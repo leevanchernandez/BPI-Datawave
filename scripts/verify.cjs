@@ -1,0 +1,23 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const source=fs.readFileSync('frontend/app.js','utf8');
+const elements=new Map();
+function element(id){if(!elements.has(id))elements.set(id,{innerHTML:'',hidden:true,value:'',addEventListener(){},focus(){},scrollTo(){},click(){}});return elements.get(id)}
+const storage=new Map();
+const ctx=vm.createContext({console,document:{getElementById:element,addEventListener(){},querySelectorAll(){return[]}},localStorage:{get:k=>storage.get(k),getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v)},setTimeout:()=>1,clearTimeout(){},FormData:function(form){return Object.entries(form.values)}});
+vm.runInContext(source,ctx);
+const run=s=>vm.runInContext(s,ctx);
+assert(element('app').innerHTML.includes('Elena’s Artisan Bakery'));
+assert.equal(run('current().checks.filter(Boolean).length'),3);
+run('handoff()');assert.equal(run('current().status'),'Missing requirements');
+run('toggleCheck(3,true);toggleCheck(4,true);handoff()');assert.equal(run('current().status'),'With BSO');
+run('toggleCheck(3,false)');assert.equal(run('current().checks[3]'),true);
+run("selectRecord('RF-2026-040');chooseProduct('Business Term Loan');assignBSO('Patricia Lee');ask(0)");
+assert.equal(run('current().loan'),'Business Term Loan');assert.equal(run('current().bso'),'Patricia Lee');assert(element('app').innerHTML.includes('Still to collect'));
+run("submitClient({values:{business:'Test & Sons',name:'Demo Client',email:'demo@example.com',phone:'555-0100',address:'Sample',years:'2',revenue:'1000000',amount:'250000',type:'Corporation',industry:'Services',purpose:'Equipment purchase'}},false)");
+assert.equal(run('records.length'),5);assert.equal(run('current().loan'),'Business Equipment Loan');assert.equal(run('current().checks.filter(Boolean).length'),0);assert.equal(run('current().status'),'Draft');
+assert(element('app').innerHTML.includes('Test &amp; Sons'));
+run("tab='Client profile';render()");assert(element('app').innerHTML.includes('demo@example.com'));
+run("tab='Documents';render()");assert(element('app').innerHTML.includes('No attachments yet'));
+run("view='Reports';render()");assert(element('app').innerHTML.includes('Pipeline status report'));
+assert(storage.get('branchline-v1'));
+console.log('Passed: rendering, incomplete handoff guard, complete handoff, checklist lock, product selection, BSO assignment, assistant context, new referral, escaping, profile, documents, reports, persistence.');
