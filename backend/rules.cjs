@@ -18,10 +18,12 @@ function applies(when, r) {
   if (when.maxAmount != null && !(Number(r.amount) <= when.maxAmount)) return false;
   if (when.civilStatus && !when.civilStatus.includes(civilOf(r.civilStatus))) return false;
   if (when.secured != null && Boolean(r.secured) !== when.secured) return false;
+  // working account: unknown counts as not BPI, so the endorsement letter is asked for until the branch says otherwise
+  if (when.bpiAccount != null && (r.bpiAccount === true) !== when.bpiAccount) return false;
   return true;
 }
 
-// r: { type, industry, amount, civilStatus?, secured? }. Returns rows in table order, each with its source.
+// r: { type, industry, amount, civilStatus?, secured?, bpiAccount? }. Returns rows in table order, each with its source.
 function checklist(r, rules = table) {
   return rules.requirements.filter((row) => applies(row.when, r)).map((row) => {
     const docTypes = row.docTypes || [row.docType];
