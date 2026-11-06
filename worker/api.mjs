@@ -25,9 +25,10 @@ export function validReferral(r) {
     && typeof r.amount === 'number' && Number.isFinite(r.amount) && r.amount > 0 && r.amount < 1e11
     && civilOf(r.civilStatus) !== null
     && (r.spouseName == null || r.spouseName === '' || str(r.spouseName, 120))
-    && (r.secured == null || typeof r.secured === 'boolean');
+    && (r.secured == null || typeof r.secured === 'boolean')
+    && (r.bpiAccount == null || typeof r.bpiAccount === 'boolean');
 }
-const cleanReferral = (r) => ({ id: r.id, business: r.business.trim(), name: r.name.trim(), type: r.type, industry: r.industry.trim(), amount: r.amount, civilStatus: civilOf(r.civilStatus), spouseName: (r.spouseName || '').trim(), secured: Boolean(r.secured) });
+const cleanReferral = (r) => ({ id: r.id, business: r.business.trim(), name: r.name.trim(), type: r.type, industry: r.industry.trim(), amount: r.amount, civilStatus: civilOf(r.civilStatus), spouseName: (r.spouseName || '').trim(), secured: Boolean(r.secured), bpiAccount: r.bpiAccount === true });
 
 function validPages(pages) {
   return Array.isArray(pages) && pages.length > 0 && pages.length <= MAX_PAGES && pages.every((p) =>
@@ -66,7 +67,7 @@ export function makeApi({ store, llm, now = () => new Date(), demoKey }) {
     'GET /api/health': async (req) => json(200, { ok: true, model: llm ? llm.model : null, rules: table.version, colo: (req.cf || {}).colo || null }),
     'GET /api/rules': async (req) => {
       const u = new URL(req.url).searchParams;
-      return json(200, rulesView({ type: u.get('type'), industry: u.get('industry'), amount: Number(u.get('amount')), civilStatus: u.get('civilStatus'), secured: u.get('secured') === 'true' }));
+      return json(200, rulesView({ type: u.get('type'), industry: u.get('industry'), amount: Number(u.get('amount')), civilStatus: u.get('civilStatus'), secured: u.get('secured') === 'true', bpiAccount: u.get('bpiAccount') === 'true' }));
     },
     'POST /api/case': async (req) => {
       const b = await body(req); if (!b || !validReferral(b.referral)) return bad('invalid referral');
