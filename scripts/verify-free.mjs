@@ -28,13 +28,16 @@ const call = async (method, path, body, key = 'k') => {
 };
 const L = (texts, conf = 0.96) => texts.map((t) => (typeof t === 'string' ? { text: t, conf } : t));
 
-const REF = { id: 'RF-2026-042', business: "Elena's Artisan Bakery", name: 'Elena Santos', type: 'Sole proprietorship', industry: 'Food & beverage', amount: 750000, civilStatus: 'married', spouseName: 'Ramon Santos', secured: false };
+const REF = { id: 'RF-2026-042', business: "Elena's Artisan Bakery", name: 'Elena Santos', type: 'Sole proprietorship', industry: 'Food & beverage', amount: 750000, civilStatus: 'married', spouseName: 'Ramon Santos', secured: false, bpiAccount: true };
 const FORM = (tin, civil, civilConf = 0.95) => ({ lines: L(['LOAN APPLICATION FORM', 'SPECIMEN', 'Page 1 of 1', "Business name: Elena's Artisan Bakery", 'Name of applicant: Elena Santos', 'Address: 12 Rizal St, Los Banos, Laguna', `TIN: ${tin}`, 'Contact number: 0917 555 0142', { text: `Civil status: ${civil}`, conf: civilConf }, 'Name of spouse: Ramon Santos']) });
 const ID = (name, side, until) => ({ lines: L(['REPUBLIC OF THE PHILIPPINES', 'PHILIPPINE IDENTIFICATION CARD', 'PhilSys', 'SPECIMEN', `Name: ${name}`, 'PSN 1234-5678-9012-3456', side === 'back' ? 'back of card' : `Valid until 2031-01-31`]) });
 const DTI = (n) => ({ lines: L(['DEPARTMENT OF TRADE AND INDUSTRY', 'Certificate of Business Name Registration', 'SPECIMEN', `Page ${n} of 2`, "Business name: Elena's Artisan Bakery", 'Owner: Elena Santos']) });
 const ITR = { lines: L(['Annual Income Tax Return', 'BIR Form No. 1701', 'SPECIMEN', 'Taxable year 2025']) };
 const FS = { lines: L(['Statement of Financial Position', 'SPECIMEN', 'As of December 31, 2025', 'Total assets']) };
 const BANK = { lines: L(['BANK STATEMENT', 'SPECIMEN', 'Account [masked]', 'Period: Aug to Oct 2026']) };
+const COR = { lines: L(['REPUBLIC OF THE PHILIPPINES', 'BUREAU OF INTERNAL REVENUE', 'Certificate of Registration', 'BIR Form No. 2303', 'SPECIMEN', "Business name: Elena's Artisan Bakery"]) };
+const PERMIT = { lines: L(["MAYOR'S PERMIT", 'SPECIMEN', "Business name: Elena's Artisan Bakery", 'Valid until: 2027-01-31']) };
+const CAL = { lines: L(['CLIENT AUTHORIZATION LETTER', 'SPECIMEN', 'Signed: Elena Santos', 'Signed: Ramon Santos']) };
 
 // auth and validation
 assert.equal((await call('GET', '/api/case?id=RF-2026-042', null, 'wrong')).status, 401);
@@ -48,11 +51,11 @@ assert(r.body.rules.rows.some((x) => x.id === 'spouse_id' && x.reason === 'marri
 assert(r.body.rules.rows.every((x) => x.sourceTitle));
 
 // 2. first scan: DTI page 2 missing, TIN blank, handwritten civil status unreadable (low OCR confidence)
-const pages1 = [FORM('', 'Kasal', 0.41), ID('Elena Santos', 'front'), ID('Elena Santos', 'back'), ID('Ramon Santos', 'front'), DTI(1), ITR, FS, BANK];
+const pages1 = [FORM('', 'Kasal', 0.41), ID('Elena Santos', 'front'), ID('Elena Santos', 'back'), ID('Ramon Santos', 'front'), DTI(1), COR, PERMIT, BANK, CAL];
 r = await call('POST', '/api/check', { id: REF.id, pages: pages1 });
 assert.equal(r.status, 200, JSON.stringify(r.body));
 const keys = (x) => [...x.result.defects, ...x.result.needsReview].map((d) => d.key);
-assert(keys(r.body).includes('MISSING_PAGE:registration_dti#2'), keys(r.body).join(','));
+assert(keys(r.body).includes('MISSING_PAGE:dti#2'), keys(r.body).join(','));
 assert(keys(r.body).includes('BLANK_FIELD:tin'));
 assert(keys(r.body).includes('CIVIL_UNREADABLE:civil_status'));
 assert(!keys(r.body).some((k) => /NAME_MISMATCH|REFERRAL_MISMATCH/.test(k)), "spouse ID is not treated as the owner");
@@ -76,7 +79,7 @@ r = await call('POST', '/api/ask', { id: REF.id, question: 'ma-a-approve ba to?'
 assert(r.body.trace[0].rule === 'refuse_credit_question' && /Credit/.test(r.body.answer));
 
 // 5. rescan with TIN and page 2: ready for BSO review, then hand off
-const pages2 = [FORM('123-456-789-000', 'Married', 0.95), ID('Elena Santos', 'front'), ID('Elena Santos', 'back'), ID('Ramon Santos', 'front'), DTI(1), DTI(2), ITR, FS, BANK];
+const pages2 = [FORM('123-456-789-000', 'Married', 0.95), ID('Elena Santos', 'front'), ID('Elena Santos', 'back'), ID('Ramon Santos', 'front'), DTI(1), DTI(2), COR, PERMIT, BANK, CAL];
 r = await call('POST', '/api/check', { id: REF.id, pages: pages2 });
 assert.equal(r.body.result.complete, true, JSON.stringify([r.body.result.defects, r.body.result.needsReview]));
 assert.equal(r.body.reconcile.resolved, 2);

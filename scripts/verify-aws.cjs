@@ -8,7 +8,7 @@ const llm = require('../backend/aws/llm.cjs');
 const textract = require('../backend/aws/textract.cjs');
 const { classify } = require('../backend/classify.cjs');
 
-const REF = { id: 'RF-2026-050', business: 'Lim Prints', name: 'David Lim', type: 'Sole proprietorship', industry: 'Services', amount: 500000 };
+const REF = { id: 'RF-2026-050', business: 'Lim Prints', name: 'David Lim', type: 'Sole proprietorship', industry: 'Services', amount: 500000, bpiAccount: true };
 const TODAY = new Date('2026-11-04T04:00:00Z');
 
 // fake pages: bytes carry a tag. OCR lines, Forms output and model output are looked up by tag.
@@ -21,6 +21,8 @@ const DOCS = {
   permit: { lines: ["Mayor's Permit", 'Business name Lim Prints', 'Valid until March 31, 2027'], model: { docType: 'business_permit', fields: { business_name: 'Lim Prints' }, conf: { business_name: 0.95 }, expiry: '2027-03-31' } },
   fin: { lines: ['Statement of Financial Position', 'As of December 31 2025', 'Total assets'] },
   bank: { lines: ['Bank Statement', 'Account number ending 1234', 'Period covered'] },
+  cor: { lines: ['Republic of the Philippines', 'Bureau of Internal Revenue', 'Certificate of Registration', 'BIR Form No. 2303'] },
+  cal: { lines: ['CLIENT AUTHORIZATION LETTER', 'I authorize BPI to verify', 'Signed David Lim'] },
   itr: { lines: ['Annual Income Tax Return', 'BIR Form No. 1701', 'Taxable year 2025'] },
   blur: { lines: ['xx ##', 'xx', 'xx'], model: { unreadable: true, docType: null } },
   thin: { lines: ['UMID'] },
@@ -35,7 +37,7 @@ const deps = {
   analyzeForm: async (b) => { calls.forms++; return DOCS[b.toString()].kv; },
   readPage: async ({ bytes }) => { calls.model++; return DOCS[bytes.toString()].model || { unreadable: true }; },
 };
-const GOOD = ['form', 'idf', 'idb', 'reg', 'permit', 'itr', 'fin', 'bank'];
+const GOOD = ['form', 'idf', 'idb', 'reg', 'cor', 'permit', 'bank', 'cal'];
 
 (async () => {
   // ---- pipeline: complete packet, cost-sensitive routing ----
@@ -46,14 +48,14 @@ const GOOD = ['form', 'idf', 'idb', 'reg', 'permit', 'itr', 'fin', 'bank'];
   assert.equal(calls.forms, 1, 'Forms (the expensive pass) runs only on the form page');
   assert.equal(calls.model, 4, 'model reads only id front, id back, registration, permit');
 
-  // ---- pipeline: missing financials plus an unreadable page never completes ----
-  out = await processPacket(REF, ['form', 'idf', 'idb', 'reg', 'permit', 'itr', 'bank', 'blur'].map(page), deps, { today: TODAY });
-  assert(out.result.defects.some((d) => d.key === 'MISSING_DOC:fs_sole'));
+  // ---- pipeline: missing CAL plus an unreadable page never completes ----
+  out = await processPacket(REF, ['form', 'idf', 'idb', 'reg', 'cor', 'permit', 'bank', 'blur'].map(page), deps, { today: TODAY });
+  assert(out.result.defects.some((d) => d.key === 'MISSING_DOC:cal_sole'));
   assert(out.result.needsReview.some((d) => d.key.startsWith('PAGE_UNPLACED')), 'an unplaced page goes to the branch, not the model');
   assert(!out.result.complete);
 
   // ---- pipeline: a page with only a title is not trusted ----
-  out = await processPacket(REF, ['form', 'thin', 'idb', 'reg', 'permit', 'itr', 'fin', 'bank'].map(page), deps, { today: TODAY });
+  out = await processPacket(REF, ['form', 'thin', 'idb', 'reg', 'cor', 'permit', 'bank', 'cal'].map(page), deps, { today: TODAY });
   assert(out.result.needsReview.some((d) => d.key.startsWith('PAGE_THIN')) && !out.result.complete);
 
   // ---- pipeline: model output must be visible in the page text (prompt injection guard) ----
@@ -98,12 +100,12 @@ const GOOD = ['form', 'idf', 'idb', 'reg', 'permit', 'itr', 'fin', 'bank'];
   assert.equal((await H.check(ev({ referral: REF, pageKeys: keys(['form'], 'RF-2026-999') }))).statusCode, 400, 'keys must belong to this referral (no cross-case reads)');
   assert.equal((await H.check(ev({ referral: REF, pageKeys: keys(Array(21).fill('a')) }))).statusCode, 400, 'page cap');
 
-  let r = JSON.parse((await H.check(ev({ referral: REF, pageKeys: keys(['form', 'idf', 'idb', 'reg', 'permit', 'itr', 'bank']) }))).body);
-  assert(r.result.defects.some((d) => d.key === 'MISSING_DOC:fs_sole'));
+  let r = JSON.parse((await H.check(ev({ referral: REF, pageKeys: keys(['form', 'idf', 'idb', 'reg', 'permit', 'cor', 'bank']) }))).body);
+  assert(r.result.defects.some((d) => d.key === 'MISSING_DOC:cal_sole'));
   assert.equal(r.status, 'Missing requirements');
-  assert(r.message.includes('Financial statements'), 'template fallback used when the model is down');
-  r = JSON.parse((await H.check(ev({ referral: REF, pageKeys: keys(['form', 'idf', 'idb', 'reg', 'permit', 'itr', 'bank', 'fin']) }))).body);
-  assert(r.reconcile.resolved.some((d) => d.key === 'MISSING_DOC:fs_sole'));
+  assert(r.message.includes('Client Authorization Letter'), 'template fallback used when the model is down');
+  r = JSON.parse((await H.check(ev({ referral: REF, pageKeys: keys(['form', 'idf', 'idb', 'reg', 'permit', 'cor', 'bank', 'cal']) }))).body);
+  assert(r.reconcile.resolved.some((d) => d.key === 'MISSING_DOC:cal_sole'));
   assert.equal(r.status, 'Draft');
   assert(r.result.complete === false || r.result.needsReview.length === 0);
   assert.equal(JSON.parse((await H.ask(ev({ referralId: 'RF-2026-050', question: 'status?' }))).body).answer.includes('Draft'), true);
@@ -135,8 +137,8 @@ const GOOD = ['form', 'idf', 'idb', 'reg', 'permit', 'itr', 'fin', 'bank'];
   assert.equal(llm.safeDraft('x'.repeat(701), items), null);
   assert(llm.safeDraft('Pakisubmit po ang financial statements. Salamat!', items));
   const approvals = makeHandlers({ ...hdeps, draftMessage: async () => llm.safeDraft('Approved na po!', ['x']) });
-  const r2 = JSON.parse((await approvals.check(ev({ referral: { ...REF, id: 'RF-2026-070' }, pageKeys: keys(['form', 'idf', 'idb', 'reg', 'permit', 'bank'], 'RF-2026-070') }))).body);
-  assert(r2.message.includes('Financial statements'), 'unsafe model draft falls back to the template');
+  const r2 = JSON.parse((await approvals.check(ev({ referral: { ...REF, id: 'RF-2026-070' }, pageKeys: keys(['form', 'idf', 'idb', 'reg', 'permit', 'cor', 'bank'], 'RF-2026-070') }))).body);
+  assert(r2.message.includes('Client Authorization Letter'), 'unsafe model draft falls back to the template');
 
   // ---- llm.ask: tool loop, parallel results in one message, error marking, refusal, turn cap ----
   const sent = []; let n = 0;
