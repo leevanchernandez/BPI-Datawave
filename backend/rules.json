@@ -1,21 +1,30 @@
 {
-  "_note": "ILLUSTRATIVE rules mirrored from frontend/app.js. Replace with the BPI guidebook and fill `source` with the guidebook page. One row per requirement.",
+  "_note": "Seed rules from BPI's PUBLIC Ka-Negosyo pages, which BPI calls 'indicative only and non-exhaustive'. Not BPI policy. In a pilot, BPI SME Lending owns and versions this table. Signatures are confirmed by the branch, not read by OCR.",
+  "version": "2026-11-05-public-seed",
+  "sources": {
+    "B1": { "title": "BPI Ka-Negosyo SME Term Loan, public page (undated, footer 2023)", "url": "https://www.bpi.com.ph/sme-banking/loans/sme-term-loan" },
+    "assumed": { "title": "Team assumption, no public BPI source. The BSO confirms.", "url": "" }
+  },
   "forms": {
     "application_form": {
-      "mandatory": ["business_name", "owner_name", "address", "tin", "contact", "signature"],
-      "ifMarried": ["spouse_name", "spouse_signature"]
+      "mandatory": ["business_name", "owner_name", "address", "tin", "contact"],
+      "ifMarried": ["spouse_name"]
     }
   },
   "requirements": [
-    { "id": "application_form", "title": "Signed loan application form", "docType": "application_form", "when": {}, "source": "illustrative" },
-    { "id": "gov_id", "title": "Valid government-issued ID (front and back)", "docType": "gov_id", "when": {}, "source": "illustrative" },
-    { "id": "registration_dti", "title": "DTI business registration", "docType": "registration", "when": { "type": ["Sole proprietorship"] }, "source": "illustrative" },
-    { "id": "registration_sec", "title": "SEC registration and corporate documents", "docType": "registration", "when": { "type": ["Corporation"] }, "source": "illustrative" },
-    { "id": "registration_sec_partner", "title": "SEC partnership registration", "docType": "registration", "when": { "type": ["Partnership"] }, "source": "illustrative" },
-    { "id": "business_permit", "title": "Latest business permit", "docType": "business_permit", "when": {}, "source": "illustrative" },
-    { "id": "financials", "title": "Financial statements and income tax return", "docType": "financials", "when": {}, "source": "illustrative" },
-    { "id": "bank_statements", "title": "Bank statements (latest 6 months)", "docType": "bank_statements", "when": {}, "source": "illustrative" },
-    { "id": "sanitary_permit", "title": "Sanitary or health permit", "docType": "sanitary_permit", "when": { "industry": ["Food & beverage"] }, "source": "illustrative conditional example" },
-    { "id": "audited_fs", "title": "Audited financial statements", "docType": "audited_fs", "when": { "minAmount": 5000000 }, "source": "illustrative conditional example" }
+    { "id": "application_form", "title": "Signed loan application form", "docTypes": ["application_form"], "when": {}, "source": "B1" },
+    { "id": "gov_id", "title": "Valid government ID of the borrower or signatories (front and back)", "docTypes": ["gov_id"], "when": {}, "source": "B1" },
+    { "id": "spouse_id", "title": "Valid government ID of the spouse", "docTypes": ["spouse_id"], "when": { "type": ["Sole proprietorship"], "civilStatus": ["married"] }, "reason": "married", "source": "B1" },
+    { "id": "registration_dti", "title": "DTI registration or business permit", "docTypes": ["registration", "business_permit"], "when": { "type": ["Sole proprietorship"] }, "source": "B1" },
+    { "id": "registration_sec", "title": "SEC registration", "docTypes": ["registration"], "when": { "type": ["Partnership", "Corporation"] }, "source": "B1" },
+    { "id": "articles", "title": "Articles of partnership or incorporation", "docTypes": ["articles"], "when": { "type": ["Partnership", "Corporation"] }, "source": "B1" },
+    { "id": "bylaws", "title": "By-laws", "docTypes": ["bylaws"], "when": { "type": ["Corporation"] }, "source": "B1" },
+    { "id": "gis", "title": "Latest General Information Sheet", "docTypes": ["gis"], "when": { "type": ["Partnership", "Corporation"] }, "source": "B1" },
+    { "id": "itr_sole", "title": "Income tax returns, last 3 years", "docTypes": ["itr"], "when": { "type": ["Sole proprietorship"] }, "source": "B1" },
+    { "id": "fs_sole", "title": "Financial statements, last 3 years (audited if gross sales are over PHP 3M, otherwise BIR-filed or in-house; the BSO confirms)", "docTypes": ["audited_fs", "financials"], "when": { "type": ["Sole proprietorship"] }, "source": "assumed" },
+    { "id": "itr_entity", "title": "Income tax returns, last 3 years", "docTypes": ["itr"], "when": { "type": ["Partnership", "Corporation"], "minAmount": 3000001 }, "reason": "loan over PHP 3M", "source": "B1" },
+    { "id": "afs_entity", "title": "Audited financial statements, last 3 years", "docTypes": ["audited_fs"], "when": { "type": ["Partnership", "Corporation"], "minAmount": 3000001 }, "reason": "loan over PHP 3M", "source": "B1" },
+    { "id": "bank_statements", "title": "Bank statements, latest 3 months", "docTypes": ["bank_statements"], "when": {}, "source": "B1" },
+    { "id": "collateral", "title": "Collateral documents (for example title and tax declaration)", "docTypes": ["collateral"], "when": { "secured": true }, "reason": "secured loan", "source": "B1" }
   ]
 }

@@ -46,7 +46,7 @@ function packet(seed, referral, inject = [], noise = 0.25, today = new Date('202
     const base = { docType: row.docType, fields: {} };
     if (row.docType === 'application_form') {
       const [bn, bc] = nzc(biz), [on, oc] = nzc(asWritten(r, p, style));
-      pages.push(...[1, 2, 3].map((n) => ({ ...base, pageNo: n, pageTotal: 3, conf: n === 1 ? { business_name: bc, owner_name: oc } : {}, fields: n === 1 ? { business_name: bn, owner_name: on, address: '24 Market St', tin: '123-456-789', contact: '09170000000', signature: 'signed', civil_status: 'single' } : {} })));
+      pages.push(...[1, 2, 3].map((n) => ({ ...base, pageNo: n, pageTotal: 3, conf: n === 1 ? { business_name: bc, owner_name: oc, civil_status: 0.97 } : {}, fields: n === 1 ? { business_name: bn, owner_name: on, address: '24 Market St', tin: '123-456-789', contact: '09170000000', signature: 'signed', civil_status: 'single' } : {} })));
     } else if (row.docType === 'gov_id') {
       const [on, oc] = nzc(asWritten(r, p, 'plain'));
       pages.push({ ...base, side: 'front', conf: { owner_name: oc }, fields: { owner_name: on }, expiry: '2030-01-31' }, { ...base, side: 'back' });
@@ -56,13 +56,17 @@ function packet(seed, referral, inject = [], noise = 0.25, today = new Date('202
     } else if (row.docType === 'business_permit') {
       const [bn, bc] = nzc(biz);
       pages.push({ ...base, conf: { business_name: bc }, fields: { business_name: bn }, expiry: '2027-03-31' });
+    } else if (row.docType === 'spouse_id') {
+      pages.push({ ...base, fields: { owner_name: 'Ramon Bautista' }, conf: { owner_name: 0.97 } });
     } else if (row.docType === 'sanitary_permit') {
       pages.push({ ...base, expiry: '2027-06-30' });
     } else pages.push(base);
   }
+  if (req.some((x) => x.docType === 'spouse_id')) { const f = pages.find((x) => x.docType === 'application_form' && x.pageNo === 1); if (f) { f.fields.civil_status = 'married'; f.fields.spouse_name = 'Ramon Bautista'; f.conf.spouse_name = 0.97; } }
+  if (!pages.some((x) => x.docType === 'business_permit')) { const [bn, bc] = nzc(biz); pages.push({ docType: 'business_permit', conf: { business_name: bc }, fields: { business_name: bn }, expiry: '2027-03-31' }); }
   const truth = new Set();
   for (const d of inject) {
-    if (d === 'MISSING_DOC') { const i = pages.findIndex((x) => x.docType === 'financials'); pages.splice(i, 1); truth.add('MISSING_DOC'); }
+    if (d === 'MISSING_DOC') { const i = pages.findIndex((x) => x.docType === 'bank_statements'); pages.splice(i, 1); truth.add('MISSING_DOC'); }
     if (d === 'MISSING_PAGE') { const i = pages.findIndex((x) => x.docType === 'application_form' && x.pageNo === 2); pages.splice(i, 1); truth.add('MISSING_PAGE'); }
     if (d === 'BLANK_FIELD') { pages.find((x) => x.docType === 'application_form' && x.pageNo === 1).fields.tin = ''; truth.add('BLANK_FIELD'); }
     if (d === 'ID_SIDE_MISSING') { const i = pages.findIndex((x) => x.docType === 'gov_id' && x.side === 'back'); pages.splice(i, 1); truth.add('ID_SIDE_MISSING'); }
