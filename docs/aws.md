@@ -5,8 +5,10 @@ This is the AWS version of the backend. BPI's AI team pointed the team to Amazon
 ## Flow
 
 ```
-Browser (counter) -> S3 presigned upload (uploads/, SSE-KMS, 1 day expiry)
+Browser (counter) -> POST /upload-url { referralId, name } -> presigned S3 POST
+                     (uploads/{referralId}/, jpeg/png/pdf, 5 MB cap, 5 minute URL, SSE-KMS, objects expire after 1 day)
                   -> POST /check { referral, pageKeys } -> Lambda
+Every route needs the x-demo-key header (shared demo secret, constant-time compare).
 Lambda: for each page
   1. Textract DetectDocumentText (cheap, every page) -> keyword classify (backend/classify.cjs)
   2. form pages only: Textract AnalyzeDocument FORMS (the expensive pass)
@@ -23,17 +25,22 @@ The checklist and the "complete" decision are plain code over a rules table, and
 - Rules, checker, reconciler, status derivation, handler validation (path traversal, id format, caps).
 - Routing cost: the Forms pass runs only on form pages; the model reads only ID, registration and permit pages.
 - `AnthropicBedrockMantle` exists in `@anthropic-ai/bedrock-sdk@1.1.1` and constructs. Requests carry none of the params Haiku 5.5 rejects (temperature, top_p, forced tool_choice, prefill).
-- Lambda bundles with esbuild (1.6 MB) and exports `check` and `ask`. SAM template parses.
+- Lambda bundles with esbuild (about 0.9 MB minified, AWS SDK clients left external) and exports `check`, `ask` and `uploadUrl`. The template passes cfn-lint 1.60.0 with no findings.
+- `/upload-url`: id validation, file name sanitising, type allow list, and the real presigner's POST policy (size range, pinned content type, expiry), signed locally with dummy credentials.
+- Demo key: every route returns 401 for a missing, wrong, truncated or non-string key, and with no key configured.
+- scripts/deploy.sh and scripts/teardown.sh run end to end against stubbed `aws` and `sam` commands, refuse to start without their env vars, and do not print the key. scripts/smoke.mjs runs end to end against an in-process fake API.
 - Fail-closed behavior: every finding of the adversarial code review has a regression test (see `docs/challenges.md`).
 
 ## NOT verified (needs AWS access)
 
 - Any real Textract output: how an empty form value is represented, accuracy on phone photos, handwriting (English only), Filipino names.
-- Bedrock: model id `anthropic.claude-haiku-5-5`, availability in the chosen region, the IAM action and resource for the Mantle endpoint, structured-output field shape, latency, and whether hackathon credits cover Marketplace-billed Claude.
+- Bedrock: model id `anthropic.claude-haiku-5-5`, availability in the chosen region, the IAM action and resource for the Mantle endpoint (the template scopes InvokeModel to ARNs built from BedrockModelId, with a commented `'*'` fallback), the ARN form of a global profile, structured-output field shape, latency, and whether hackathon credits cover Marketplace-billed Claude.
+- The Bedrock model access check in scripts/deploy.sh: the output of `get-foundation-model-availability` on a real account.
 - Taglish quality of drafted messages and extraction. No published benchmark found for Claude or Nova on Taglish.
-- `sam build` and `sam deploy`. The template has no authorizer yet and must not be exposed.
-- Authorization: callers are not authenticated, and the referral (type, industry, amount, names) is supplied by the caller. Production must load the referral by id from the bank's system and authorize the caller for that case.
-- No presign endpoint exists, so uploads to `uploads/{referralId}/` are not wired.
+- `sam build`, `sam deploy`, the smoke test and teardown against a real account. Steps are in docs/aws-runbook.md.
+- Authorization: callers share one demo key, which sits in the Lambda environment, and the referral (type, industry, amount, names) is supplied by the caller. Production needs an IAM or Cognito authorizer, must load the referral by id from the bank's system, and must authorize the caller for that case.
+- Real S3 behavior of the presigned POST: bucket CORS for POST from the browser, SSE-KMS on upload, and the 403 returned for an oversized or wrong-type file.
+- The live demo page talks to the free stack's API. Pointing it at the AWS API needs an adapter that is not built.
 - HTTP API integrations time out at 30 seconds. A request is capped at 20 pages with 4 pages read in parallel. Not measured.
 - Textract checkbox fields (for example civil status tick boxes) are not parsed, so such a form raises a blank-field defect.
 - What "complete" means: no defects, nothing to review, every required signal present. It does not check authenticity, content accuracy, or that statements cover 6 months.
@@ -49,13 +56,8 @@ About 12 pesos per referral per pass, about 90 percent Textract Forms. Multiply 
 
 ## Data handling
 
-Synthetic documents only. Set the Textract AI-services opt-out policy before any upload, keep Bedrock retention settings explicit, no document content in logs or object names, delete when the referral closes.
+Synthetic documents only. Set the Textract AI-services opt-out policy before any upload (commands in docs/aws-runbook.md), keep Bedrock retention settings explicit, no document content in logs or object names, delete when the referral closes.
 
 ## To deploy (not run)
 
-```sh
-npm --prefix backend install
-sam build -t infra/template.yaml
-sam deploy --guided --parameter-overrides ReviewOrigin=http://localhost:8000
-```
-Add an IAM or Cognito authorizer first.
+Follow docs/aws-runbook.md. In short, export AWS_REGION, DEMO_KEY, BEDROCK_MODEL_ID and REVIEW_ORIGIN, run `scripts/deploy.sh`, then `node scripts/smoke.mjs`, and `scripts/teardown.sh` after recording. The shared demo key is for the demo only; real use needs an IAM or Cognito authorizer.

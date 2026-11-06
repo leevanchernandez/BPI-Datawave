@@ -19,3 +19,50 @@ aws organizations describe-effective-policy --policy-type AISERVICES_OPT_OUT_POL
 ```
 
 `default` covers every AI service, Textract included. To opt out Textract alone, use `"textract"` in place of `"default"`. Bedrock is not covered by this policy. Keep Bedrock model invocation logging off (it is off unless someone turns it on).
+
+## Access day, step by step
+
+1. Tools. Install the AWS CLI v2 and the SAM CLI (`uv tool install aws-sam-cli`, `pipx install aws-sam-cli`, or the installer from the AWS docs), and have Node 22. Check with `aws --version`, `sam --version`, `node --version`.
+2. Credentials. If BPI gives IAM Identity Center access, run `aws configure sso` once, name the profile `bpi-demo`, then `aws sso login --profile bpi-demo`. If BPI gives access keys instead, run `aws configure --profile bpi-demo`. Then `export AWS_PROFILE=bpi-demo` and check with `aws sts get-caller-identity`.
+3. Opt-out. Confirm the Textract opt-out above is in place.
+4. Bedrock model access. In the Bedrock console, switch to Asia Pacific (Singapore), open the model access or model catalog page, and enable the chosen Claude model. Anthropic models can ask for a one-time use case form, and the first call may create an AWS Marketplace subscription. Copy the exact model or profile id from the console. Haiku 5.5 is reported to reach Singapore only through a global cross-region inference profile, so use that profile's id. Sonnet 5 is reported to be in-region. Both claims are unverified until the console shows them.
+5. Deploy.
+   ```sh
+   export AWS_REGION=ap-southeast-1
+   export BEDROCK_MODEL_ID='<id copied from the Bedrock console>'
+   export REVIEW_ORIGIN='https://<frontend origin, no trailing slash>'
+   export DEMO_KEY="$(openssl rand -hex 24)"     # keep it in a password manager, never in git
+   npm --prefix backend ci && npm test && npm run test:aws
+   scripts/deploy.sh
+   ```
+   The script checks the credentials, the region and Bedrock model access, then runs `sam build` and `sam deploy` and prints the stack outputs.
+6. Smoke test. `API_URL='<ApiUrl output>' node scripts/smoke.mjs` (DEMO_KEY is still exported). It checks that a wrong key gets 401, uploads the Elena specimens, runs `/check` for both visits, prints the defects and the drafted message, and asks one question. Each run calls Textract and Bedrock for real.
+7. Point the demo at it. The live demo (frontend/live.*) talks to the free stack's `/api/*` routes and sends OCR text from the browser. The AWS API takes uploads and page keys instead, so the page needs a small adapter before it can use this stack. That adapter is not built. Until then, record the smoke test output and the AWS console as the AWS path.
+8. Teardown after recording. `CONFIRM_TEARDOWN=counter-check-demo scripts/teardown.sh` empties the upload bucket, deletes the stack (functions, API, bucket, table) and the Lambda log groups. The `aws-sam-cli-managed-default` artifact stack is kept; delete it in CloudFormation if nothing else uses it.
+
+## Troubleshooting
+
+| Symptom | Likely cause | Fix |
+| --- | --- | --- |
+| deploy.sh stops at the Bedrock check, or Lambda logs show `AccessDeniedException` from Bedrock | Model access not enabled in this region, use case form pending, or no Marketplace subscription | Enable access in the Bedrock console for the region you deploy to, wait for it to show as granted, rerun |
+| `AccessDenied` that names a Bedrock ARN after access is granted | The template's Bedrock resource ARNs do not match what the endpoint checks | In infra/template.yaml use the commented `Resource: '*'` line, redeploy, read the denied ARN in CloudTrail, then narrow again |
+| Bedrock says the model id is invalid or on-demand use is not supported | The model is only offered through an inference profile in this region | Use the profile id from the console as BEDROCK_MODEL_ID |
+| `/check` succeeds but ID, registration and permit pages all land in review | The model call failed and the page went to a person (fail closed) | Look for `modelError` in the `pages` field of the response and in the Lambda logs |
+| Region mismatch: stack or model not found | AWS_REGION, the profile's default region and the console region differ | Export AWS_REGION; the scripts set it for every aws and sam command. Check the console region selector |
+| `/check` returns 503 after about 30 seconds | HTTP API integrations stop at 30 seconds; the Lambda may still be running | Send fewer pages per call, or raise MemorySize in the template |
+| Browser shows a CORS error | REVIEW_ORIGIN does not match the page origin exactly (scheme, host, port, no trailing slash) | Redeploy with the right REVIEW_ORIGIN; the API and the bucket both use it |
+| `401 demo key required` | Missing or wrong `x-demo-key` header | Send the key used at deploy time |
+| S3 upload returns 403 | The presigned POST expired (5 minutes), the file is over 5 MB, or the file is not jpeg, png or pdf | Ask `/upload-url` again and upload right away |
+| `sam build` fails in the esbuild step | Backend dependencies missing | `npm --prefix backend ci`, then rerun |
+
+## Services to request beyond the six
+
+The six requested services are Bedrock, Textract, Lambda, API Gateway, S3 and DynamoDB. A SAM deploy also needs these.
+
+- CloudFormation. SAM deploys through a stack and change sets, plus a small `aws-sam-cli-managed-default` stack for the artifact bucket.
+- IAM role creation. SAM creates one execution role per function (`CAPABILITY_IAM`), so the deploying role needs to create, tag, update and pass roles.
+- CloudWatch Logs. Lambda writes its logs there; it is the only way to debug a failed call. Teardown deletes the log groups.
+- KMS with the default AWS managed keys. The upload bucket (SSE-KMS) and the table use the `aws/s3` and `aws/dynamodb` keys. No customer managed key is needed for the demo.
+- Bedrock control plane reads (`ListFoundationModels`, `GetFoundationModelAvailability`, `GetInferenceProfile`) for the deploy check, and AWS Marketplace subscribe rights or an admin who subscribes, because Anthropic models are billed through Marketplace.
+- SSM Parameter Store is not used. The demo key is a NoEcho template parameter stored as a Lambda environment variable. It is needed only if the key moves out of the Lambda configuration.
+- An AWS Organizations admin, only to set the Textract opt-out above.
