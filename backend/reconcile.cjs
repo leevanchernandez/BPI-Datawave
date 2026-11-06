@@ -2,21 +2,21 @@
 // Reconcile a resubmission against the open lacking list, and derive status from events (never typed by hand).
 
 // prev: defects[] from the last check. next: defects[] from the new check.
-function reconcile(prev, next) {
+function reconcile(prev, next, nextReview = []) {
   const nextKeys = new Set(next.map((d) => d.key));
   const prevKeys = new Set(prev.map((d) => d.key));
   return {
     resolved: prev.filter((d) => !nextKeys.has(d.key)),
     stillMissing: prev.filter((d) => nextKeys.has(d.key)),
     newIssues: next.filter((d) => !prevKeys.has(d.key)), // a resubmission can introduce new problems
-    complete: next.length === 0,
+    complete: next.length === 0 && nextReview.length === 0,
   };
 }
 
 // Template fallback when no LLM is available. The LLM version (llm.cjs) only rewrites this in Taglish.
 function draftMessage(rec, { to = 'branch' } = {}) {
   const lines = [...rec.stillMissing, ...rec.newIssues].map((d) => `- ${d.message}`);
-  if (!lines.length) return 'Complete na ang requirements. Thank you!';
+  if (!lines.length) return 'Walang nakitang problema ng checker. Titingnan pa rin ito ng BSO.';
   const head = rec.resolved.length ? `Natanggap namin. ${rec.resolved.length} ang na-resolve na. Kulang pa:` : 'Kulang pa ang mga ito:';
   return [head, ...lines].join('\n');
 }
@@ -30,9 +30,15 @@ const STATUS_BY_EVENT = {
   bso_opened: 'With BSO',
   submitted_for_credit: 'For approval',
 };
+const RANK = { Draft: 0, 'Missing requirements': 0, 'With BSO': 1, 'For approval': 2 };
 function deriveStatus(events) {
   let s = 'Draft';
-  for (const e of events) if (STATUS_BY_EVENT[e.type]) s = STATUS_BY_EVENT[e.type];
+  for (const e of events) {
+    const next = STATUS_BY_EVENT[e.type];
+    if (!next) continue;
+    if (RANK[s] >= 1 && e.type === 'check_passed') continue; // a later passing re-check never rolls back a handoff
+    s = next;
+  }
   return s;
 }
 

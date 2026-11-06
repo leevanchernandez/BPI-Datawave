@@ -28,7 +28,7 @@ let noised = false; // set by ocrNoise, read by confFor
 const SILENT = 0.2; // share of OCR errors that come back with high confidence (silent errors)
 function confFor(r, wasNoised) { return wasNoised && r() > SILENT ? 0.5 + r() * 0.35 : 0.93 + r() * 0.06; }
 
-function person(r) { return { first: pick(r, FIRST), last: pick(r, LAST) }; }
+function person(r, name) { if (name) { const t = name.trim().split(/\s+/); return { first: t.slice(0, -1).join(' '), last: t[t.length - 1] }; } return { first: pick(r, FIRST), last: pick(r, LAST) }; }
 const asWritten = (r, p, style) => (style === 'lastfirst' ? `${p.last}, ${p.first}` : style === 'initial' ? `${p.first} ${pick(r, 'ABCDEFG')}. ${p.last}` : `${p.first} ${p.last}`);
 
 const DEFECTS = ['MISSING_DOC', 'MISSING_PAGE', 'BLANK_FIELD', 'ID_SIDE_MISSING', 'NAME_MISMATCH', 'BUSINESS_NAME_MISMATCH', 'EXPIRED'];
@@ -36,7 +36,7 @@ const DEFECTS = ['MISSING_DOC', 'MISSING_PAGE', 'BLANK_FIELD', 'ID_SIDE_MISSING'
 /** referral: { type, industry, amount, business }. inject: array of defect names. noise: 0..1 per-field OCR noise rate. */
 function packet(seed, referral, inject = [], noise = 0.25, today = new Date('2026-11-04')) {
   const r = rng(seed);
-  const p = person(r);
+  const p = person(r, referral.name);
   const style = pick(r, ['plain', 'lastfirst', 'initial']);
   const req = checklist(referral);
   const nzc = (s) => { noised = false; const v = ocrNoise(r, s, noise); return [v, confFor(r, noised)]; };
@@ -49,13 +49,15 @@ function packet(seed, referral, inject = [], noise = 0.25, today = new Date('202
       pages.push(...[1, 2, 3].map((n) => ({ ...base, pageNo: n, pageTotal: 3, conf: n === 1 ? { business_name: bc, owner_name: oc } : {}, fields: n === 1 ? { business_name: bn, owner_name: on, address: '24 Market St', tin: '123-456-789', contact: '09170000000', signature: 'signed', civil_status: 'single' } : {} })));
     } else if (row.docType === 'gov_id') {
       const [on, oc] = nzc(asWritten(r, p, 'plain'));
-      pages.push({ ...base, side: 'front', conf: { owner_name: oc }, fields: { owner_name: on } }, { ...base, side: 'back' });
+      pages.push({ ...base, side: 'front', conf: { owner_name: oc }, fields: { owner_name: on }, expiry: '2030-01-31' }, { ...base, side: 'back' });
     } else if (row.docType === 'registration') {
       const [on, oc] = nzc(asWritten(r, p, 'lastfirst')), [bn, bc] = nzc(biz);
       pages.push({ ...base, conf: { owner_name: oc, business_name: bc }, fields: { owner_name: on, business_name: bn } });
     } else if (row.docType === 'business_permit') {
       const [bn, bc] = nzc(biz);
       pages.push({ ...base, conf: { business_name: bc }, fields: { business_name: bn }, expiry: '2027-03-31' });
+    } else if (row.docType === 'sanitary_permit') {
+      pages.push({ ...base, expiry: '2027-06-30' });
     } else pages.push(base);
   }
   const truth = new Set();
@@ -66,11 +68,11 @@ function packet(seed, referral, inject = [], noise = 0.25, today = new Date('202
     if (d === 'ID_SIDE_MISSING') { const i = pages.findIndex((x) => x.docType === 'gov_id' && x.side === 'back'); pages.splice(i, 1); truth.add('ID_SIDE_MISSING'); }
     if (d === 'NAME_MISMATCH') { // ID belongs to someone else: near-spelling surname half the time, a different person otherwise
       const id = pages.find((x) => x.docType === 'gov_id' && x.side === 'front');
-      id.conf = { owner_name: 0.97 };
+      id.conf = { owner_name: 0.5 + r() * 0.49 }; // the wrong name can be read confidently or not, do not rig it
       id.fields.owner_name = r() < 0.5 && SIMILAR_LAST[p.last] ? `${p.first} ${SIMILAR_LAST[p.last]}` : asWritten(r, { first: pick(r, FIRST.filter((f) => f !== p.first)), last: pick(r, LAST.filter((l) => l !== p.last)) }, 'plain');
       truth.add('NAME_MISMATCH');
     }
-    if (d === 'BUSINESS_NAME_MISMATCH') { const bp = pages.find((x) => x.docType === 'business_permit'); bp.conf = { business_name: 0.97 }; bp.fields.business_name = `${pick(r, ['Golden', 'Sunrise', 'Metro', 'Prime'])} ${pick(r, ['Traders', 'Foods', 'Hardware', 'Prints'])}`; truth.add('BUSINESS_NAME_MISMATCH'); }
+    if (d === 'BUSINESS_NAME_MISMATCH') { const bp = pages.find((x) => x.docType === 'business_permit'); bp.conf = { business_name: 0.5 + r() * 0.49 }; bp.fields.business_name = `${pick(r, ['Golden', 'Sunrise', 'Metro', 'Prime'])} ${pick(r, ['Traders', 'Foods', 'Hardware', 'Prints'])}`; truth.add('BUSINESS_NAME_MISMATCH'); }
     if (d === 'EXPIRED') { pages.find((x) => x.docType === 'business_permit').expiry = '2026-06-30'; truth.add('EXPIRED'); }
   }
   return { packet: { pages }, truth, today };

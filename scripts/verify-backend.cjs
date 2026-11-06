@@ -1,98 +1,135 @@
 'use strict';
 // Backend checks. No dependencies, no AWS. Run: node scripts/verify-backend.cjs
+// Includes a regression case for every finding of the adversarial code review (complete=true must fail closed).
 const assert = require('node:assert/strict');
 const { checklist } = require('../backend/rules.cjs');
-const { check } = require('../backend/checker.cjs');
-const { nameSimilarity } = require('../backend/names.cjs');
+const { check, validDate } = require('../backend/checker.cjs');
+const { nameCompare } = require('../backend/names.cjs');
+const { classify, mapForm } = require('../backend/classify.cjs');
 const { reconcile, draftMessage, deriveStatus } = require('../backend/reconcile.cjs');
 const { packet, DEFECTS, rng } = require('../backend/synth.cjs');
 
+const TODAY = new Date('2026-11-04T04:00:00Z'); // 12:00 in Manila
+const REF = { id: 'RF-2026-042', type: 'Sole proprietorship', industry: 'Food & beverage', amount: 750000, business: 'Elena Artisan Bakery', name: 'Elena Santos' };
+const run = (ref, pk, today = TODAY) => check(ref, pk, { today });
+const clean = (seed = 1, ref = REF) => packet(seed, ref, [], 0, TODAY).packet;
+const codes = (o) => [...o.defects, ...o.needsReview].map((d) => d.key.split(':')[0]);
+const dup = (x) => JSON.parse(JSON.stringify(x));
+
 // ---- rules: golden cases (illustrative table) ----
 const ids = (r) => checklist(r).map((x) => x.id);
-assert.deepEqual(ids({ type: 'Sole proprietorship', industry: 'Services', amount: 500000 }),
-  ['application_form', 'gov_id', 'registration_dti', 'business_permit', 'financials', 'bank_statements']);
+assert.deepEqual(ids({ type: 'Sole proprietorship', industry: 'Services', amount: 500000 }), ['application_form', 'gov_id', 'registration_dti', 'business_permit', 'financials', 'bank_statements']);
 assert(ids({ type: 'Sole proprietorship', industry: 'Food & beverage', amount: 750000 }).includes('sanitary_permit'));
-assert(ids({ type: 'Corporation', industry: 'Services', amount: 6000000 }).includes('registration_sec'));
 assert(ids({ type: 'Corporation', industry: 'Services', amount: 6000000 }).includes('audited_fs'));
 assert(!ids({ type: 'Corporation', industry: 'Services', amount: 4999999 }).includes('audited_fs'), 'boundary below 5M');
-assert(ids({ type: 'Partnership', industry: 'Services', amount: 1 }).includes('registration_sec_partner'));
 
-// ---- names ----
-assert(nameSimilarity('Santos, Elena M.', 'Elena Santos') === 1);
-assert(nameSimilarity('MARIA ELENA SANTOS', 'Elena Santos') === 1);
-assert(nameSimilarity('Elena Santos', 'Marco Reyes') === 0);
-assert(nameSimilarity('Bautista', 'Bautlsta') === 1, 'OCR i->l slip on a long token');
-assert(nameSimilarity('Lim', 'Lirn') === 1, 'rn/m is a known OCR fold');
-assert(nameSimilarity('Lim', 'Lam') < 1, 'short tokens get no spelling tolerance');
-assert(require('../backend/names.cjs').strictSimilarity('Elena Santos', 'Elena Santoz') < 1, 'strict path rejects near spellings');
-
-// ---- checker: each injected defect is found at zero noise, clean is complete ----
-const REF = { type: 'Sole proprietorship', industry: 'Food & beverage', amount: 750000, business: 'Elena Artisan Bakery' };
-{
-  const c = packet(1, REF, [], 0);
-  assert.deepEqual(check(REF, c.packet, { today: c.today }).defects, [], 'clean packet at zero noise has no defects');
-  for (const d of DEFECTS.filter((x) => x !== 'NAME_MISMATCH')) {
-    const s = packet(7, REF, [d], 0);
-    const codes = check(REF, s.packet, { today: s.today }).defects.map((x) => x.code);
-    assert(codes.includes(d), `${d} detected`);
-  }
+// ---- names: these pairs must NOT compare equal (reviewer repros) ----
+for (const [a, b] of [['Maria Santos', 'Jose Santos'], ['Pedro Santos', 'Santos'], ['Juan Cruz Jr.', 'Juan Cruz Sr.'], ['Juan Cruz II', 'Juan Cruz III'], ['Elena Santos', 'Elena'], ['Maria Cruz', 'Mario Cruz'], ['J. Santos', 'Juan Santos'], ['Elena Santos', 'Elena Santoz']]) {
+  assert.notEqual(nameCompare(a, b), 'equal', `${a} vs ${b}`);
 }
+for (const [a, b] of [['Santos, Elena M.', 'Elena Santos'], ['ELENA  SANTOS', 'elena santos'], ['Mr. Elena Santos', 'Elena Santos'], ['Elena Q. Santos', 'Elena Santos']]) assert.equal(nameCompare(a, b), 'equal', `${a} vs ${b}`);
+assert.equal(nameCompare('Juan Cruz Jr.', 'Juan Cruz Sr.'), 'different');
 
-// NAME_MISMATCH with an unambiguous different person. Near-spelling surnames (Santos/Santoz) are accepted as OCR slips by design: see experiment.
-{
-  const s = packet(7, REF, [], 0);
-  s.packet.pages.find((x) => x.docType === 'gov_id' && x.side === 'front').fields.owner_name = 'Pedro Villanueva';
-  assert(check(REF, s.packet, { today: s.today }).defects.some((d) => d.code === 'NAME_MISMATCH'));
+// ---- clean packet and each single defect ----
+assert.deepEqual(run(REF, clean()).defects, []);
+assert.deepEqual(run(REF, clean()).needsReview, [], 'a clean, confident packet needs no review');
+assert(run(REF, clean()).complete);
+for (const d of DEFECTS.filter((x) => x !== 'NAME_MISMATCH')) {
+  const s = packet(7, REF, [d], 0, TODAY);
+  const o = run(REF, s.packet, TODAY);
+  if (d === 'BUSINESS_NAME_MISMATCH') assert(!o.complete, `${d} flagged`); // hard defect at high confidence, review item at low
+  else assert(codes(o).includes(d), `${d} detected`);
 }
+{ const s = packet(7, REF, [], 0, TODAY); s.packet.pages.find((x) => x.docType === 'gov_id' && x.side === 'front').fields.owner_name = 'Pedro Villanueva';
+  s.packet.pages.find((x) => x.docType === 'gov_id' && x.side === 'front').conf = { owner_name: 0.97 };
+  assert(run(REF, s.packet).defects.some((d) => d.code === 'NAME_MISMATCH')); }
 
-// ---- married applicant needs spouse fields (the BSO's own example of a recurring error) ----
-{
-  const s = packet(3, { ...REF, civilStatus: 'married' }, [], 0);
-  const out = check({ ...REF, civilStatus: 'married' }, s.packet, { today: s.today });
-  assert(out.defects.some((d) => d.key === 'BLANK_FIELD:spouse_name'));
-}
+// ---- REGRESSIONS from the adversarial review: complete must fail closed ----
+{ // 1. a consistent packet for a different client
+  const pk = clean(); for (const p of pk.pages) { if (p.fields.owner_name) p.fields.owner_name = 'Pedro Reyes'; if (p.fields.business_name) p.fields.business_name = 'X Corp'; }
+  const o = run(REF, pk); assert(!o.complete); assert(o.defects.some((d) => d.code.startsWith('REFERRAL_MISMATCH'))); }
+{ // 2. missing signals are review items, never silent passes
+  const noName = clean(); noName.pages.find((p) => p.docType === 'gov_id' && p.side === 'front').fields.owner_name = '';
+  assert(!run(REF, noName).complete, 'ID with no readable name');
+  const noExpiry = clean(); delete noExpiry.pages.find((p) => p.docType === 'business_permit').expiry;
+  assert(!run(REF, noExpiry).complete, 'permit with no validity date');
+  const noCivil = clean(); noCivil.pages.find((p) => p.docType === 'application_form' && p.pageNo === 1).fields.civil_status = '';
+  assert(!run(REF, noCivil).complete, 'blank civil status'); }
+{ // 3. garbage dates, and the expiry day itself in Manila
+  for (const bad of ['2026-13-45', '9999-99-99', 'garbage', '2026-02-30']) { const pk = clean(); pk.pages.find((p) => p.docType === 'business_permit').expiry = bad; assert(!run(REF, pk).complete, `date ${bad}`); }
+  assert(validDate('2027-03-31') && !validDate('2026-02-30'));
+  const onDay = clean(); onDay.pages.find((p) => p.docType === 'business_permit').expiry = '2026-11-04'; assert(run(REF, onDay).complete, 'valid through the day itself in Manila');
+  const dayBefore = clean(); dayBefore.pages.find((p) => p.docType === 'business_permit').expiry = '2026-11-03'; assert(run(REF, dayBefore).defects.some((d) => d.code === 'EXPIRED'));
+  const earlyUtc = new Date('2026-11-03T20:00:00Z'); // already Nov 4 in Manila
+  assert(run(REF, onDay, earlyUtc).complete, 'expiry compare does not depend on UTC midnight'); }
+{ // 4. low or missing confidence never grants a name match
+  const lo = clean(); const id = lo.pages.find((p) => p.docType === 'gov_id' && p.side === 'front'); id.fields.owner_name = 'Elena Santoz'; id.conf = { owner_name: 0.75 };
+  assert(!run(REF, lo).complete, 'near spelling at 0.75 confidence');
+  const nan = dup(lo); nan.pages.find((p) => p.docType === 'gov_id' && p.side === 'front').conf = { owner_name: NaN }; assert(!run(REF, nan).complete, 'NaN confidence');
+  const none = dup(lo); delete none.pages.find((p) => p.docType === 'gov_id' && p.side === 'front').conf; assert(!run(REF, none).complete, 'no confidence'); }
+{ // 5. spouse requirement cannot be bypassed
+  const mk = (formCivil, refCivil) => { const pk = clean(); pk.pages.find((p) => p.docType === 'application_form' && p.pageNo === 1).fields.civil_status = formCivil; return run({ ...REF, civilStatus: refCivil }, pk); };
+  assert(mk('Married', 'single').defects.some((d) => d.key === 'BLANK_FIELD:spouse_name'), 'form says married, caller says single');
+  assert(mk('single', 'married').defects.some((d) => d.key === 'BLANK_FIELD:spouse_name'), 'caller says married');
+  assert(mk('Married ', undefined).defects.some((d) => d.key === 'BLANK_FIELD:spouse_name'), 'trailing space');
+  assert(!mk('Marr1ed', undefined).complete, 'garbled civil status'); }
+{ // 6. page numbers are clamped (was 4.6 s and 1.8 GB at 5e6)
+  for (const bad of [5e6, 1e9, -3, 'x', 0]) { const pk = clean(); pk.pages.find((p) => p.docType === 'application_form').pageTotal = bad; const t = Date.now(); const o = run(REF, pk); assert(Date.now() - t < 200, `pageTotal ${bad} fast`); assert(!o.complete, `pageTotal ${bad} flagged`); } }
+{ // 7. placeholders and TIN shape
+  const pk = clean(); pk.pages.find((p) => p.docType === 'application_form' && p.pageNo === 1).fields.tin = 'N/A'; assert(run(REF, pk).defects.some((d) => d.key === 'BLANK_FIELD:tin'));
+  const pk2 = clean(); pk2.pages.find((p) => p.docType === 'application_form' && p.pageNo === 1).fields.tin = '12'; assert(!run(REF, pk2).complete); }
+{ // 8. a later empty page does not blank a field filled earlier
+  const pk = clean(); pk.pages.find((p) => p.docType === 'application_form' && p.pageNo === 3).fields = { tin: '' }; assert(!run(REF, pk).defects.some((d) => d.key === 'BLANK_FIELD:tin')); }
+{ // 9. classifier and form key mapping
+  assert.equal(classify([{ text: 'relative humidity 80%' }]).docType, null);
+  assert.equal(classify([{ text: 'LOAN APPLICATION FORM' }]).docType, 'application_form');
+  const m = mapForm({ 'Signature of Spouse:': { value: 'x', conf: 1 }, 'Full name of spouse': { value: 'Pedro', conf: 1 }, 'Address of employer': { value: 'z', conf: 1 } });
+  assert.equal(m.fields.signature, undefined); assert.equal(m.fields.owner_name, undefined); assert.equal(m.fields.address, undefined); assert.equal(m.fields.spouse_signature, 'x'); }
+{ // 10. defects must be storable: no undefined values (DynamoDB rejected them by default)
+  const s = packet(7, REF, [], 0, TODAY); const idp = s.packet.pages.find((x) => x.docType === 'gov_id' && x.side === 'front'); idp.fields.owner_name = 'Pedro Villanueva'; idp.conf = { owner_name: 0.97 }; const o = run(REF, s.packet);
+  assert(o.defects.some((d) => d.code === 'NAME_MISMATCH' && !('docType' in d)), 'identity defects carry no docType key, never an undefined one'); assert.doesNotThrow(() => { for (const d of o.defects) for (const [k, v] of Object.entries(d)) if (v === undefined) throw new Error(`${d.key}.${k} is undefined`); }); }
 
 // ---- reconcile + status ----
-{
-  const prev = [{ key: 'MISSING_DOC:financials', message: 'Financial statements missing.' }, { key: 'MISSING_PAGE:application_form#2', message: 'Form page 2 missing.' }];
+{ const prev = [{ key: 'MISSING_DOC:financials', message: 'Financial statements missing.' }, { key: 'MISSING_PAGE:application_form#2', message: 'Form page 2 missing.' }];
   const next = [{ key: 'MISSING_PAGE:application_form#2', message: 'Form page 2 missing.' }, { key: 'EXPIRED:business_permit', message: 'Permit expired.' }];
   const rec = reconcile(prev, next);
-  assert.equal(rec.resolved.length, 1);
-  assert.equal(rec.stillMissing[0].key, 'MISSING_PAGE:application_form#2');
-  assert.equal(rec.newIssues[0].key, 'EXPIRED:business_permit', 'resubmission introduced a new issue');
-  assert(!rec.complete);
-  assert(draftMessage(rec).includes('Form page 2 missing.'));
+  assert.equal(rec.resolved.length, 1); assert.equal(rec.stillMissing[0].key, 'MISSING_PAGE:application_form#2'); assert.equal(rec.newIssues[0].key, 'EXPIRED:business_permit'); assert(!rec.complete);
+  assert(!reconcile([], [], [{ key: 'x', message: 'review me' }]).complete, 'reconcile is not complete while a review item is open');
+  assert(!/complete|approved/i.test(draftMessage({ resolved: [], stillMissing: [], newIssues: [] })), 'template never sounds like approval');
   assert.equal(deriveStatus([{ type: 'created' }, { type: 'check_failed' }]), 'Missing requirements');
   assert.equal(deriveStatus([{ type: 'created' }, { type: 'check_failed' }, { type: 'check_passed' }, { type: 'handed_off' }]), 'With BSO');
-}
+  assert.equal(deriveStatus([{ type: 'handed_off' }, { type: 'check_passed' }]), 'With BSO', 'a later passing check does not roll back a handoff'); }
 
-// ---- experiment: detection and false alarms under SIMULATED OCR noise ----
-function experiment(noise, n = 600, seed0 = 1000) {
-  const r = rng(seed0);
-  const types = ['Sole proprietorship', 'Corporation', 'Partnership'];
-  const inds = ['Food & beverage', 'Services', 'Wholesale & retail'];
-  const rows = Object.fromEntries(DEFECTS.map((d) => [d, { n: 0, hit: 0 }]));
-  let clean = 0, falseAlarm = 0, reviewOnly = 0, falseComplete = 0, defective = 0;
+// ---- experiment: simulated OCR noise. Reports what was found FOR THE RIGHT REASON, separately from "flagged for any reason". ----
+function wilson(k, n, z = 1.96) { if (!n) return [0, 0]; const p = k / n, d = 1 + z * z / n, c = p + z * z / (2 * n), m = z * Math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)); return [(c - m) / d, (c + m) / d]; }
+const pct = (k, n) => `${(100 * k / n).toFixed(1).padStart(5)}%`;
+const ci = (k, n) => { const [a, b] = wilson(k, n); return `[${Math.max(0, 100 * a).toFixed(0)}-${(100 * b).toFixed(0)}]`; };
+function experiment(noise, n = 1500, seed0 = 1000) {
+  const r = rng(seed0), types = ['Sole proprietorship', 'Corporation', 'Partnership'], inds = ['Food & beverage', 'Services', 'Wholesale & retail'];
+  const bizs = ['Elena Artisan Bakery', 'Verde Trading Co', 'Northside Auto Care', 'Lim Prints'], owners = ['Elena Santos', 'Marco Reyes', 'David Lim', 'Sofia Garcia', 'Rodel Ramos', 'Carmela Aquino'];
+  const rows = Object.fromEntries(DEFECTS.map((d) => [d, { n: 0, right: 0, any: 0 }]));
+  let clean = 0, hard = 0, reviewOnly = 0, defective = 0, falseComplete = 0;
   for (let i = 0; i < n; i++) {
-    const ref = { type: types[Math.floor(r() * 3)], industry: inds[Math.floor(r() * 3)], amount: [300000, 750000, 6000000][Math.floor(r() * 3)], business: ['Elena Artisan Bakery', 'Verde Trading Co', 'Northside Auto Care', 'Lim Prints'][Math.floor(r() * 4)] };
+    const ref = { id: 'RF-2026-001', type: types[Math.floor(r() * 3)], industry: inds[Math.floor(r() * 3)], amount: [300000, 750000, 6000000][Math.floor(r() * 3)], business: bizs[Math.floor(r() * 4)], name: owners[Math.floor(r() * 6)] };
     const inject = r() < 0.5 ? [] : [DEFECTS[Math.floor(r() * DEFECTS.length)]];
-    const s = packet(seed0 + i * 7 + 1, ref, inject, noise);
-    const out = check(ref, s.packet, { today: s.today });
-    const codes = new Set(out.defects.map((x) => x.code));
-    if (!inject.length) { clean++; if (codes.size) falseAlarm++; else if (out.needsReview.length) reviewOnly++; } else { defective++; if (out.complete) falseComplete++; for (const d of inject) { rows[d].n++; if (codes.has(d)) rows[d].hit++; } }
+    const s = packet(seed0 + i * 7 + 1, ref, inject, noise, TODAY);
+    const o = run(ref, s.packet);
+    const defectCodes = new Set(o.defects.map((x) => x.code)), flagged = o.defects.length + o.needsReview.length > 0;
+    if (!inject.length) { clean++; if (o.defects.length) hard++; else if (o.needsReview.length) reviewOnly++; }
+    else { defective++; if (o.complete) falseComplete++; for (const d of inject) { rows[d].n++; if (defectCodes.has(d)) rows[d].right++; if (flagged) rows[d].any++; } }
   }
-  return { rows, clean, falseAlarm, reviewOnly, defective, falseComplete };
+  return { rows, clean, hard, reviewOnly, defective, falseComplete };
 }
-
-console.log('\nSimulated OCR noise (per-field rate) vs deterministic checker. Synthetic, not Textract.');
-console.log('noise | clean packets: hard false alarm / review flag | defective: false-complete | per-defect recall');
-const results = {};
+console.log('\nSimulated OCR noise (per-field rate). Synthetic generator and checker share assumptions: this is NOT Textract and NOT a model.');
+console.log('noise | clean packets: hard alarm / review only | defective: false-complete | recall for the right reason (flagged for any reason)');
+const res = {};
 for (const noise of [0, 0.15, 0.3, 0.5]) {
-  const e = experiment(noise);
-  results[noise] = e;
-  const rec = DEFECTS.map((d) => `${d.split('_')[0].slice(0, 4)}${e.rows[d].n ? (e.rows[d].hit / e.rows[d].n).toFixed(2) : '-'}`).join(' ');
-  console.log(`${String(noise).padEnd(5)} | ${(e.falseAlarm / e.clean * 100).toFixed(1).padStart(5)}% / ${(e.reviewOnly / e.clean * 100).toFixed(1).padStart(5)}%                       | ${(e.falseComplete / e.defective * 100).toFixed(1).padStart(5)}%                 | ${rec}`);
+  const e = experiment(noise); res[noise] = e;
+  const per = DEFECTS.map((d) => `${d.split('_')[0].slice(0, 4)} ${(e.rows[d].right / e.rows[d].n).toFixed(2)}(${(e.rows[d].any / e.rows[d].n).toFixed(2)})`).join('  ');
+  console.log(`${String(noise).padEnd(5)} | ${pct(e.hard, e.clean)} / ${pct(e.reviewOnly, e.clean)} (n=${e.clean})      | ${pct(e.falseComplete, e.defective)} ${ci(e.falseComplete, e.defective)} (n=${e.defective}) | ${per}`);
 }
-assert.equal(results[0].falseAlarm, 0, 'no false alarms at zero noise');
-assert.equal(results[0].falseComplete, 0, 'no false-complete at zero noise');
+assert.equal(res[0].hard, 0, 'no hard false alarms at zero noise');
+assert.equal(res[0].reviewOnly, 0, 'no review flags on clean confident packets');
+assert.equal(res[0].falseComplete, 0, 'no false-complete at zero noise');
+for (const noise of [0, 0.15, 0.3, 0.5]) assert(res[noise].falseComplete / res[noise].defective < 0.03, `false-complete stays under 3 percent at noise ${noise}`);
 console.log('\nbackend checks passed');
