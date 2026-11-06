@@ -25,6 +25,11 @@ function build() {
       const o = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: key }));
       return { bytes: Buffer.from(await o.Body.transformToByteArray()), mediaType: o.ContentType || 'image/jpeg' };
     },
+    // Presigned POST, not PUT: only a POST policy can cap the size and pin the content type.
+    presignUpload({ key, contentType, maxBytes, expiresIn }) {
+      const { createPresignedPost } = require('@aws-sdk/s3-presigned-post');
+      return createPresignedPost(s3, { Bucket: BUCKET, Key: key, Expires: expiresIn, Fields: { 'Content-Type': contentType }, Conditions: [['content-length-range', 1, maxBytes], ['eq', '$Content-Type', contentType]] });
+    },
     store: {
       events,
       async lastOpen(id) { const e = (await events(id)).filter((x) => x.defects); const l = e[e.length - 1]; return { defects: l ? l.defects : [], needsReview: l ? l.needsReview || [] : [] }; },
@@ -38,3 +43,4 @@ function build() {
 
 exports.check = (event) => build().check(event);
 exports.ask = (event) => build().ask(event);
+exports.uploadUrl = (event) => build().uploadUrl(event);

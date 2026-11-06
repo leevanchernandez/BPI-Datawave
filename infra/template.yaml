@@ -39,7 +39,7 @@ Resources:
           - { Id: expire-uploads, Status: Enabled, ExpirationInDays: 1 }
       CorsConfiguration:
         CorsRules:
-          - { AllowedMethods: [PUT], AllowedOrigins: [!Ref ReviewOrigin], AllowedHeaders: ['*'], MaxAge: 300 }
+          - { AllowedMethods: [POST], AllowedOrigins: [!Ref ReviewOrigin], AllowedHeaders: ['*'], MaxAge: 300 }   # presigned POST uploads
 
   UploadBucketPolicy:
     Type: AWS::S3::BucketPolicy
@@ -74,7 +74,7 @@ Resources:
 
   CheckFunction:
     Type: AWS::Serverless::Function
-    Metadata: { BuildMethod: esbuild, BuildProperties: { Minify: true, Target: es2022, Format: cjs, EntryPoints: [lambda.cjs], External: ['@aws-sdk/*'] } }
+    Metadata: { BuildMethod: esbuild, BuildProperties: { Minify: true, Target: es2022, Format: cjs, EntryPoints: [lambda.cjs], External: ['@aws-sdk/client-*', '@aws-sdk/lib-dynamodb'] } }   # s3-presigned-post is bundled
     Properties:
       CodeUri: ../backend/
       Handler: lambda.check
@@ -94,7 +94,7 @@ Resources:
 
   AskFunction:
     Type: AWS::Serverless::Function
-    Metadata: { BuildMethod: esbuild, BuildProperties: { Minify: true, Target: es2022, Format: cjs, EntryPoints: [lambda.cjs], External: ['@aws-sdk/*'] } }
+    Metadata: { BuildMethod: esbuild, BuildProperties: { Minify: true, Target: es2022, Format: cjs, EntryPoints: [lambda.cjs], External: ['@aws-sdk/client-*', '@aws-sdk/lib-dynamodb'] } }   # s3-presigned-post is bundled
     Properties:
       CodeUri: ../backend/
       Handler: lambda.ask
@@ -106,6 +106,21 @@ Resources:
             - Effect: Allow
               Action: [bedrock:InvokeModel, bedrock:InvokeModelWithResponseStream]
               Resource: '*'
+
+  UploadUrlFunction:
+    Type: AWS::Serverless::Function
+    Metadata: { BuildMethod: esbuild, BuildProperties: { Minify: true, Target: es2022, Format: cjs, EntryPoints: [lambda.cjs], External: ['@aws-sdk/client-*', '@aws-sdk/lib-dynamodb'] } }   # s3-presigned-post is bundled
+    Properties:
+      CodeUri: ../backend/
+      Handler: lambda.uploadUrl
+      Timeout: 10
+      Events:
+        UploadUrl: { Type: HttpApi, Properties: { ApiId: !Ref Api, Method: POST, Path: /upload-url } }
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: s3:PutObject   # the presigned POST is signed with this role, so it can only write under uploads/
+              Resource: !Sub '${UploadBucket.Arn}/uploads/*'
 
 Outputs:
   ApiUrl: { Value: !Sub 'https://${Api}.execute-api.${AWS::Region}.amazonaws.com' }

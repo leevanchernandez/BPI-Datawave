@@ -1,6 +1,6 @@
 'use strict';
 // API Gateway (HTTP API v2) Lambda handlers. Thin: validate, call pipeline and reconcile, return JSON.
-// Document pages are read from S3 under uploads/{referralId}/. No presign endpoint exists yet (to build).
+// Document pages are uploaded to S3 under uploads/{referralId}/ with a presigned POST from /upload-url, then read by /check.
 // TRUST BOUNDARY: this prototype accepts the referral from the caller. In production the referral (type, industry,
 // amount, names) must be loaded server-side by id from the bank's own system and the caller must be authenticated
 // and authorised for that case. There is no authorizer yet (see infra/template.yaml).
@@ -21,6 +21,18 @@ function validReferral(r) {
     && typeof r.amount === 'number' && Number.isFinite(r.amount) && r.amount > 0 && r.amount < 1e11;
 }
 const validKey = (id, k) => typeof k === 'string' && k.startsWith(`uploads/${id}/`) && /^uploads\/RF-\d{4}-\d{3}\/[\w.-]{1,100}$/.test(k);
+
+const UPLOAD_TYPES = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', pdf: 'application/pdf' };
+const UPLOAD_MAX_BYTES = 5 * 1024 * 1024; // under the Textract sync limit (10 MB). The Bedrock image limit is unverified.
+const UPLOAD_TTL = 300; // seconds
+/** Object key for an upload, or null. Keeps [\w.-], drops path parts and leading dots, keeps the extension. */
+function uploadKey(id, name) {
+  if (!ID.test(id || '') || typeof name !== 'string' || name.length > 200) return null;
+  const safe = name.split(/[\\/]/).pop().replace(/[^\w.-]+/g, '-').replace(/^[.-]+/, '').slice(-100);
+  const ext = (/\.([a-z]+)$/i.exec(safe) || [])[1];
+  const key = `uploads/${id}/${safe}`;
+  return ext && UPLOAD_TYPES[ext.toLowerCase()] && validKey(id, key) ? { key, contentType: UPLOAD_TYPES[ext.toLowerCase()] } : null;
+}
 
 const msgs = (list) => list.map((d) => d.message);
 
@@ -58,7 +70,16 @@ function makeHandlers(deps) {
       };
       return json(200, await deps.ask(q.trim(), handlers));
     },
+    /** POST /upload-url  { referralId, name } -> { url, fields, key }. The browser POSTs the file as multipart form data. */
+    async uploadUrl(event) {
+      let body; try { body = JSON.parse(event.body || '{}'); } catch { return bad('invalid json'); }
+      if (!ID.test(body.referralId || '')) return bad('invalid referralId');
+      const u = uploadKey(body.referralId, body.name);
+      if (!u) return bad('invalid name: use a .jpg, .jpeg, .png or .pdf file name');
+      const post = await deps.presignUpload({ ...u, maxBytes: UPLOAD_MAX_BYTES, expiresIn: UPLOAD_TTL });
+      return json(200, { url: post.url, fields: post.fields, key: u.key, contentType: u.contentType, maxBytes: UPLOAD_MAX_BYTES, expiresIn: UPLOAD_TTL });
+    },
   };
 }
 
-module.exports = { makeHandlers, validReferral, validKey };
+module.exports = { makeHandlers, validReferral, validKey, uploadKey };

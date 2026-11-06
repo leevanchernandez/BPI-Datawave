@@ -2,9 +2,10 @@
   "name": "bpi-datawave-backend",
   "version": "0.1.0",
   "private": true,
-  "description": "Lambda backend. Core logic is dependency-free; only the Bedrock client needs bundling (the AWS SDK v3 ships in the nodejs22.x runtime).",
+  "description": "Lambda backend. Core logic is dependency-free; the Bedrock client and the S3 presigned-post helper are bundled (the rest of AWS SDK v3 ships in the nodejs22.x runtime).",
   "dependencies": {
-    "@anthropic-ai/bedrock-sdk": "^1.1.1"
+    "@anthropic-ai/bedrock-sdk": "^1.1.1",
+    "@aws-sdk/s3-presigned-post": "^3.1161.0"
   },
   "devDependencies": {
     "@aws-sdk/client-textract": "^3.1161.0",

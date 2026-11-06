@@ -3,7 +3,7 @@
 // Run: node scripts/verify-aws.cjs  (needs: cd backend && npm install, for the SDK command classes)
 const assert = require('node:assert/strict');
 const { processPacket } = require('../backend/pipeline.cjs');
-const { makeHandlers } = require('../backend/handler.cjs');
+const { makeHandlers, validKey } = require('../backend/handler.cjs');
 const llm = require('../backend/aws/llm.cjs');
 const textract = require('../backend/aws/textract.cjs');
 const { classify } = require('../backend/classify.cjs');
@@ -121,6 +121,23 @@ const GOOD = ['form', 'idf', 'idb', 'reg', 'cor', 'permit', 'bank', 'cal'];
   await H3.ask(ev({ referralId: 'RF-2026-060', question: 'lacking?' }));
   assert.equal((await captured.get_lacking({ referralId: 'RF-2026-060' })).known, false, 'an unknown referral is "unknown", not "nothing lacking"');
 
+  // ---- /upload-url: presigned POST for uploads/{referralId}/{safe name}, fake presigner ----
+  let signed;
+  const H4 = makeHandlers({ ...hdeps, presignUpload: async (o) => { signed = o; return { url: 'https://bucket.example', fields: { key: o.key } }; } });
+  const up = async (b) => { signed = null; const res = await H4.uploadUrl(ev(b)); return { code: res.statusCode, body: JSON.parse(res.body) }; };
+  let u = await up({ referralId: 'RF-2026-050', name: '../../etc/My Scan (1).PNG' });
+  assert.equal(u.code, 200);
+  assert.equal(u.body.key, 'uploads/RF-2026-050/My-Scan-1-.PNG', 'path parts dropped, unsafe characters replaced');
+  assert.deepEqual(signed, { key: u.body.key, contentType: 'image/png', maxBytes: 5 * 1024 * 1024, expiresIn: 300 });
+  assert.deepEqual(u.body.fields, { key: u.body.key });
+  assert(validKey('RF-2026-050', u.body.key), 'an issued key is a valid /check page key');
+  assert.equal((await up({ referralId: 'RF-2026-050', name: 'id.jpeg' })).body.contentType, 'image/jpeg');
+  assert.equal((await up({ referralId: 'RF-2026-050', name: 'dti.pdf' })).body.contentType, 'application/pdf');
+  for (const id of ['RF-2026-05', 'rf-2026-050', '../RF-2026-050', 'RF-2026-050/x', 42, null]) assert.equal((await up({ referralId: id, name: 'a.png' })).code, 400, `referralId ${id}`);
+  for (const name of ['a.exe', 'a.svg', 'a.png.html', '.png', '', 'noext', 'x'.repeat(200) + '.png', 5, null]) assert.equal((await up({ referralId: 'RF-2026-050', name })).code, 400, `name ${name}`);
+  assert.equal(signed, null, 'nothing is signed for a rejected request');
+  assert.equal((await H4.uploadUrl({ body: '{bad' })).statusCode, 400);
+
   // ---- llm.readPage validation ----
   const fake = (text, extra = {}) => ({ messages: { create: async () => ({ stop_reason: 'end_turn', content: [{ type: 'text', text }], ...extra }) } });
   let p = await llm.readPage({ bytes: Buffer.from('x') }, fake(JSON.stringify({ docType: 'root_access', legibility: 'clear', owner_name: 'A', expiry: '2026-13-45', admin: true })));
@@ -175,6 +192,19 @@ const GOOD = ['form', 'idf', 'idb', 'reg', 'cor', 'permit', 'bank', 'cal'];
 
   const { AnthropicBedrockMantle } = await import('../backend/node_modules/@anthropic-ai/bedrock-sdk/index.mjs');
   assert.equal(typeof new AnthropicBedrockMantle({ awsRegion: 'ap-southeast-1' }).messages.create, 'function');
+
+  // ---- the real presigner (local signing only, dummy credentials, no network): the POST policy caps size and type ----
+  Object.assign(process.env, { AWS_REGION: 'ap-southeast-1', AWS_ACCESS_KEY_ID: 'AKIDEXAMPLE', AWS_SECRET_ACCESS_KEY: 'dummy', UPLOAD_BUCKET: 'test-bucket', EVENTS_TABLE: 't' });
+  const lambda = require('../backend/lambda.cjs');
+  const res = await lambda.uploadUrl(ev({ referralId: 'RF-2026-050', name: 'id.png' }));
+  assert.equal(res.statusCode, 200, res.body);
+  const post = JSON.parse(res.body);
+  assert.match(post.url, /^https:\/\/test-bucket\.s3\.ap-southeast-1\.amazonaws\.com\/?$/);
+  assert.equal(post.fields.key, 'uploads/RF-2026-050/id.png');
+  const policy = JSON.parse(Buffer.from(post.fields.Policy, 'base64').toString());
+  assert.deepEqual(policy.conditions.find((c) => c[0] === 'content-length-range'), ['content-length-range', 1, 5 * 1024 * 1024]);
+  assert.deepEqual(policy.conditions.find((c) => c[1] === '$Content-Type'), ['eq', '$Content-Type', 'image/png']);
+  assert(new Date(policy.expiration) - Date.now() <= 300e3, 'short expiry');
 
   console.log('aws-layer checks passed (fakes only; nothing here calls AWS)');
 })().catch((e) => { console.error(e); process.exit(1); });
