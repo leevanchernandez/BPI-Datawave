@@ -78,7 +78,9 @@ const GOOD = ['form', 'idf', 'idb', 'reg', 'cor', 'permit', 'bank', 'cal'];
 
   // ---- handler: validation, trust boundary, reconcile across calls, status ----
   const events = [];
+  const KEY = 'demo-key-0123456789abcdefghij';
   const hdeps = {
+    demoKey: KEY,
     ...deps,
     loadPage: async (k) => page(k.split('/').pop()),
     store: {
@@ -90,9 +92,9 @@ const GOOD = ['form', 'idf', 'idb', 'reg', 'cor', 'permit', 'bank', 'cal'];
     ask: async (q, h) => ({ answer: JSON.stringify(await h.get_status({ referralId: 'RF-2026-050' })) }),
   };
   const H = makeHandlers(hdeps);
-  const ev = (b) => ({ body: JSON.stringify(b) });
+  const ev = (b, key = KEY) => ({ headers: { 'x-demo-key': key }, body: typeof b === 'string' ? b : JSON.stringify(b) });
   const keys = (tags, id = REF.id) => tags.map((k) => `uploads/${id}/${k}`);
-  assert.equal((await H.check({ body: '{bad' })).statusCode, 400);
+  assert.equal((await H.check(ev('{bad'))).statusCode, 400);
   assert.equal((await H.check(ev({ referral: { ...REF, id: 'x' }, pageKeys: keys(['a']) }))).statusCode, 400, 'referral id format');
   for (const bad of [{ amount: -5 }, { amount: '500000' }, { amount: null }, { amount: 0 }, { industry: '' }, { name: '' }, { type: 'Cooperative' }]) assert.equal((await H.check(ev({ referral: { ...REF, ...bad }, pageKeys: keys(['form']) }))).statusCode, 400, `referral ${JSON.stringify(bad)}`);
   assert.equal((await H.check(ev({ referral: REF, pageKeys: ['uploads/../secret'] }))).statusCode, 400, 'path traversal');
@@ -136,7 +138,21 @@ const GOOD = ['form', 'idf', 'idb', 'reg', 'cor', 'permit', 'bank', 'cal'];
   for (const id of ['RF-2026-05', 'rf-2026-050', '../RF-2026-050', 'RF-2026-050/x', 42, null]) assert.equal((await up({ referralId: id, name: 'a.png' })).code, 400, `referralId ${id}`);
   for (const name of ['a.exe', 'a.svg', 'a.png.html', '.png', '', 'noext', 'x'.repeat(200) + '.png', 5, null]) assert.equal((await up({ referralId: 'RF-2026-050', name })).code, 400, `name ${name}`);
   assert.equal(signed, null, 'nothing is signed for a rejected request');
-  assert.equal((await H4.uploadUrl({ body: '{bad' })).statusCode, 400);
+  assert.equal((await H4.uploadUrl(ev('{bad'))).statusCode, 400);
+
+  // ---- demo key: every route answers 401 without the right x-demo-key, before any work is done ----
+  const touched = []; const spy = makeHandlers({ ...hdeps, loadPage: async (k) => { touched.push(k); return page('form'); }, presignUpload: async () => { touched.push('sign'); return {}; }, ask: async () => { touched.push('ask'); return {}; } });
+  const okBodies = { check: { referral: REF, pageKeys: keys(['form']) }, ask: { referralId: REF.id, question: 'status?' }, uploadUrl: { referralId: REF.id, name: 'a.png' } };
+  for (const [route, body] of Object.entries(okBodies)) {
+    for (const key of [null, '', 'wrong', KEY.slice(0, -1), KEY + 'x', KEY.toUpperCase()]) assert.equal((await spy[route](ev(body, key))).statusCode, 401, `${route} key ${key}`);
+    assert.equal((await spy[route]({ body: JSON.stringify(body) })).statusCode, 401, `${route} without headers`);
+    assert.equal((await spy[route]({ headers: { 'x-demo-key': [KEY] }, body: JSON.stringify(body) })).statusCode, 401, `${route} non-string key`);
+  }
+  assert.deepEqual(touched, [], 'nothing runs before the key check');
+  for (const [route, body] of Object.entries(okBodies)) assert.equal((await spy[route](ev(body))).statusCode, 200, `${route} with the key`);
+  const noKey = makeHandlers({ ...hdeps, demoKey: undefined });
+  for (const key of [null, '', 'undefined']) assert.equal((await noKey.check(ev(okBodies.check, key))).statusCode, 401, 'no configured key fails closed');
+  assert.equal((await makeHandlers({ ...hdeps, demoKey: '' }).ask(ev(okBodies.ask, ''))).statusCode, 401, 'an empty configured key fails closed');
 
   // ---- llm.readPage validation ----
   const fake = (text, extra = {}) => ({ messages: { create: async () => ({ stop_reason: 'end_turn', content: [{ type: 'text', text }], ...extra }) } });
@@ -194,7 +210,7 @@ const GOOD = ['form', 'idf', 'idb', 'reg', 'cor', 'permit', 'bank', 'cal'];
   assert.equal(typeof new AnthropicBedrockMantle({ awsRegion: 'ap-southeast-1' }).messages.create, 'function');
 
   // ---- the real presigner (local signing only, dummy credentials, no network): the POST policy caps size and type ----
-  Object.assign(process.env, { AWS_REGION: 'ap-southeast-1', AWS_ACCESS_KEY_ID: 'AKIDEXAMPLE', AWS_SECRET_ACCESS_KEY: 'dummy', UPLOAD_BUCKET: 'test-bucket', EVENTS_TABLE: 't' });
+  Object.assign(process.env, { AWS_REGION: 'ap-southeast-1', AWS_ACCESS_KEY_ID: 'AKIDEXAMPLE', AWS_SECRET_ACCESS_KEY: 'dummy', UPLOAD_BUCKET: 'test-bucket', EVENTS_TABLE: 't', DEMO_KEY: KEY });
   const lambda = require('../backend/lambda.cjs');
   const res = await lambda.uploadUrl(ev({ referralId: 'RF-2026-050', name: 'id.png' }));
   assert.equal(res.statusCode, 200, res.body);

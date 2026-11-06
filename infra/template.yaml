@@ -10,6 +10,12 @@ Parameters:
   BedrockModelId:
     Type: String
     Default: anthropic.claude-haiku-5-5
+  DemoKey:
+    Type: String
+    NoEcho: true
+    MinLength: 24
+    AllowedPattern: '^[A-Za-z0-9_-]+$'
+    Description: Shared demo secret, sent by callers as the x-demo-key header. Demo only. It is visible to anyone who can read the Lambda configuration.
   ReviewOrigin:
     Type: String
     Default: http://localhost:8000
@@ -25,6 +31,7 @@ Globals:
         EVENTS_TABLE: !Ref EventsTable
         UPLOAD_BUCKET: !Ref UploadBucket
         BEDROCK_MODEL_ID: !Ref BedrockModelId
+        DEMO_KEY: !Ref DemoKey
 
 Resources:
   UploadBucket:
@@ -69,8 +76,9 @@ Resources:
       CorsConfiguration:
         AllowOrigins: [!Ref ReviewOrigin]
         AllowMethods: [POST, OPTIONS]
-        AllowHeaders: [content-type, x-api-key]
-      # TODO before any real use: IAM or Cognito authorizer. An open API in front of a bank workflow is not acceptable.
+        AllowHeaders: [content-type, x-demo-key]
+      # Demo auth is a shared x-demo-key checked in the Lambda (backend/handler.cjs).
+      # TODO before any real use: IAM or Cognito authorizer. A shared key in front of a bank workflow is not acceptable.
 
   CheckFunction:
     Type: AWS::Serverless::Function

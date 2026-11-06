@@ -3,7 +3,8 @@
 // Document pages are uploaded to S3 under uploads/{referralId}/ with a presigned POST from /upload-url, then read by /check.
 // TRUST BOUNDARY: this prototype accepts the referral from the caller. In production the referral (type, industry,
 // amount, names) must be loaded server-side by id from the bank's own system and the caller must be authenticated
-// and authorised for that case. There is no authorizer yet (see infra/template.yaml).
+// and authorised for that case. The demo has only a shared x-demo-key header; production needs IAM or Cognito.
+const crypto = require('node:crypto');
 const { processPacket } = require('./pipeline.cjs');
 const { reconcile, draftMessage, deriveStatus } = require('./reconcile.cjs');
 const { checklist } = require('./rules.cjs');
@@ -36,9 +37,14 @@ function uploadKey(id, name) {
 
 const msgs = (list) => list.map((d) => d.message);
 
-// Dependencies are built once per container and injectable for tests.
+// Compare SHA-256 digests with timingSafeEqual: constant time, and the key length does not leak either.
+const digest = (v) => crypto.createHash('sha256').update(v).digest();
+const sameKey = (given, want) => typeof given === 'string' && typeof want === 'string' && want.length > 0 && crypto.timingSafeEqual(digest(given), digest(want));
+
+// Dependencies are built once per container and injectable for tests. Every route needs deps.demoKey in x-demo-key;
+// with no key configured every request is refused.
 function makeHandlers(deps) {
-  return {
+  const routes = {
     /** POST /check  { referral, pageKeys: ["uploads/RF-2026-042/page1.jpg", ...] } */
     async check(event) {
       let body; try { body = JSON.parse(event.body || '{}'); } catch { return bad('invalid json'); }
@@ -80,6 +86,8 @@ function makeHandlers(deps) {
       return json(200, { url: post.url, fields: post.fields, key: u.key, contentType: u.contentType, maxBytes: UPLOAD_MAX_BYTES, expiresIn: UPLOAD_TTL });
     },
   };
+  const authed = (fn) => async (event) => (sameKey((event.headers || {})['x-demo-key'], deps.demoKey) ? fn(event) : json(401, { error: 'demo key required' }));
+  return Object.fromEntries(Object.entries(routes).map(([name, fn]) => [name, authed(fn)]));
 }
 
 module.exports = { makeHandlers, validReferral, validKey, uploadKey };

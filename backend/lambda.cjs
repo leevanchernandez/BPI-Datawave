@@ -16,6 +16,7 @@ function build() {
 
   const events = async (id) => (await ddb.send(new QueryCommand({ TableName: TABLE, KeyConditionExpression: 'referralId = :r', ExpressionAttributeValues: { ':r': id } }))).Items || [];
   const deps = {
+    demoKey: process.env.DEMO_KEY,
     detectLines: (bytes) => textract.detectLines(bytes),
     analyzeForm: (bytes) => textract.analyzeForm(bytes),
     readPage: (page) => llm.readPage(page),
