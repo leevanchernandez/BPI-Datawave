@@ -1,6 +1,6 @@
 # AWS design and what is verified
 
-BPI runs on AWS (stated by the team, not verified from a BPI source), so the prototype is built as a small serverless stack. Nothing here has been deployed or called against real AWS yet.
+This is the AWS version of the backend. BPI's AI team pointed the team to Amazon Bedrock; no public source confirms BPI's cloud stack, so do not state it as fact. Nothing here has been deployed or called against real AWS yet. The live prototype runs on the free stack instead (see docs/free-stack.md).
 
 ## Flow
 

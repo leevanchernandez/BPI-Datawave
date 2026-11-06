@@ -48,6 +48,19 @@ scripts/
 - BSO handoff updates the local demo. It sends no messages and connects to no bank system.
 - This source includes no application sign-in, shared database, or production document storage. The access controls on the existing hosted preview come from its hosting service.
 
+## Counter Check live prototype (free stack)
+
+Live: https://counter-check.h-847.workers.dev/live (branch view) and `/live?role=bso` (BSO view). A demo key is required; ask Simonee.
+
+- Photos are read by Tesseract.js **in the browser**. Images never leave the device; only lines of text go to the server.
+- A Cloudflare Worker (`worker/`) runs the same rules, checker, grounding and reconciler as `backend/`, and keeps each case in KV.
+- Gemini (`backend/free/gemini.cjs`) reads only ID, registration and permit pages, as text with ID numbers masked, and drafts Taglish messages. Every name or date it reports must appear in the OCR text, or the page goes to a person.
+- Approval, eligibility and rate questions are refused by a rule before any model sees them.
+- Rules (`backend/rules.json`) are seeded from BPI's public Ka-Negosyo pages, each row with its source. Not BPI policy.
+- Synthetic data only. SPECIMEN documents are in `frontend/specimens/`.
+
+Tests: `npm test` (rules and checker), `node scripts/verify-free.mjs` (the API on the Elena storyline). Details in `docs/free-stack.md`.
+
 ## Counter Check backend (branch feat/aws-case-agent)
 
 A document checker that runs while the client is still at the counter, plus the AWS pieces to run it for real. The dashboard above is not wired to it yet.
