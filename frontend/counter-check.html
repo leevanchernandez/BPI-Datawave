@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Counter Check · BPI Datawave demo</title>
+<style>
+  :root { --red:#9c1c2e; --ink:#2a2326; --mute:#6b6266; --line:#e6dfe0; --bg:#faf7f6; --ok:#1f7a4d; --warn:#a86400; --bad:#b3261e; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:15px/1.45 system-ui, sans-serif; color:var(--ink); background:var(--bg); }
+  header { background:var(--red); color:#fff; padding:14px 24px; display:flex; gap:16px; align-items:baseline; }
+  header b { font-size:22px; letter-spacing:.02em; } header span { opacity:.85; font-size:12px; }
+  main { max-width:1080px; margin:0 auto; padding:20px 24px 48px; display:grid; grid-template-columns: 320px 1fr; gap:20px; }
+  @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+  .card { background:#fff; border:1px solid var(--line); border-radius:10px; padding:16px; }
+  h2 { font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--mute); margin:0 0 10px; }
+  .kv { display:grid; grid-template-columns: 96px 1fr; gap:4px 10px; font-size:15px; } .kv dt { color:var(--mute); } .kv dd { margin:0; }
+  button { font:inherit; border:1px solid var(--red); background:var(--red); color:#fff; padding:9px 14px; border-radius:8px; cursor:pointer; }
+  button.ghost { background:#fff; color:var(--red); } button:disabled { opacity:.4; cursor:default; }
+  select { font:inherit; padding:8px; border:1px solid var(--line); border-radius:8px; width:100%; margin:6px 0 12px; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; }
+  .pill { display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:600; background:#eee; }
+  .pill.Draft { background:#eceaf6; color:#4a3fa0; } .pill.Missing { background:#fdf0d8; color:var(--warn); } .pill.With { background:#dff3e8; color:var(--ok); } .pill.For { background:#f0e4f7; color:#6b2f8a; }
+  ul { list-style:none; margin:0; padding:0; } li { padding:7px 0; border-bottom:1px solid var(--line); display:flex; gap:10px; }
+  li:last-child { border-bottom:0; } .ic { width:18px; text-align:center; font-weight:700; }
+  .ok { color:var(--ok); } .bad { color:var(--bad); } .warn { color:var(--warn); }
+  .msg { white-space:pre-wrap; background:#faf3f4; border:1px solid #efd9dc; border-radius:8px; padding:10px 12px; font-size:15px; }
+  .note { font-size:12px; color:var(--mute); } .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; } @media (max-width:700px){ .grid2{grid-template-columns:1fr;} }
+  .tl li { font-size:12px; } .t { color:var(--mute); min-width:64px; }
+  .banner { background:#fff8e6; border:1px solid #f0dca0; color:#6b5200; padding:10px 14px; border-radius:8px; font-size:12px; grid-column:1/-1; }
+</style>
+</head>
+<body>
+<header><b>BPI</b><span>Counter Check · demo on synthetic packets</span></header>
+<main>
+  <div class="banner">Synthetic data. The checks below are the real deterministic checker (rules, page and field checks, name matching). In production the packet comes from Textract and a vision model; this demo skips that step. Rules are illustrative, not BPI policy.</div>
+
+  <section>
+    <div class="card">
+      <h2>Referral</h2>
+      <dl class="kv" id="ref"></dl>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h2>At the counter</h2>
+      <label for="sc" class="note">Scenario (what the branch just scanned)</label>
+      <select id="sc"></select>
+      <div class="row"><button id="scan">1. Scan docs</button><button id="resub" class="ghost" disabled>2. Client fixes, rescan</button></div>
+      <p class="note" id="timing"></p>
+      <p style="margin:12px 0 0">Status (derived from events, not typed): <span id="status" class="pill Draft">Draft</span></p>
+    </div>
+  </section>
+
+  <section>
+    <div class="card" id="out"><h2>Result</h2><p class="note">Pick a scenario and press Scan. The check runs while the client is still at the counter.</p></div>
+    <div class="card" style="margin-top:16px"><h2>Event timeline</h2><ul class="tl" id="tl"></ul></div>
+  </section>
+</main>
+<script src="vendor/checker.js"></script>
+<script>
+const C = CounterCheck;
+const REF = { id: 'RF-2026-042', business: 'Elena Artisan Bakery', name: 'Elena Santos', type: 'Sole proprietorship', industry: 'Food & beverage', amount: 750000 };
+const TODAY = new Date('2026-11-04');
+const SCEN = {
+  clean:     { label: 'Complete packet', first: [], second: [] },
+  fin:       { label: 'Financial statements missing', first: ['MISSING_DOC'], second: [] },
+  page:      { label: 'Application form page 2 missing', first: ['MISSING_PAGE'], second: [] },
+  tin:       { label: 'TIN left blank on the form', first: ['BLANK_FIELD'], second: [] },
+  idback:    { label: 'ID back not scanned', first: ['ID_SIDE_MISSING'], second: [] },
+  name:      { label: 'ID belongs to a different person', first: ['NAME_MISMATCH'], second: [] },
+  expired:   { label: 'Business permit expired', first: ['EXPIRED'], second: [] },
+  two:       { label: 'Two problems, client fixes only one', first: ['MISSING_DOC', 'BLANK_FIELD'], second: ['BLANK_FIELD'] },
+  new:       { label: 'Resubmission introduces a new problem', first: ['MISSING_DOC'], second: ['EXPIRED'] },
+  blurry:    { label: 'Blurry ID name (reader unsure)', first: [], second: [], blur: true },
+};
+const sc = document.getElementById('sc');
+for (const [k, v] of Object.entries(SCEN)) sc.add(new Option(v.label, k));
+
+document.getElementById('ref').innerHTML = [['Business', REF.business], ['Owner', REF.name], ['Structure', REF.type], ['Industry', REF.industry], ['Amount', '₱' + REF.amount.toLocaleString('en-PH')]].map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
+
+let events = [], last = [], step = 0;
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const $ = (id) => document.getElementById(id);
+
+function run(inject, blur) {
+  const s = C.packet(11 + step, REF, inject, 0, TODAY);
+  if (blur) { const id = s.packet.pages.find((p) => p.docType === 'gov_id' && p.side === 'front'); id.fields.owner_name = 'El3na Sant0s'; id.conf = { owner_name: 0.5 }; }
+  const t0 = performance.now();
+  const res = C.check(REF, s.packet, { today: s.today });
+  return { res, ms: performance.now() - t0 };
+}
+
+function show(res, rec, ms) {
+  const have = new Set(res.present);
+  const defectDocs = new Set(res.defects.map((d) => d.docType).filter(Boolean));
+  const list = res.checklist.map((r) => { const bad = !have.has(r.docType) || defectDocs.has(r.docType); return `<li><span class="ic ${bad ? 'bad' : 'ok'}">${bad ? '✗' : '✓'}</span><span>${esc(r.title)}</span></li>`; }).join('');
+  const defects = res.defects.map((d) => `<li><span class="ic bad">!</span><span>${esc(d.message)}</span></li>`).join('') || '<li><span class="ic ok">✓</span><span>No defects found by these rules.</span></li>';
+  const review = res.needsReview.map((d) => `<li><span class="ic warn">?</span><span>${esc(d.message)}</span></li>`).join('');
+  const diff = rec ? `<div class="card" style="margin-top:12px;background:#fbfbfb"><h2>Against the open lacking list</h2><ul>${
+    rec.resolved.map((d) => `<li><span class="ic ok">✓</span><span>Resolved: ${esc(d.message)}</span></li>`).join('')}${
+    rec.stillMissing.map((d) => `<li><span class="ic bad">✗</span><span>Still missing: ${esc(d.message)}</span></li>`).join('')}${
+    rec.newIssues.map((d) => `<li><span class="ic warn">+</span><span>New: ${esc(d.message)}</span></li>`).join('')}</ul></div>` : '';
+  const msg = res.complete ? 'Complete na ang requirements. Pwede nang i-refer sa BSO.' : C.draftMessage(rec || { resolved: [], stillMissing: [...res.defects], newIssues: res.needsReview });
+  $('out').innerHTML = `<h2>Result <span class="note">· checked in ${ms.toFixed(1)} ms</span></h2><div class="grid2"><div><h2>Checklist</h2><ul>${list}</ul></div><div><h2>Defects</h2><ul>${defects}${review}</ul></div></div>${diff}<h2 style="margin-top:14px">Draft message to branch (BSO approves before sending)</h2><div class="msg">${esc(msg)}</div><p class="note">"Complete" means no defects and nothing flagged for review. It is not an approval.</p>`;
+}
+
+function refresh() {
+  const st = C.deriveStatus(events);
+  const el = $('status'); el.textContent = st; el.className = 'pill ' + st.split(' ')[0];
+  $('tl').innerHTML = events.map((e) => `<li><span class="t">${e.t}</span><span>${esc(e.text)}</span></li>`).join('');
+}
+const log = (type, text) => { events.push({ type, text, t: new Date(1e3 * (1730678400 + events.length * 47)).toISOString().slice(11, 19) }); };
+
+$('scan').onclick = () => {
+  const s = SCEN[sc.value]; events = []; last = []; step = 0;
+  log('created', 'Referral created at the counter');
+  const { res, ms } = run(s.first, s.blur);
+  log(res.complete ? 'check_passed' : 'check_failed', res.complete ? 'Scan checked: no defects' : `Scan checked: ${res.defects.length} defect(s), ${res.needsReview.length} to review`);
+  last = res.defects; show(res, null, ms); refresh();
+  $('timing').textContent = 'The client is still at the counter, so this can be fixed now, not after a multi-day email loop.';
+  $('resub').disabled = res.complete; step++;
+};
+$('resub').onclick = () => {
+  const s = SCEN[sc.value];
+  const { res, ms } = run(s.second, false);
+  const rec = C.reconcile(last, res.defects);
+  log(res.complete ? 'check_passed' : 'check_failed', res.complete ? 'Rescan checked: all lacking items resolved' : `Rescan checked: ${rec.resolved.length} resolved, ${rec.stillMissing.length} still missing, ${rec.newIssues.length} new`);
+  if (res.complete) log('handed_off', 'Handed off to BSO (one tap)');
+  last = res.defects; show(res, rec, ms); refresh(); $('resub').disabled = res.complete; step++;
+};
+</script>
+</body>
+</html>
