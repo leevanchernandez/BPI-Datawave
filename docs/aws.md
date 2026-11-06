@@ -16,7 +16,7 @@ Lambda: deterministic checker (rules + page/field/name/expiry checks) -> reconci
 POST /ask -> inquiry agent: Claude with read-only tools get_status, get_lacking, get_checklist
 ```
 
-The checklist and the "complete" decision are plain code over a rules table. Models read pages, draft messages and answer questions from tool results. They never decide what is required and never say a referral is approved.
+The checklist and the "complete" decision are plain code over a rules table, and the check fails closed: anything unreadable, unparseable or unconfirmed becomes a review item. Models read pages, draft messages and answer questions from tool results. Anything a model reads must be visible in the page's OCR text. They never decide what is required and a draft that sounds like approval is discarded.
 
 ## Verified offline (`npm test`, `npm run test:aws`)
 
@@ -24,6 +24,7 @@ The checklist and the "complete" decision are plain code over a rules table. Mod
 - Routing cost: the Forms pass runs only on form pages; the model reads only ID, registration and permit pages.
 - `AnthropicBedrockMantle` exists in `@anthropic-ai/bedrock-sdk@1.1.1` and constructs. Requests carry none of the params Haiku 5.5 rejects (temperature, top_p, forced tool_choice, prefill).
 - Lambda bundles with esbuild (1.6 MB) and exports `check` and `ask`. SAM template parses.
+- Fail-closed behavior: every finding of the adversarial code review has a regression test (see `docs/challenges.md`).
 
 ## NOT verified (needs AWS access)
 
@@ -31,6 +32,11 @@ The checklist and the "complete" decision are plain code over a rules table. Mod
 - Bedrock: model id `anthropic.claude-haiku-5-5`, availability in the chosen region, the IAM action and resource for the Mantle endpoint, structured-output field shape, latency, and whether hackathon credits cover Marketplace-billed Claude.
 - Taglish quality of drafted messages and extraction. No published benchmark found for Claude or Nova on Taglish.
 - `sam build` and `sam deploy`. The template has no authorizer yet and must not be exposed.
+- Authorization: callers are not authenticated, and the referral (type, industry, amount, names) is supplied by the caller. Production must load the referral by id from the bank's system and authorize the caller for that case.
+- No presign endpoint exists, so uploads to `uploads/{referralId}/` are not wired.
+- HTTP API integrations time out at 30 seconds. A request is capped at 20 pages with 4 pages read in parallel. Not measured.
+- Textract checkbox fields (for example civil status tick boxes) are not parsed, so such a form raises a blank-field defect.
+- What "complete" means: no defects, nothing to review, every required signal present. It does not check authenticity, content accuracy, or that statements cover 6 months.
 - PDFs: the Bedrock vision call needs images. Multi-page PDFs need to be split to page images first (not built).
 
 ## Region
