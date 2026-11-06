@@ -21,6 +21,7 @@ const DOCS = {
   permit: { lines: ["Mayor's Permit", 'Business name Lim Prints', 'Valid until March 31, 2027'], model: { docType: 'business_permit', fields: { business_name: 'Lim Prints' }, conf: { business_name: 0.95 }, expiry: '2027-03-31' } },
   fin: { lines: ['Statement of Financial Position', 'As of December 31 2025', 'Total assets'] },
   bank: { lines: ['Bank Statement', 'Account number ending 1234', 'Period covered'] },
+  itr: { lines: ['Annual Income Tax Return', 'BIR Form No. 1701', 'Taxable year 2025'] },
   blur: { lines: ['xx ##', 'xx', 'xx'], model: { unreadable: true, docType: null } },
   thin: { lines: ['UMID'] },
   // hostile: the model claims things that are not on the page
@@ -34,7 +35,7 @@ const deps = {
   analyzeForm: async (b) => { calls.forms++; return DOCS[b.toString()].kv; },
   readPage: async ({ bytes }) => { calls.model++; return DOCS[bytes.toString()].model || { unreadable: true }; },
 };
-const GOOD = ['form', 'idf', 'idb', 'reg', 'permit', 'fin', 'bank'];
+const GOOD = ['form', 'idf', 'idb', 'reg', 'permit', 'itr', 'fin', 'bank'];
 
 (async () => {
   // ---- pipeline: complete packet, cost-sensitive routing ----
@@ -46,20 +47,20 @@ const GOOD = ['form', 'idf', 'idb', 'reg', 'permit', 'fin', 'bank'];
   assert.equal(calls.model, 4, 'model reads only id front, id back, registration, permit');
 
   // ---- pipeline: missing financials plus an unreadable page never completes ----
-  out = await processPacket(REF, ['form', 'idf', 'idb', 'reg', 'permit', 'bank', 'blur'].map(page), deps, { today: TODAY });
-  assert(out.result.defects.some((d) => d.key === 'MISSING_DOC:financials'));
-  assert(out.result.needsReview.some((d) => d.key.startsWith('PAGE_UNREADABLE')));
+  out = await processPacket(REF, ['form', 'idf', 'idb', 'reg', 'permit', 'itr', 'bank', 'blur'].map(page), deps, { today: TODAY });
+  assert(out.result.defects.some((d) => d.key === 'MISSING_DOC:fs_sole'));
+  assert(out.result.needsReview.some((d) => d.key.startsWith('PAGE_UNPLACED')), 'an unplaced page goes to the branch, not the model');
   assert(!out.result.complete);
 
   // ---- pipeline: a page with only a title is not trusted ----
-  out = await processPacket(REF, ['form', 'thin', 'idb', 'reg', 'permit', 'fin', 'bank'].map(page), deps, { today: TODAY });
+  out = await processPacket(REF, ['form', 'thin', 'idb', 'reg', 'permit', 'itr', 'fin', 'bank'].map(page), deps, { today: TODAY });
   assert(out.result.needsReview.some((d) => d.key.startsWith('PAGE_THIN')) && !out.result.complete);
 
   // ---- pipeline: model output must be visible in the page text (prompt injection guard) ----
-  out = await processPacket(REF, ['form', 'idf', 'idb', 'reg', 'liar', 'fin', 'bank'].map(page), deps, { today: TODAY });
+  out = await processPacket(REF, ['form', 'idf', 'idb', 'reg', 'liar', 'itr', 'fin', 'bank'].map(page), deps, { today: TODAY });
   assert(out.result.needsReview.some((d) => d.key.includes('MODEL_UNGROUNDED') && d.key.endsWith('expiry')), 'invented expiry date is rejected');
   assert(!out.result.complete);
-  out = await processPacket(REF, ['form', 'liarName', 'idb', 'reg', 'permit', 'fin', 'bank'].map(page), deps, { today: TODAY });
+  out = await processPacket(REF, ['form', 'liarName', 'idb', 'reg', 'permit', 'itr', 'fin', 'bank'].map(page), deps, { today: TODAY });
   assert(out.result.needsReview.some((d) => d.key.includes('MODEL_UNGROUNDED') && d.key.endsWith('owner_name')), 'invented name is rejected');
   assert(!out.result.complete);
 
@@ -97,12 +98,12 @@ const GOOD = ['form', 'idf', 'idb', 'reg', 'permit', 'fin', 'bank'];
   assert.equal((await H.check(ev({ referral: REF, pageKeys: keys(['form'], 'RF-2026-999') }))).statusCode, 400, 'keys must belong to this referral (no cross-case reads)');
   assert.equal((await H.check(ev({ referral: REF, pageKeys: keys(Array(21).fill('a')) }))).statusCode, 400, 'page cap');
 
-  let r = JSON.parse((await H.check(ev({ referral: REF, pageKeys: keys(['form', 'idf', 'idb', 'reg', 'permit', 'bank']) }))).body);
-  assert(r.result.defects.some((d) => d.key === 'MISSING_DOC:financials'));
+  let r = JSON.parse((await H.check(ev({ referral: REF, pageKeys: keys(['form', 'idf', 'idb', 'reg', 'permit', 'itr', 'bank']) }))).body);
+  assert(r.result.defects.some((d) => d.key === 'MISSING_DOC:fs_sole'));
   assert.equal(r.status, 'Missing requirements');
   assert(r.message.includes('Financial statements'), 'template fallback used when the model is down');
-  r = JSON.parse((await H.check(ev({ referral: REF, pageKeys: keys(['form', 'idf', 'idb', 'reg', 'permit', 'bank', 'fin']) }))).body);
-  assert(r.reconcile.resolved.some((d) => d.key === 'MISSING_DOC:financials'));
+  r = JSON.parse((await H.check(ev({ referral: REF, pageKeys: keys(['form', 'idf', 'idb', 'reg', 'permit', 'itr', 'bank', 'fin']) }))).body);
+  assert(r.reconcile.resolved.some((d) => d.key === 'MISSING_DOC:fs_sole'));
   assert.equal(r.status, 'Draft');
   assert(r.result.complete === false || r.result.needsReview.length === 0);
   assert.equal(JSON.parse((await H.ask(ev({ referralId: 'RF-2026-050', question: 'status?' }))).body).answer.includes('Draft'), true);
@@ -167,7 +168,7 @@ const GOOD = ['form', 'idf', 'idb', 'reg', 'permit', 'fin', 'bank'];
 
   // ---- stored defect items must marshal for DynamoDB (it rejected undefined values by default) ----
   const { marshall } = require('../backend/node_modules/@aws-sdk/util-dynamodb');
-  const bad = await processPacket(REF, ['form', 'liarName', 'idb', 'reg', 'permit', 'fin', 'bank'].map(page), deps, { today: TODAY });
+  const bad = await processPacket(REF, ['form', 'liarName', 'idb', 'reg', 'permit', 'itr', 'fin', 'bank'].map(page), deps, { today: TODAY });
   assert.doesNotThrow(() => marshall({ defects: bad.result.defects, needsReview: bad.result.needsReview }), 'events marshal without removeUndefinedValues');
 
   const { AnthropicBedrockMantle } = await import('../backend/node_modules/@anthropic-ai/bedrock-sdk/index.mjs');

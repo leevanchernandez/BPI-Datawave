@@ -16,12 +16,16 @@ const clean = (seed = 1, ref = REF) => packet(seed, ref, [], 0, TODAY).packet;
 const codes = (o) => [...o.defects, ...o.needsReview].map((d) => d.key.split(':')[0]);
 const dup = (x) => JSON.parse(JSON.stringify(x));
 
-// ---- rules: golden cases (illustrative table) ----
+// ---- rules: golden cases (public-seed table) ----
 const ids = (r) => checklist(r).map((x) => x.id);
-assert.deepEqual(ids({ type: 'Sole proprietorship', industry: 'Services', amount: 500000 }), ['application_form', 'gov_id', 'registration_dti', 'business_permit', 'financials', 'bank_statements']);
-assert(ids({ type: 'Sole proprietorship', industry: 'Food & beverage', amount: 750000 }).includes('sanitary_permit'));
-assert(ids({ type: 'Corporation', industry: 'Services', amount: 6000000 }).includes('audited_fs'));
-assert(!ids({ type: 'Corporation', industry: 'Services', amount: 4999999 }).includes('audited_fs'), 'boundary below 5M');
+assert.deepEqual(ids({ type: 'Sole proprietorship', industry: 'Services', amount: 500000, civilStatus: 'single' }), ['application_form', 'gov_id', 'registration_dti', 'itr_sole', 'fs_sole', 'bank_statements']);
+assert(ids({ type: 'Sole proprietorship', industry: 'Food & beverage', amount: 750000, civilStatus: 'Kasal' }).includes('spouse_id'), 'Filipino civil status adds the spouse ID');
+assert(!ids({ type: 'Corporation', industry: 'Services', amount: 750000, civilStatus: 'married' }).includes('spouse_id'));
+assert(ids({ type: 'Corporation', industry: 'Services', amount: 3000001 }).includes('afs_entity'));
+assert(!ids({ type: 'Corporation', industry: 'Services', amount: 3000000 }).includes('afs_entity'), 'AFS for entities only above PHP 3M');
+assert(ids({ type: 'Partnership', industry: 'Services', amount: 500000, secured: true }).includes('collateral'));
+assert(checklist({ type: 'Sole proprietorship', amount: 1 }).every((r) => r.sourceTitle), 'every row carries a source');
+assert(!checklist({ type: 'Sole proprietorship', amount: 1 }).some((r) => /6 months/.test(r.title)), 'bank statements are 3 months on BPI public page');
 
 // ---- names: these pairs must NOT compare equal (reviewer repros) ----
 for (const [a, b] of [['Maria Santos', 'Jose Santos'], ['Pedro Santos', 'Santos'], ['Juan Cruz Jr.', 'Juan Cruz Sr.'], ['Juan Cruz II', 'Juan Cruz III'], ['Elena Santos', 'Elena'], ['Maria Cruz', 'Mario Cruz'], ['J. Santos', 'Juan Santos'], ['Elena Santos', 'Elena Santoz']]) {
@@ -88,6 +92,27 @@ for (const d of DEFECTS.filter((x) => x !== 'NAME_MISMATCH')) {
 { // 10. defects must be storable: no undefined values (DynamoDB rejected them by default)
   const s = packet(7, REF, [], 0, TODAY); const idp = s.packet.pages.find((x) => x.docType === 'gov_id' && x.side === 'front'); idp.fields.owner_name = 'Pedro Villanueva'; idp.conf = { owner_name: 0.97 }; const o = run(REF, s.packet);
   assert(o.defects.some((d) => d.code === 'NAME_MISMATCH' && !('docType' in d)), 'identity defects carry no docType key, never an undefined one'); assert.doesNotThrow(() => { for (const d of o.defects) for (const [k, v] of Object.entries(d)) if (v === undefined) throw new Error(`${d.key}.${k} is undefined`); }); }
+
+{ // 11. red team: Filipino civil status, low confidence, spouse ID is not the owner
+  const form = (pk) => pk.pages.find((p) => p.docType === 'application_form' && p.pageNo === 1);
+  const kasal = clean(); form(kasal).fields.civil_status = 'Kasal'; form(kasal).fields.spouse_name = 'Ramon Santos';
+  assert(!codes(run({ ...REF, civilStatus: 'married' }, kasal)).includes('CIVIL_UNREADABLE'), 'clear Kasal is understood');
+  const low = clean(); form(low).fields.civil_status = 'single'; form(low).conf.civil_status = 0.31;
+  const lo = run({ ...REF, civilStatus: 'married' }, low); assert(!lo.complete && codes(lo).includes('CIVIL_UNREADABLE'), 'low-confidence civil status goes to review, never silently single');
+  const sp = clean(5, { ...REF, civilStatus: 'married' });
+  const o = run({ ...REF, civilStatus: 'married' }, sp);
+  assert(!o.defects.some((d) => /NAME_MISMATCH|REFERRAL_MISMATCH/.test(d.code)), 'spouse ID raises no owner-name defects: ' + JSON.stringify(o.defects));
+  assert(o.complete, 'married packet with spouse ID is complete: ' + JSON.stringify([o.defects, o.needsReview]));
+  const wrong = dup(sp); wrong.pages.find((p) => p.docType === 'spouse_id').fields.owner_name = 'Pedro Villanueva';
+  assert(run({ ...REF, civilStatus: 'married' }, wrong).defects.some((d) => d.code === 'SPOUSE_MISMATCH')); }
+{ // 12. grounding and masking (pipeline)
+  const { nameGrounded, dateGrounded, maskIds } = require('../backend/pipeline.cjs');
+  assert(!nameGrounded('Ana Lena', 'BANANA BREAD by ELENA'), 'substring is not grounding');
+  assert(nameGrounded('Elena Santos', 'SANTOS\nELENA MARIA'));
+  assert(!dateGrounded('2026-05-01', 'Issued 2026\nValid 05 January\nNo. 01'), 'date parts on different lines');
+  assert(dateGrounded('2027-03-31', 'Valid until March 31, 2027'));
+  const m = maskIds('PhilSys 1234-5678-9012-3456\nTIN 123-456-789-000\nValid until 2027-03-31');
+  assert(!/1234|123-456/.test(m) && m.includes('2027-03-31'), m); }
 
 // ---- reconcile + status ----
 { const prev = [{ key: 'MISSING_DOC:financials', message: 'Financial statements missing.' }, { key: 'MISSING_PAGE:application_form#2', message: 'Form page 2 missing.' }];
