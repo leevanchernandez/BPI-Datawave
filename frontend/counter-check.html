@@ -171,7 +171,7 @@ function show(res, rec, ms) {
   const have = new Set(res.present), defectDocs = new Set(res.defects.map((d) => d.docType).filter(Boolean));
   const checklist = res.checklist.map((r) => row(!have.has(r.docType) || defectDocs.has(r.docType) ? 'bad' : 'ok', r.title)).join('');
   const problems = res.defects.map((d) => row('bad', d.message)).join('') + res.needsReview.map((d) => row('warn', d.message)).join('');
-  const headline = res.complete ? 'No problems found' : res.defects.length ? `${plural(res.defects.length, 'problem')} found` : `${plural(res.needsReview.length, 'item')} for a person to check`;
+  const headline = res.complete ? 'No problems found by these rules' : res.defects.length ? `${plural(res.defects.length, 'problem')} found` : `${plural(res.needsReview.length, 'item')} for a person to check`;
   const tone = res.complete ? 'ok' : res.defects.length ? '' : 'warn';
   const diff = rec ? `<section><h2>Compared with the last scan</h2><ul>${
     rec.resolved.map((d) => row('ok', `Fixed: ${d.message}`)).join('')}${
@@ -181,7 +181,7 @@ function show(res, rec, ms) {
   $('out').innerHTML = `<div class="verdict ${tone}"><h1>${headline}</h1><p class="soft">Checked in ${ms.toFixed(1)} ms</p></div>
     <div class="cols"><div><h2>Requirements</h2><ul>${checklist}</ul></div><div><h2>What needs attention</h2><ul>${problems || row('ok', 'Nothing flagged by these rules.')}</ul></div></div>
     ${diff}
-    <section><h2>Message to the branch</h2><div class="message">${esc(msg)}</div><p class="soft" style="margin-top:8px">The BSO approves this before it is sent. "No problems found" does not mean approved.</p></section>`;
+    <section><h2>Message to the branch</h2><div class="message">${esc(msg)}</div><p style="margin-top:8px">A BSO reviews every referral and approves this message before it is sent. This result is not an approval and does not check that documents are genuine.</p></section>`;
 }
 
 function refresh() {
