@@ -3,83 +3,158 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Counter Check · BPI Datawave demo</title>
+<title>Counter Check, BPI Datawave demo</title>
 <style>
-  :root { --red:#9c1c2e; --ink:#2a2326; --mute:#6b6266; --line:#e6dfe0; --bg:#faf7f6; --ok:#1f7a4d; --warn:#a86400; --bad:#b3261e; }
+  /* Counter Check demo. Product register. Tokens come from frontend/styles.css so this page matches the team's dashboard.
+     Rules for this page: no uppercase labels, no letter-spaced kickers, no interpuncts, no side stripes. */
+  :root {
+    --color-paper: #f7f6f2;
+    --color-surface: #ffffff;
+    --color-ink: #352d2e;
+    --color-ink-soft: #5f5755;      /* 6.4:1 on paper, used for secondary text */
+    --color-line: #e3ddd6;
+    --color-brand: #a32628;
+    --color-brand-deep: #842024;
+    --color-brand-tint: #fbefeb;
+    --color-ok: #1d6b45;
+    --color-ok-tint: #e6f3ec;
+    --color-warn: #8a5300;
+    --color-warn-tint: #fbf0d9;
+    --color-bad: #a32628;
+    --color-bad-tint: #fbefeb;
+    --font-ui: 'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --text-s: 0.8125rem;   /* 13 */
+    --text-m: 0.9375rem;   /* 15 */
+    --text-l: 1.125rem;    /* 18 */
+    --text-xl: 1.5rem;     /* 24 */
+    --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 24px; --space-6: 40px;
+    --radius: 6px;
+    --ease: cubic-bezier(0.25, 1, 0.5, 1);
+    --dur: 160ms;
+  }
   * { box-sizing: border-box; }
-  body { margin:0; font:15px/1.45 system-ui, sans-serif; color:var(--ink); background:var(--bg); }
-  header { background:var(--red); color:#fff; padding:14px 24px; display:flex; gap:16px; align-items:baseline; }
-  header b { font-size:22px; letter-spacing:.02em; } header span { opacity:.85; font-size:12px; }
-  main { max-width:1080px; margin:0 auto; padding:20px 24px 48px; display:grid; grid-template-columns: 320px 1fr; gap:20px; }
-  @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
-  .card { background:#fff; border:1px solid var(--line); border-radius:10px; padding:16px; }
-  h2 { font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--mute); margin:0 0 10px; }
-  .kv { display:grid; grid-template-columns: 96px 1fr; gap:4px 10px; font-size:15px; } .kv dt { color:var(--mute); } .kv dd { margin:0; }
-  button { font:inherit; border:1px solid var(--red); background:var(--red); color:#fff; padding:9px 14px; border-radius:8px; cursor:pointer; }
-  button.ghost { background:#fff; color:var(--red); } button:disabled { opacity:.4; cursor:default; }
-  select { font:inherit; padding:8px; border:1px solid var(--line); border-radius:8px; width:100%; margin:6px 0 12px; }
-  .row { display:flex; gap:8px; flex-wrap:wrap; }
-  .pill { display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:600; background:#eee; }
-  .pill.Draft { background:#eceaf6; color:#4a3fa0; } .pill.Missing { background:#fdf0d8; color:var(--warn); } .pill.With { background:#dff3e8; color:var(--ok); } .pill.For { background:#f0e4f7; color:#6b2f8a; }
-  ul { list-style:none; margin:0; padding:0; } li { padding:7px 0; border-bottom:1px solid var(--line); display:flex; gap:10px; }
-  li:last-child { border-bottom:0; } .ic { width:18px; text-align:center; font-weight:700; }
-  .ok { color:var(--ok); } .bad { color:var(--bad); } .warn { color:var(--warn); }
-  .msg { white-space:pre-wrap; background:#faf3f4; border:1px solid #efd9dc; border-radius:8px; padding:10px 12px; font-size:15px; }
-  .note { font-size:12px; color:var(--mute); } .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; } @media (max-width:700px){ .grid2{grid-template-columns:1fr;} }
-  .tl li { font-size:12px; } .t { color:var(--mute); min-width:64px; }
-  .banner { background:#fff8e6; border:1px solid #f0dca0; color:#6b5200; padding:10px 14px; border-radius:8px; font-size:12px; grid-column:1/-1; }
+  html, body { overflow-x: clip; }
+  body { margin: 0; background: var(--color-paper); color: var(--color-ink); font: var(--text-m)/1.5 var(--font-ui); }
+  h1, h2, h3, p { margin: 0; overflow-wrap: anywhere; }
+  h1 { font-size: var(--text-xl); line-height: 1.2; font-weight: 700; letter-spacing: -0.01em; color: var(--color-brand-deep); text-wrap: balance; }
+  h2 { font-size: var(--text-m); font-weight: 700; color: var(--color-ink); }
+  .soft { color: var(--color-ink-soft); font-size: var(--text-s); }
+
+  .top { border-top: 3px solid var(--color-brand); background: var(--color-surface); border-bottom: 1px solid var(--color-line); }
+  .top-inner { max-width: 1120px; margin: 0 auto; padding: var(--space-3) var(--space-5); display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-4); flex-wrap: wrap; }
+  .wordmark { font-weight: 800; font-size: var(--text-l); letter-spacing: -0.02em; color: var(--color-brand); }
+  .wordmark span { font-weight: 500; font-size: var(--text-m); letter-spacing: 0; color: var(--color-ink-soft); margin-left: var(--space-2); }
+
+  main { max-width: 1120px; margin: 0 auto; padding: var(--space-5); display: grid; grid-template-columns: minmax(0, 320px) minmax(0, 1fr); gap: var(--space-6); }
+  @media (max-width: 860px) { main { grid-template-columns: minmax(0, 1fr); gap: var(--space-5); padding: var(--space-4); } }
+
+  .intro { grid-column: 1 / -1; max-width: 68ch; }
+  .intro p { margin-top: var(--space-2); color: var(--color-ink-soft); }
+
+  section { padding-top: var(--space-4); border-top: 1px solid var(--color-line); }
+  section + section { margin-top: var(--space-5); }
+  dl { display: grid; grid-template-columns: 6.5rem minmax(0, 1fr); gap: var(--space-2) var(--space-3); margin: var(--space-3) 0 0; }
+  dt { color: var(--color-ink-soft); } dd { margin: 0; }
+
+  label { display: block; margin-top: var(--space-3); font-weight: 600; }
+  select { font: inherit; width: 100%; margin-top: var(--space-2); padding: 9px 10px; border: 1px solid var(--color-line); border-radius: var(--radius); background: var(--color-surface); color: var(--color-ink); transition: border-color var(--dur) var(--ease); }
+  select:hover { border-color: var(--color-ink-soft); }
+  .actions { display: flex; gap: var(--space-2); margin-top: var(--space-4); flex-wrap: wrap; }
+  button { font: inherit; font-weight: 600; white-space: nowrap; padding: 9px 16px; border-radius: var(--radius); border: 1px solid var(--color-brand); background: var(--color-brand); color: #fff; cursor: pointer; transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease), transform var(--dur) var(--ease); }
+  button:hover { background: var(--color-brand-deep); border-color: var(--color-brand-deep); }
+  button:active { transform: translateY(1px); }
+  button.secondary { background: var(--color-surface); color: var(--color-brand); }
+  button.secondary:hover { background: var(--color-brand-tint); border-color: var(--color-brand); }
+  button:disabled { opacity: 0.45; cursor: default; transform: none; }
+  button:disabled:hover { background: var(--color-brand); }
+  button.secondary:disabled:hover { background: var(--color-surface); }
+  :focus-visible { outline: 3px solid var(--color-ink); outline-offset: 2px; }
+  @media (max-width: 420px) { .actions button { flex: 1 1 100%; } }
+
+  .status { display: inline-block; margin-top: var(--space-1); padding: 2px 10px; border-radius: var(--radius); font-weight: 700; font-size: var(--text-s); background: #ece9f5; color: #3f3590; }
+  .status.missing { background: var(--color-warn-tint); color: var(--color-warn); }
+  .status.with { background: var(--color-ok-tint); color: var(--color-ok); }
+
+  .verdict { margin-top: var(--space-1); }
+  .verdict.ok h1 { color: var(--color-ok); } .verdict.warn h1 { color: var(--color-warn); }
+  .empty { margin-top: var(--space-2); color: var(--color-ink-soft); max-width: 52ch; }
+
+  .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: var(--space-5); margin-top: var(--space-4); }
+  ul { list-style: none; margin: var(--space-2) 0 0; padding: 0; }
+  li { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: var(--space-2); padding: var(--space-2) 0; border-bottom: 1px solid var(--color-line); }
+  li:last-child { border-bottom: 0; }
+  svg { width: 18px; height: 18px; margin-top: 2px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .ok { color: var(--color-ok); } .bad { color: var(--color-bad); } .warn { color: var(--color-warn); }
+
+  .message { margin-top: var(--space-2); padding: var(--space-3) var(--space-4); background: var(--color-surface); border: 1px solid var(--color-line); border-radius: var(--radius); white-space: pre-wrap; }
+  .timeline li { grid-template-columns: 4.5rem minmax(0, 1fr); font-size: var(--text-s); }
+  .timeline time { color: var(--color-ink-soft); font-variant-numeric: tabular-nums; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
 <body>
-<header><b>BPI</b><span>Counter Check · demo on synthetic packets</span></header>
+<header class="top"><div class="top-inner"><div class="wordmark">BPI<span>Counter Check</span></div><p class="soft">Demo on made-up documents</p></div></header>
+
 <main>
-  <div class="banner">Synthetic data. The checks below are the real deterministic checker (rules, page and field checks, name matching). In production the packet comes from Textract and a vision model; this demo skips that step. Rules are illustrative, not BPI policy.</div>
+  <div class="intro">
+    <h1>Fix a loan packet while the client is still at the counter</h1>
+    <p>This page runs the real checker on synthetic documents. In production, Textract and a vision model read the pages first, and this demo skips that step. The requirements are placeholders, not BPI policy.</p>
+  </div>
 
-  <section>
-    <div class="card">
+  <div>
+    <section>
       <h2>Referral</h2>
-      <dl class="kv" id="ref"></dl>
-    </div>
-    <div class="card" style="margin-top:16px">
+      <dl id="ref"></dl>
+    </section>
+    <section>
       <h2>At the counter</h2>
-      <label for="sc" class="note">Scenario (what the branch just scanned)</label>
+      <label for="sc">What the branch just scanned</label>
       <select id="sc"></select>
-      <div class="row"><button id="scan">1. Scan docs</button><button id="resub" class="ghost" disabled>2. Client fixes, rescan</button></div>
-      <p class="note" id="timing"></p>
-      <p style="margin:12px 0 0">Status (derived from events, not typed): <span id="status" class="pill Draft">Draft</span></p>
-    </div>
-  </section>
+      <div class="actions">
+        <button id="scan" type="button">Scan documents</button>
+        <button id="resub" class="secondary" type="button" disabled>Client fixed it, scan again</button>
+      </div>
+      <p class="soft" style="margin-top:12px">Status is worked out from what happened, nobody types it.</p>
+      <div id="status" class="status">Draft</div>
+    </section>
+  </div>
 
-  <section>
-    <div class="card" id="out"><h2>Result</h2><p class="note">Pick a scenario and press Scan. The check runs while the client is still at the counter.</p></div>
-    <div class="card" style="margin-top:16px"><h2>Event timeline</h2><ul class="tl" id="tl"></ul></div>
-  </section>
+  <div>
+    <section id="out"><p class="empty">Choose what was scanned and press Scan documents. The result appears here in a fraction of a second.</p></section>
+    <section><h2>What happened</h2><ul class="timeline" id="tl"></ul></section>
+  </div>
 </main>
+
 <script src="vendor/checker.js"></script>
 <script>
 const C = CounterCheck;
 const REF = { id: 'RF-2026-042', business: 'Elena Artisan Bakery', name: 'Elena Santos', type: 'Sole proprietorship', industry: 'Food & beverage', amount: 750000 };
 const TODAY = new Date('2026-11-04');
 const SCEN = {
-  clean:     { label: 'Complete packet', first: [], second: [] },
-  fin:       { label: 'Financial statements missing', first: ['MISSING_DOC'], second: [] },
-  page:      { label: 'Application form page 2 missing', first: ['MISSING_PAGE'], second: [] },
-  tin:       { label: 'TIN left blank on the form', first: ['BLANK_FIELD'], second: [] },
-  idback:    { label: 'ID back not scanned', first: ['ID_SIDE_MISSING'], second: [] },
-  name:      { label: 'ID belongs to a different person', first: ['NAME_MISMATCH'], second: [] },
-  expired:   { label: 'Business permit expired', first: ['EXPIRED'], second: [] },
-  two:       { label: 'Two problems, client fixes only one', first: ['MISSING_DOC', 'BLANK_FIELD'], second: ['BLANK_FIELD'] },
-  new:       { label: 'Resubmission introduces a new problem', first: ['MISSING_DOC'], second: ['EXPIRED'] },
-  blurry:    { label: 'Blurry ID name (reader unsure)', first: [], second: [], blur: true },
+  clean:   { label: 'A complete packet', first: [], second: [] },
+  fin:     { label: 'Financial statements missing', first: ['MISSING_DOC'], second: [] },
+  page:    { label: 'Application form, page 2 missing', first: ['MISSING_PAGE'], second: [] },
+  tin:     { label: 'TIN left blank on the form', first: ['BLANK_FIELD'], second: [] },
+  idback:  { label: 'Back of the ID not scanned', first: ['ID_SIDE_MISSING'], second: [] },
+  name:    { label: 'ID belongs to a different person', first: ['NAME_MISMATCH'], second: [] },
+  expired: { label: 'Business permit has expired', first: ['EXPIRED'], second: [] },
+  two:     { label: 'Two problems, the client fixes only one', first: ['MISSING_DOC', 'BLANK_FIELD'], second: ['BLANK_FIELD'] },
+  fresh:   { label: 'The rescan introduces a new problem', first: ['MISSING_DOC'], second: ['EXPIRED'] },
+  blurry:  { label: 'Blurry name on the ID, reader unsure', first: [], second: [], blur: true },
 };
-const sc = document.getElementById('sc');
-for (const [k, v] of Object.entries(SCEN)) sc.add(new Option(v.label, k));
-
-document.getElementById('ref').innerHTML = [['Business', REF.business], ['Owner', REF.name], ['Structure', REF.type], ['Industry', REF.industry], ['Amount', '₱' + REF.amount.toLocaleString('en-PH')]].map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const ICON = {
+  ok: '<svg class="ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  bad: '<svg class="bad" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  warn: '<svg class="warn" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7v6M12 17v.5"/></svg>',
+  add: '<svg class="warn" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6v12M6 12h12"/></svg>',
+};
+for (const [k, v] of Object.entries(SCEN)) $('sc').add(new Option(v.label, k));
+$('ref').innerHTML = [['Business', REF.business], ['Owner', REF.name], ['Structure', REF.type], ['Industry', REF.industry], ['Amount', '₱' + REF.amount.toLocaleString('en-PH')]].map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('');
 
 let events = [], last = [], step = 0;
-const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const $ = (id) => document.getElementById(id);
 
 function run(inject, blur) {
   const s = C.packet(11 + step, REF, inject, 0, TODAY);
@@ -88,43 +163,46 @@ function run(inject, blur) {
   const res = C.check(REF, s.packet, { today: s.today });
   return { res, ms: performance.now() - t0 };
 }
+const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+const row = (icon, text) => `<li>${ICON[icon]}<span>${esc(text)}</span></li>`;
 
 function show(res, rec, ms) {
-  const have = new Set(res.present);
-  const defectDocs = new Set(res.defects.map((d) => d.docType).filter(Boolean));
-  const list = res.checklist.map((r) => { const bad = !have.has(r.docType) || defectDocs.has(r.docType); return `<li><span class="ic ${bad ? 'bad' : 'ok'}">${bad ? '✗' : '✓'}</span><span>${esc(r.title)}</span></li>`; }).join('');
-  const defects = res.defects.map((d) => `<li><span class="ic bad">!</span><span>${esc(d.message)}</span></li>`).join('') || '<li><span class="ic ok">✓</span><span>No defects found by these rules.</span></li>';
-  const review = res.needsReview.map((d) => `<li><span class="ic warn">?</span><span>${esc(d.message)}</span></li>`).join('');
-  const diff = rec ? `<div class="card" style="margin-top:12px;background:#fbfbfb"><h2>Against the open lacking list</h2><ul>${
-    rec.resolved.map((d) => `<li><span class="ic ok">✓</span><span>Resolved: ${esc(d.message)}</span></li>`).join('')}${
-    rec.stillMissing.map((d) => `<li><span class="ic bad">✗</span><span>Still missing: ${esc(d.message)}</span></li>`).join('')}${
-    rec.newIssues.map((d) => `<li><span class="ic warn">+</span><span>New: ${esc(d.message)}</span></li>`).join('')}</ul></div>` : '';
+  const have = new Set(res.present), defectDocs = new Set(res.defects.map((d) => d.docType).filter(Boolean));
+  const checklist = res.checklist.map((r) => row(!have.has(r.docType) || defectDocs.has(r.docType) ? 'bad' : 'ok', r.title)).join('');
+  const problems = res.defects.map((d) => row('bad', d.message)).join('') + res.needsReview.map((d) => row('warn', d.message)).join('');
+  const headline = res.complete ? 'No problems found' : res.defects.length ? `${plural(res.defects.length, 'problem')} found` : `${plural(res.needsReview.length, 'item')} for a person to check`;
+  const tone = res.complete ? 'ok' : res.defects.length ? '' : 'warn';
+  const diff = rec ? `<section><h2>Compared with the last scan</h2><ul>${
+    rec.resolved.map((d) => row('ok', `Fixed: ${d.message}`)).join('')}${
+    rec.stillMissing.map((d) => row('bad', `Still open: ${d.message}`)).join('')}${
+    rec.newIssues.map((d) => row('add', `New: ${d.message}`)).join('')}</ul></section>` : '';
   const msg = res.complete ? 'Complete na ang requirements. Pwede nang i-refer sa BSO.' : C.draftMessage(rec || { resolved: [], stillMissing: [...res.defects], newIssues: res.needsReview });
-  $('out').innerHTML = `<h2>Result <span class="note">· checked in ${ms.toFixed(1)} ms</span></h2><div class="grid2"><div><h2>Checklist</h2><ul>${list}</ul></div><div><h2>Defects</h2><ul>${defects}${review}</ul></div></div>${diff}<h2 style="margin-top:14px">Draft message to branch (BSO approves before sending)</h2><div class="msg">${esc(msg)}</div><p class="note">"Complete" means no defects and nothing flagged for review. It is not an approval.</p>`;
+  $('out').innerHTML = `<div class="verdict ${tone}"><h1>${headline}</h1><p class="soft">Checked in ${ms.toFixed(1)} ms</p></div>
+    <div class="cols"><div><h2>Requirements</h2><ul>${checklist}</ul></div><div><h2>What needs attention</h2><ul>${problems || row('ok', 'Nothing flagged by these rules.')}</ul></div></div>
+    ${diff}
+    <section><h2>Message to the branch</h2><div class="message">${esc(msg)}</div><p class="soft" style="margin-top:8px">The BSO approves this before it is sent. "No problems found" does not mean approved.</p></section>`;
 }
 
 function refresh() {
-  const st = C.deriveStatus(events);
-  const el = $('status'); el.textContent = st; el.className = 'pill ' + st.split(' ')[0];
-  $('tl').innerHTML = events.map((e) => `<li><span class="t">${e.t}</span><span>${esc(e.text)}</span></li>`).join('');
+  const st = C.deriveStatus(events), el = $('status');
+  el.textContent = st; el.className = 'status ' + (st === 'Missing requirements' ? 'missing' : st === 'With BSO' ? 'with' : '');
+  $('tl').innerHTML = events.map((e) => `<li><time>${e.t}</time><span>${esc(e.text)}</span></li>`).join('');
 }
-const log = (type, text) => { events.push({ type, text, t: new Date(1e3 * (1730678400 + events.length * 47)).toISOString().slice(11, 19) }); };
+const log = (type, text) => events.push({ type, text, t: new Date(1e3 * (1730678400 + events.length * 47)).toISOString().slice(11, 19) });
 
 $('scan').onclick = () => {
-  const s = SCEN[sc.value]; events = []; last = []; step = 0;
+  const s = SCEN[$('sc').value]; events = []; last = []; step = 0;
   log('created', 'Referral created at the counter');
   const { res, ms } = run(s.first, s.blur);
-  log(res.complete ? 'check_passed' : 'check_failed', res.complete ? 'Scan checked: no defects' : `Scan checked: ${res.defects.length} defect(s), ${res.needsReview.length} to review`);
-  last = res.defects; show(res, null, ms); refresh();
-  $('timing').textContent = 'The client is still at the counter, so this can be fixed now, not after a multi-day email loop.';
-  $('resub').disabled = res.complete; step++;
+  log(res.complete ? 'check_passed' : 'check_failed', res.complete ? 'First scan found no problems' : `First scan found ${plural(res.defects.length, 'problem')} and ${plural(res.needsReview.length, 'item')} to check`);
+  last = res.defects; show(res, null, ms); refresh(); $('resub').disabled = res.complete; step++;
 };
 $('resub').onclick = () => {
-  const s = SCEN[sc.value];
+  const s = SCEN[$('sc').value];
   const { res, ms } = run(s.second, false);
   const rec = C.reconcile(last, res.defects);
-  log(res.complete ? 'check_passed' : 'check_failed', res.complete ? 'Rescan checked: all lacking items resolved' : `Rescan checked: ${rec.resolved.length} resolved, ${rec.stillMissing.length} still missing, ${rec.newIssues.length} new`);
-  if (res.complete) log('handed_off', 'Handed off to BSO (one tap)');
+  log(res.complete ? 'check_passed' : 'check_failed', res.complete ? 'Rescan fixed everything on the list' : `Rescan fixed ${rec.resolved.length}, ${rec.stillMissing.length} still open, ${rec.newIssues.length} new`);
+  if (res.complete) log('handed_off', 'Handed off to the BSO');
   last = res.defects; show(res, rec, ms); refresh(); $('resub').disabled = res.complete; step++;
 };
 </script>
