@@ -10,6 +10,10 @@ Parameters:
   BedrockModelId:
     Type: String
     Default: anthropic.claude-haiku-5-5
+    # UNVERIFIED: this default id and its availability. In ap-southeast-1, Haiku 5.5 is reported to be reachable only
+    # through a global cross-region inference profile, so pass that profile's id here (copy it from the Bedrock console,
+    # do not guess it). Sonnet 5 is reported to be available in-region. IAM below is scoped to this value.
+    Description: Bedrock model id or inference profile id for Claude. Copy the exact id from the Bedrock console.
   DemoKey:
     Type: String
     NoEcho: true
@@ -89,16 +93,27 @@ Resources:
       Events:
         Check: { Type: HttpApi, Properties: { ApiId: !Ref Api, Method: POST, Path: /check } }
       Policies:
-        - S3ReadPolicy: { BucketName: !Ref UploadBucket }
-        - DynamoDBCrudPolicy: { TableName: !Ref EventsTable }
         - Statement:
             - Effect: Allow
+              Action: s3:GetObject   # no ListBucket, so a missing key reads as AccessDenied rather than NoSuchKey
+              Resource: !Sub '${UploadBucket.Arn}/uploads/*'
+            - Effect: Allow
+              Action: [dynamodb:Query, dynamodb:PutItem]
+              Resource: !GetAtt EventsTable.Arn
+            - Effect: Allow
               Action: [textract:DetectDocumentText, textract:AnalyzeDocument]
-              Resource: '*'
-            # UNVERIFIED: the IAM action and resource for the Bedrock Mantle (Messages API) endpoint. Confirm in the Bedrock console.
+              Resource: '*'   # Textract has no resource-level permissions for these actions, so '*' is the only option
+            # Bedrock, scoped to BedrockModelId. UNVERIFIED: which IAM action and resource the Mantle (Messages API) endpoint
+            # checks, and the ARN form for a global profile (assumed to have an empty region, which bedrock:* matches).
+            # If calls fail with AccessDenied after model access is enabled, use the commented '*' line, read the denied
+            # ARN in CloudTrail, then narrow again.
             - Effect: Allow
               Action: [bedrock:InvokeModel, bedrock:InvokeModelWithResponseStream]
-              Resource: '*'
+              Resource:
+                - !Sub 'arn:${AWS::Partition}:bedrock:*::foundation-model/${BedrockModelId}'                   # a plain model id
+                - !Sub 'arn:${AWS::Partition}:bedrock:*:${AWS::AccountId}:inference-profile/${BedrockModelId}'  # a profile id
+                - !Sub 'arn:${AWS::Partition}:bedrock:*::foundation-model/anthropic.claude-*'  # the model a profile routes to; narrow to the exact id once known
+              # Resource: '*'
 
   AskFunction:
     Type: AWS::Serverless::Function
@@ -111,9 +126,17 @@ Resources:
       Policies:
         - DynamoDBReadPolicy: { TableName: !Ref EventsTable }
         - Statement:
+            # Bedrock, scoped to BedrockModelId. UNVERIFIED: which IAM action and resource the Mantle (Messages API) endpoint
+            # checks, and the ARN form for a global profile (assumed to have an empty region, which bedrock:* matches).
+            # If calls fail with AccessDenied after model access is enabled, use the commented '*' line, read the denied
+            # ARN in CloudTrail, then narrow again.
             - Effect: Allow
               Action: [bedrock:InvokeModel, bedrock:InvokeModelWithResponseStream]
-              Resource: '*'
+              Resource:
+                - !Sub 'arn:${AWS::Partition}:bedrock:*::foundation-model/${BedrockModelId}'                   # a plain model id
+                - !Sub 'arn:${AWS::Partition}:bedrock:*:${AWS::AccountId}:inference-profile/${BedrockModelId}'  # a profile id
+                - !Sub 'arn:${AWS::Partition}:bedrock:*::foundation-model/anthropic.claude-*'  # the model a profile routes to; narrow to the exact id once known
+              # Resource: '*'
 
   UploadUrlFunction:
     Type: AWS::Serverless::Function
