@@ -4,6 +4,6 @@
   "private": true,
   "description": "MSME loan-referral dashboard hackathon prototype",
   "scripts": {
-    "test": "node scripts/verify.cjs"
+    "test": "node scripts/verify.cjs && node scripts/verify-backend.cjs"
   }
 }
