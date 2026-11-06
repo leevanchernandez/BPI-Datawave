@@ -8,7 +8,7 @@ const { check } = require('./checker.cjs');
 const { nameCompare } = require('./names.cjs');
 
 const NEEDS_MODEL_FIELDS = new Set(['gov_id', 'registration', 'business_permit', 'sanitary_permit']);
-const LABELS = new Set(['application_form', 'gov_id', 'spouse_id', 'registration', 'business_permit', 'sanitary_permit', 'itr', 'financials', 'audited_fs', 'bank_statements', 'articles', 'bylaws', 'gis', 'collateral']);
+const LABELS = new Set(['application_form', 'gov_id', 'spouse_id', 'registration', 'business_permit', 'sanitary_permit', 'itr', 'financials', 'audited_fs', 'bank_statements', 'articles', 'bylaws', 'gis', 'collateral', 'bir_cor', 'cal', 'endorsement_letter', 'pcab_license', 'project_list', 'contract', 'tax_declaration', 'tax_clearance', 'tax_receipt', 'appraisal_letter', 'authorization_letter']);
 const MIN_LINES = 3;     // a page with fewer text lines than this is not trusted to be the document its title says
 const CONCURRENCY = 4;
 const MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];

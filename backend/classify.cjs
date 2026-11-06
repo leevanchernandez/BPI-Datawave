@@ -1,6 +1,19 @@
 'use strict';
 // Cheap page classification from OCR lines. Model is only the fallback for pages this cannot place.
 const RULES = [
+  // Titles that contain words matched further down come first: "client authorization letter" before
+  // "authorization letter", "tax declaration" before the TCT rule, "certificate of registration" (BIR) before DTI.
+  ['cal', /client authori[sz]ation letter/i],
+  ['endorsement_letter', /endorsement letter|bank verification/i],
+  ['authorization_letter', /authori[sz]ation letter|letter of authority|special power of attorney/i],
+  ['appraisal_letter', /appraisal (letter|report)|letter of appraisal/i],
+  ['tax_clearance', /(real property )?tax clearance/i],
+  ['tax_receipt', /official receipt[\s\S]*real property tax|real property tax[\s\S]*receipt|\brpt\b.*receipt/i],
+  ['tax_declaration', /tax declaration/i],
+  ['pcab_license', /\bpcab\b|philippine contractors accreditation board|contractor'?s licen[sc]e/i],
+  ['project_list', /list of (on-?going|current) projects/i],
+  ['contract', /notice of award|\bcontract agreement\b|construction contract/i],
+  ['bir_cor', /bir form (no\.? )?2303|certificate of registration[\s\S]*bureau of internal revenue|bureau of internal revenue[\s\S]*certificate of registration/i],
   ['application_form', /\bloan application( form)?\b|^application form\b/im],
   ['audited_fs', /audited financial statements?|independent auditor/i],
   ['itr', /income tax return|\bbir form (no\.? )?170[0-2]/i],
