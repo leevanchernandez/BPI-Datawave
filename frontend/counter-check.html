@@ -130,7 +130,7 @@
 <script>
 const C = CounterCheck;
 const REF = { id: 'RF-2026-042', business: 'Elena Artisan Bakery', name: 'Elena Santos', type: 'Sole proprietorship', industry: 'Food & beverage', amount: 750000 };
-const TODAY = new Date('2026-11-04');
+const TODAY = new Date('2026-11-04T04:00:00Z');
 const SCEN = {
   clean:   { label: 'A complete packet', first: [], second: [] },
   fin:     { label: 'Financial statements missing', first: ['MISSING_DOC'], second: [] },
@@ -158,6 +158,7 @@ let events = [], last = [], step = 0;
 
 function run(inject, blur) {
   const s = C.packet(11 + step, REF, inject, 0, TODAY);
+  if (inject.includes('NAME_MISMATCH')) s.packet.pages.find((p) => p.docType === 'gov_id' && p.side === 'front').conf = { owner_name: 0.97 }; // demo: a confident read of someone else's name
   if (blur) { const id = s.packet.pages.find((p) => p.docType === 'gov_id' && p.side === 'front'); id.fields.owner_name = 'El3na Sant0s'; id.conf = { owner_name: 0.5 }; }
   const t0 = performance.now();
   const res = C.check(REF, s.packet, { today: s.today });
