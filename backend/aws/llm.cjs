@@ -4,6 +4,7 @@
 // hackathon credits cover Marketplace-billed Claude. See docs/aws.md.
 // Haiku 5.5 rules (Anthropic docs): no temperature/top_p, no assistant prefill, no forced tool_choice, thinking is adaptive.
 
+const { validDate } = require('../checker.cjs');
 const MODEL = process.env.BEDROCK_MODEL_ID || 'anthropic.claude-haiku-5-5';
 const DOC_TYPES = ['application_form', 'gov_id', 'registration', 'business_permit', 'sanitary_permit', 'financials', 'audited_fs', 'bank_statements'];
 
@@ -46,10 +47,19 @@ async function readPage({ bytes, mediaType = 'image/jpeg' }, client) {
   const page = { docType: DOC_TYPES.includes(o.docType) ? o.docType : null, fields: {}, conf: {} };
   const c0 = o.legibility === 'clear' ? 0.95 : 0.6; // coarse: the model gives no per-field score
   for (const k of ['owner_name', 'business_name']) if (typeof o[k] === 'string' && o[k].trim()) { page.fields[k] = o[k].trim().slice(0, 120); page.conf[k] = c0; }
-  if (/^\d{4}-\d{2}-\d{2}$/.test(o.expiry || '')) page.expiry = o.expiry;
+  if (validDate(o.expiry)) page.expiry = o.expiry; // real calendar parse. The pipeline also requires it to be visible in the OCR text.
   if (o.side === 'front' || o.side === 'back') page.side = o.side;
   if (Number.isInteger(o.pageNo) && Number.isInteger(o.pageTotal)) { page.pageNo = o.pageNo; page.pageTotal = o.pageTotal; }
   return page;
+}
+
+/** Reject model drafts that sound like approval or are empty or oversized. null makes the caller use the template. */
+const FORBIDDEN = /\b(approved?|na-?approve|complete\s+na|tapos\s+na|good\s+to\s+go|ok(?:ay)?\s+na|verified)\b/i;
+function safeDraft(out, items) {
+  const t = String(out || '').trim();
+  if (!t || t.length > 700) return null;
+  if (items.length && FORBIDDEN.test(t)) return null;
+  return t;
 }
 
 /** Rewrite the lacking list as a short Taglish message. It may not add, remove, or soften items. */
@@ -62,9 +72,7 @@ async function draftMessage({ items, audience = 'branch' }, client) {
     system: 'You write short, polite Taglish messages for a bank business-loan officer (BSO). Use exactly the items provided: do not add, remove, merge, or soften any item, and never say the application is approved or complete unless the item list is empty. No promises about timing. Under 90 words.',
     messages: [{ role: 'user', content: `Audience: ${audience === 'client' ? 'the business owner (explain briefly why each item is needed)' : 'the branch officer'}.\nItems still needed:\n${items.map((i) => `- ${i}`).join('\n') || '(none)'}` }],
   });
-  const out = text(msg).trim();
-  // guard: every item must still appear in some recognizable form; otherwise the caller falls back to the template
-  return out.length ? out : null;
+  return safeDraft(text(msg), items);
 }
 
 const TOOLS = [
@@ -105,4 +113,4 @@ async function ask(question, handlers, client, maxTurns = 4) {
   return { answer: 'I could not finish that. Please ask the BSO.', handoff: true };
 }
 
-module.exports = { readPage, draftMessage, ask, TOOLS, MODEL, DOC_TYPES };
+module.exports = { readPage, draftMessage, safeDraft, ask, TOOLS, MODEL, DOC_TYPES };

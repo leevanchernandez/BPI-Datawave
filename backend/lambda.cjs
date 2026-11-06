@@ -11,7 +11,7 @@ function build() {
   const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
   const { DynamoDBDocumentClient, PutCommand, QueryCommand } = require('@aws-sdk/lib-dynamodb');
   const s3 = new S3Client({});
-  const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
+  const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}), { marshallOptions: { removeUndefinedValues: true } }); // identity-mismatch defects carry no docType
   const TABLE = process.env.EVENTS_TABLE, BUCKET = process.env.UPLOAD_BUCKET;
 
   const events = async (id) => (await ddb.send(new QueryCommand({ TableName: TABLE, KeyConditionExpression: 'referralId = :r', ExpressionAttributeValues: { ':r': id } }))).Items || [];
@@ -27,9 +27,9 @@ function build() {
     },
     store: {
       events,
-      async lastDefects(id) { const e = (await events(id)).filter((x) => x.defects); return e.length ? e[e.length - 1].defects : []; },
+      async lastOpen(id) { const e = (await events(id)).filter((x) => x.defects); const l = e[e.length - 1]; return { defects: l ? l.defects : [], needsReview: l ? l.needsReview || [] : [] }; },
       // ttl: delete case events after 30 days (synthetic data in the demo)
-      async record(id, ev) { await ddb.send(new PutCommand({ TableName: TABLE, Item: { referralId: id, at: ev.at, type: ev.type, defects: ev.defects, ttl: Math.floor(Date.now() / 1000) + 30 * 86400 } })); },
+      async record(id, ev) { await ddb.send(new PutCommand({ TableName: TABLE, Item: { referralId: id, at: `${ev.at}#${Math.random().toString(16).slice(2, 6)}`, type: ev.type, defects: ev.defects, needsReview: ev.needsReview, ttl: Math.floor(Date.now() / 1000) + 30 * 86400 }, ConditionExpression: 'attribute_not_exists(referralId)' })); },
     },
   };
   handlers = makeHandlers(deps);

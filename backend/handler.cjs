@@ -1,49 +1,59 @@
 'use strict';
-// API Gateway (HTTP API v2) Lambda handlers. Thin: validate, call pipeline/reconcile, return JSON.
-// Document bytes come from S3 (browser uploads with a presigned URL). No document content is logged.
+// API Gateway (HTTP API v2) Lambda handlers. Thin: validate, call pipeline and reconcile, return JSON.
+// Document pages are read from S3 under uploads/{referralId}/. No presign endpoint exists yet (to build).
+// TRUST BOUNDARY: this prototype accepts the referral from the caller. In production the referral (type, industry,
+// amount, names) must be loaded server-side by id from the bank's own system and the caller must be authenticated
+// and authorised for that case. There is no authorizer yet (see infra/template.yaml).
 const { processPacket } = require('./pipeline.cjs');
 const { reconcile, draftMessage, deriveStatus } = require('./reconcile.cjs');
 const { checklist } = require('./rules.cjs');
 
-const MAX_PAGES = 40;
+const MAX_PAGES = 20; // HTTP API integrations time out at 30 seconds, so keep one request small
+const ID = /^RF-\d{4}-\d{3}$/;
 const json = (code, body) => ({ statusCode: code, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
 const bad = (msg) => json(400, { error: msg });
+const str = (v, max) => typeof v === 'string' && v.trim().length > 0 && v.length <= max;
 
 function validReferral(r) {
-  return r && typeof r === 'object' && typeof r.id === 'string' && /^RF-\d{4}-\d{3}$/.test(r.id)
-    && ['Sole proprietorship', 'Partnership', 'Corporation'].includes(r.type) && typeof r.industry === 'string'
-    && Number.isFinite(Number(r.amount)) && typeof r.business === 'string';
+  return !!r && typeof r === 'object' && ID.test(r.id || '')
+    && ['Sole proprietorship', 'Partnership', 'Corporation'].includes(r.type)
+    && str(r.industry, 80) && str(r.business, 120) && str(r.name, 120)
+    && typeof r.amount === 'number' && Number.isFinite(r.amount) && r.amount > 0 && r.amount < 1e11;
 }
+const validKey = (id, k) => typeof k === 'string' && k.startsWith(`uploads/${id}/`) && /^uploads\/RF-\d{4}-\d{3}\/[\w.-]{1,100}$/.test(k);
+
+const msgs = (list) => list.map((d) => d.message);
 
 // Dependencies are built once per container and injectable for tests.
 function makeHandlers(deps) {
   return {
-    /** POST /check  { referral, pageKeys: ["uploads/..."] } */
+    /** POST /check  { referral, pageKeys: ["uploads/RF-2026-042/page1.jpg", ...] } */
     async check(event) {
       let body; try { body = JSON.parse(event.body || '{}'); } catch { return bad('invalid json'); }
       if (!validReferral(body.referral)) return bad('invalid referral');
-      const keys = body.pageKeys;
-      if (!Array.isArray(keys) || !keys.length || keys.length > MAX_PAGES || !keys.every((k) => typeof k === 'string' && /^uploads\/[\w./-]+$/.test(k) && !k.includes('..'))) return bad('invalid pageKeys');
+      const id = body.referral.id, keys = body.pageKeys;
+      if (!Array.isArray(keys) || !keys.length || keys.length > MAX_PAGES || !keys.every((k) => validKey(id, k))) return bad('invalid pageKeys');
       const pages = await Promise.all(keys.map((k) => deps.loadPage(k)));
-      const prev = await deps.store.lastDefects(body.referral.id);
+      const prev = await deps.store.lastOpen(id);
       const { result, pages: provenance } = await processPacket(body.referral, pages, deps);
-      const rec = reconcile(prev, result.defects);
-      const items = [...rec.stillMissing, ...rec.newIssues, ...result.needsReview].map((d) => d.message);
+      const rec = reconcile(prev.defects, result.defects, result.needsReview);
+      const items = msgs([...rec.stillMissing, ...rec.newIssues, ...result.needsReview]);
       let message = null;
       if (deps.draftMessage && items.length) { try { message = await deps.draftMessage({ items, audience: 'branch' }); } catch { /* template fallback below */ } }
       message = message || draftMessage({ ...rec, newIssues: [...rec.newIssues, ...result.needsReview] });
-      const eventType = result.complete ? 'check_passed' : 'check_failed';
-      await deps.store.record(body.referral.id, { type: eventType, defects: result.defects, at: new Date().toISOString() });
-      return json(200, { result, reconcile: rec, message, pages: provenance, status: deriveStatus(await deps.store.events(body.referral.id)) });
+      await deps.store.record(id, { type: result.complete ? 'check_passed' : 'check_failed', defects: result.defects, needsReview: result.needsReview, at: new Date().toISOString() });
+      return json(200, { result, reconcile: rec, message, pages: provenance, status: deriveStatus(await deps.store.events(id)) });
     },
-    /** POST /ask  { question } */
+    /** POST /ask  { referralId, question }. Tools are bound to that one referral. */
     async ask(event) {
       let body; try { body = JSON.parse(event.body || '{}'); } catch { return bad('invalid json'); }
-      const q = body.question;
+      const q = body.question, id = body.referralId;
       if (typeof q !== 'string' || !q.trim() || q.length > 500) return bad('invalid question');
+      if (!ID.test(id || '')) return bad('invalid referralId');
+      const own = (input) => { if (input.referralId !== id) throw new Error('referral not allowed'); };
       const handlers = {
-        get_status: async ({ referralId }) => ({ referralId, status: deriveStatus(await deps.store.events(referralId)) }),
-        get_lacking: async ({ referralId }) => ({ referralId, lacking: (await deps.store.lastDefects(referralId)).map((d) => d.message) }),
+        get_status: async (i) => { own(i); const ev = await deps.store.events(id); return ev.length ? { referralId: id, status: deriveStatus(ev) } : { referralId: id, known: false }; },
+        get_lacking: async (i) => { own(i); const ev = await deps.store.events(id); if (!ev.length) return { referralId: id, known: false }; const o = await deps.store.lastOpen(id); return { referralId: id, defects: msgs(o.defects), needsReview: msgs(o.needsReview) }; },
         get_checklist: async (r) => ({ requirements: checklist(r).map((x) => x.title), note: 'Sample rules. Confirm against the bank guidebook.' }),
       };
       return json(200, await deps.ask(q.trim(), handlers));
@@ -51,4 +61,4 @@ function makeHandlers(deps) {
   };
 }
 
-module.exports = { makeHandlers, validReferral };
+module.exports = { makeHandlers, validReferral, validKey };

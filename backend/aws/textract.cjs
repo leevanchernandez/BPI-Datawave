@@ -28,7 +28,8 @@ async function analyzeForm(bytes, client) {
     const valueIds = (b.Relationships || []).filter((r) => r.Type === 'VALUE').flatMap((r) => r.Ids);
     const v = valueIds.map((id) => blocks.get(id)).filter(Boolean)[0];
     // An empty value block means a blank field. Unverified against real forms: test on synthetic PDFs in week 1.
-    kv[text(b).replace(/:$/, '').trim().toLowerCase()] = { value: v ? text(v) : '', conf: ((v || b).Confidence || 0) / 100 };
+    const key = text(b).replace(/:$/, '').trim().toLowerCase(), val = { value: v ? text(v) : '', conf: ((v || b).Confidence || 0) / 100 };
+    if (!kv[key] || (!kv[key].value && val.value)) kv[key] = val; // duplicate labels: keep the first non-empty value
   }
   return kv;
 }
