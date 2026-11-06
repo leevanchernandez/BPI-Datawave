@@ -16,16 +16,22 @@ const clean = (seed = 1, ref = REF) => packet(seed, ref, [], 0, TODAY).packet;
 const codes = (o) => [...o.defects, ...o.needsReview].map((d) => d.key.split(':')[0]);
 const dup = (x) => JSON.parse(JSON.stringify(x));
 
-// ---- rules: golden cases (public-seed table) ----
+// ---- rules: golden cases (BSO checklist, 2026-11-06) ----
 const ids = (r) => checklist(r).map((x) => x.id);
-assert.deepEqual(ids({ type: 'Sole proprietorship', industry: 'Services', amount: 500000, civilStatus: 'single' }), ['application_form', 'gov_id', 'registration_dti', 'itr_sole', 'fs_sole', 'bank_statements']);
+assert.deepEqual(ids({ type: 'Sole proprietorship', industry: 'Services', amount: 500000, civilStatus: 'single', bpiAccount: true }), ['application_form_sole', 'gov_id', 'dti', 'bir_cor', 'mayors_permit', 'bank_statements', 'cal_sole']);
+assert(ids({ type: 'Sole proprietorship', industry: 'Services', amount: 500000 }).includes('endorsement_letter'), 'unknown working account asks for the endorsement letter');
+assert(!ids({ type: 'Corporation', industry: 'Services', amount: 500000, bpiAccount: true }).includes('endorsement_letter'));
+assert(ids({ type: 'Sole proprietorship', industry: 'Services', amount: 3000001 }).includes('itr'), 'ITR and AFS above PHP 3M for sole props too');
+assert(ids({ type: 'Corporation', industry: 'Construction', amount: 500000 }).includes('pcab_license'));
+assert(!ids({ type: 'Corporation', industry: 'Services', amount: 500000 }).includes('pcab_license'));
+assert.equal(ids({ type: 'Corporation', industry: 'Services', amount: 500000, secured: true }).filter((i) => ['title', 'tax_declaration', 'tax_clearance', 'tax_receipt', 'appraisal_letter', 'collateral_authorization'].includes(i)).length, 6, 'six collateral documents');
 assert(ids({ type: 'Sole proprietorship', industry: 'Food & beverage', amount: 750000, civilStatus: 'Kasal' }).includes('spouse_id'), 'Filipino civil status adds the spouse ID');
 assert(!ids({ type: 'Corporation', industry: 'Services', amount: 750000, civilStatus: 'married' }).includes('spouse_id'));
-assert(ids({ type: 'Corporation', industry: 'Services', amount: 3000001 }).includes('afs_entity'));
-assert(!ids({ type: 'Corporation', industry: 'Services', amount: 3000000 }).includes('afs_entity'), 'AFS for entities only above PHP 3M');
-assert(ids({ type: 'Partnership', industry: 'Services', amount: 500000, secured: true }).includes('collateral'));
+assert(ids({ type: 'Corporation', industry: 'Services', amount: 3000001 }).includes('afs'));
+assert(!ids({ type: 'Corporation', industry: 'Services', amount: 3000000 }).includes('afs'), 'AFS only above PHP 3M');
+assert(ids({ type: 'Partnership', industry: 'Services', amount: 500000, secured: true }).includes('title'));
 assert(checklist({ type: 'Sole proprietorship', amount: 1 }).every((r) => r.sourceTitle), 'every row carries a source');
-assert(!checklist({ type: 'Sole proprietorship', amount: 1 }).some((r) => /6 months/.test(r.title)), 'bank statements are 3 months on BPI public page');
+assert(!checklist({ type: 'Sole proprietorship', amount: 1 }).some((r) => /6 months/.test(r.title)), 'bank statements are 3 months');
 
 // ---- names: these pairs must NOT compare equal (reviewer repros) ----
 for (const [a, b] of [['Maria Santos', 'Jose Santos'], ['Pedro Santos', 'Santos'], ['Juan Cruz Jr.', 'Juan Cruz Sr.'], ['Juan Cruz II', 'Juan Cruz III'], ['Elena Santos', 'Elena'], ['Maria Cruz', 'Mario Cruz'], ['J. Santos', 'Juan Santos'], ['Elena Santos', 'Elena Santoz']]) {

@@ -1,9 +1,9 @@
 {
-  "_note": "Seed rules from BPI's PUBLIC Ka-Negosyo pages, which BPI calls 'indicative only and non-exhaustive'. Not BPI policy. In a pilot, BPI SME Lending owns and versions this table. Signatures are confirmed by the branch, not read by OCR.",
-  "version": "2026-11-05-public-seed",
+  "_note": "Corporation and sole proprietorship rows are BPI Business Banking's basic requirements as sent by the team's BU Captain (a BSO) on 2026-11-06: what the BSO expects complete from the branch at referral, before KYC. Partnership rows are still seeded from BPI's public Ka-Negosyo page. In a pilot, BPI SME Lending owns and versions this table. Signatures are confirmed by the branch, not read by OCR.",
+  "version": "2026-11-06-bso-checklist",
   "sources": {
-    "B1": { "title": "BPI Ka-Negosyo SME Term Loan, public page (undated, footer 2023)", "url": "https://www.bpi.com.ph/sme-banking/loans/sme-term-loan" },
-    "assumed": { "title": "Team assumption, no public BPI source. The BSO confirms.", "url": "" }
+    "J1": { "title": "BPI Business Banking basic requirements, from the BU Captain (BSO), 6 Nov 2026", "url": "" },
+    "B1": { "title": "BPI Ka-Negosyo SME Term Loan, public page (undated, footer 2023)", "url": "https://www.bpi.com.ph/sme-banking/loans/sme-term-loan" }
   },
   "forms": {
     "application_form": {
@@ -12,19 +12,41 @@
     }
   },
   "requirements": [
-    { "id": "application_form", "title": "Signed loan application form", "docTypes": ["application_form"], "when": {}, "source": "B1" },
-    { "id": "gov_id", "title": "Valid government ID of the borrower or signatories (front and back)", "docTypes": ["gov_id"], "when": {}, "source": "B1" },
-    { "id": "spouse_id", "title": "Valid government ID of the spouse", "docTypes": ["spouse_id"], "when": { "type": ["Sole proprietorship"], "civilStatus": ["married"] }, "reason": "married", "source": "B1" },
-    { "id": "registration_dti", "title": "DTI registration or business permit", "docTypes": ["registration", "business_permit"], "when": { "type": ["Sole proprietorship"] }, "source": "B1" },
-    { "id": "registration_sec", "title": "SEC registration", "docTypes": ["registration"], "when": { "type": ["Partnership", "Corporation"] }, "source": "B1" },
-    { "id": "articles", "title": "Articles of partnership or incorporation", "docTypes": ["articles"], "when": { "type": ["Partnership", "Corporation"] }, "source": "B1" },
-    { "id": "bylaws", "title": "By-laws", "docTypes": ["bylaws"], "when": { "type": ["Corporation"] }, "source": "B1" },
-    { "id": "gis", "title": "Latest General Information Sheet", "docTypes": ["gis"], "when": { "type": ["Partnership", "Corporation"] }, "source": "B1" },
-    { "id": "itr_sole", "title": "Income tax returns, last 3 years", "docTypes": ["itr"], "when": { "type": ["Sole proprietorship"] }, "source": "B1" },
-    { "id": "fs_sole", "title": "Financial statements, last 3 years (audited if gross sales are over PHP 3M, otherwise BIR-filed or in-house; the BSO confirms)", "docTypes": ["audited_fs", "financials"], "when": { "type": ["Sole proprietorship"] }, "source": "assumed" },
-    { "id": "itr_entity", "title": "Income tax returns, last 3 years", "docTypes": ["itr"], "when": { "type": ["Partnership", "Corporation"], "minAmount": 3000001 }, "reason": "loan over PHP 3M", "source": "B1" },
-    { "id": "afs_entity", "title": "Audited financial statements, last 3 years", "docTypes": ["audited_fs"], "when": { "type": ["Partnership", "Corporation"], "minAmount": 3000001 }, "reason": "loan over PHP 3M", "source": "B1" },
-    { "id": "bank_statements", "title": "Bank statements, latest 3 months", "docTypes": ["bank_statements"], "when": {}, "source": "B1" },
-    { "id": "collateral", "title": "Collateral documents (for example title and tax declaration)", "docTypes": ["collateral"], "when": { "secured": true }, "reason": "secured loan", "source": "B1" }
+    { "id": "application_form", "title": "Duly accomplished application form", "docTypes": ["application_form"], "when": { "type": ["Corporation", "Partnership"] }, "source": "J1" },
+    { "id": "application_form_sole", "title": "Duly accomplished application form (spouse signs pages 3 and 6 if married)", "docTypes": ["application_form"], "when": { "type": ["Sole proprietorship"] }, "source": "J1" },
+
+    { "id": "gov_id", "title": "Valid ID", "docTypes": ["gov_id"], "when": { "type": ["Sole proprietorship"] }, "source": "J1" },
+    { "id": "spouse_id", "title": "Spouse valid ID", "docTypes": ["spouse_id"], "when": { "type": ["Sole proprietorship"], "civilStatus": ["married"] }, "reason": "married", "source": "J1" },
+    { "id": "gov_id_corp", "title": "Valid IDs of all stockholders, officers and directors", "docTypes": ["gov_id"], "when": { "type": ["Corporation"] }, "source": "J1" },
+    { "id": "gov_id_partners", "title": "Valid IDs of the partners and signatories", "docTypes": ["gov_id"], "when": { "type": ["Partnership"] }, "source": "B1" },
+
+    { "id": "dti", "title": "DTI registration", "docTypes": ["registration"], "when": { "type": ["Sole proprietorship"] }, "source": "J1" },
+    { "id": "bir_cor", "title": "BIR Certificate of Registration (COR)", "docTypes": ["bir_cor"], "when": { "type": ["Sole proprietorship"] }, "source": "J1" },
+    { "id": "mayors_permit", "title": "Mayor's permit", "docTypes": ["business_permit"], "when": { "type": ["Sole proprietorship"] }, "source": "J1" },
+
+    { "id": "articles", "title": "Articles of Incorporation, with amendments if any", "docTypes": ["articles"], "when": { "type": ["Corporation"] }, "source": "J1" },
+    { "id": "gis", "title": "Latest GIS with SEC cover letter and eFAST final acceptance", "docTypes": ["gis"], "when": { "type": ["Corporation"] }, "source": "J1" },
+    { "id": "registration_sec", "title": "SEC registration", "docTypes": ["registration"], "when": { "type": ["Partnership"] }, "source": "B1" },
+    { "id": "articles_partnership", "title": "Articles of partnership", "docTypes": ["articles"], "when": { "type": ["Partnership"] }, "source": "B1" },
+    { "id": "gis_partnership", "title": "Latest General Information Sheet", "docTypes": ["gis"], "when": { "type": ["Partnership"] }, "source": "B1" },
+
+    { "id": "itr", "title": "ITR for 2023, 2024 and 2025, with BIR stamp or BIR online reference number", "docTypes": ["itr"], "when": { "minAmount": 3000001 }, "reason": "loan exposure over PHP 3M", "source": "J1" },
+    { "id": "afs", "title": "AFS for 2023, 2024 and 2025, with BIR stamp or BIR online reference number", "docTypes": ["audited_fs"], "when": { "minAmount": 3000001 }, "reason": "loan exposure over PHP 3M", "source": "J1" },
+
+    { "id": "bank_statements", "title": "Latest 3 months bank statements", "docTypes": ["bank_statements"], "when": {}, "source": "J1" },
+    { "id": "endorsement_letter", "title": "Endorsement letter for bank verification", "docTypes": ["endorsement_letter"], "when": { "bpiAccount": false }, "reason": "working account is not with BPI", "source": "J1" },
+    { "id": "cal", "title": "DocuSign Client Authorization Letter (CAL), wet or e-signed by the authorized signatories", "docTypes": ["cal"], "when": { "type": ["Corporation", "Partnership"] }, "source": "J1" },
+    { "id": "cal_sole", "title": "DocuSign Client Authorization Letter (CAL), wet or e-signed on all pages (by both spouses if married)", "docTypes": ["cal"], "when": { "type": ["Sole proprietorship"] }, "source": "J1" },
+
+    { "id": "pcab_license", "title": "PCAB license", "docTypes": ["pcab_license"], "when": { "type": ["Corporation"], "industry": ["Construction"] }, "reason": "construction", "source": "J1" },
+    { "id": "project_list", "title": "List of ongoing projects", "docTypes": ["project_list"], "when": { "type": ["Corporation"], "industry": ["Construction"] }, "reason": "construction", "source": "J1" },
+    { "id": "project_contracts", "title": "Contracts or notices of award for ongoing and upcoming projects", "docTypes": ["contract"], "when": { "type": ["Corporation"], "industry": ["Construction"] }, "reason": "construction", "source": "J1" },
+
+    { "id": "title", "title": "TCT or CCT", "docTypes": ["collateral"], "when": { "secured": true }, "reason": "property collateral", "source": "J1" },
+    { "id": "tax_declaration", "title": "Tax declaration", "docTypes": ["tax_declaration"], "when": { "secured": true }, "reason": "property collateral", "source": "J1" },
+    { "id": "tax_clearance", "title": "Real property tax clearance", "docTypes": ["tax_clearance"], "when": { "secured": true }, "reason": "property collateral", "source": "J1" },
+    { "id": "tax_receipt", "title": "Real property tax receipt", "docTypes": ["tax_receipt"], "when": { "secured": true }, "reason": "property collateral", "source": "J1" },
+    { "id": "appraisal_letter", "title": "Letter of appraisal", "docTypes": ["appraisal_letter"], "when": { "secured": true }, "reason": "property collateral", "source": "J1" },
+    { "id": "collateral_authorization", "title": "Authorization letter for the collateral", "docTypes": ["authorization_letter"], "when": { "secured": true }, "reason": "property collateral", "source": "J1" }
   ]
 }
