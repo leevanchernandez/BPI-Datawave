@@ -1,36 +1,50 @@
 'use strict';
-// Pages in, check result out. All AWS access is injected: deps = { detectLines, analyzeForm, readPage }.
+// Pages in, check result out. OCR and model access are injected: deps = { detectLines, analyzeForm, readPage }.
 // Model output is untrusted: any name or date it returns must be visible in the OCR text of the same page.
+// The model only sees pages the classifier placed as IDs, registrations or permits, as OCR text with ID numbers
+// masked. Pages the classifier cannot place go to the branch to label, never to the model.
 const { classify, mapForm } = require('./classify.cjs');
 const { check } = require('./checker.cjs');
+const { nameCompare } = require('./names.cjs');
 
 const NEEDS_MODEL_FIELDS = new Set(['gov_id', 'registration', 'business_permit', 'sanitary_permit']);
+const LABELS = new Set(['application_form', 'gov_id', 'spouse_id', 'registration', 'business_permit', 'sanitary_permit', 'itr', 'financials', 'audited_fs', 'bank_statements', 'articles', 'bylaws', 'gis', 'collateral']);
 const MIN_LINES = 3;     // a page with fewer text lines than this is not trusted to be the document its title says
 const CONCURRENCY = 4;
 const MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
 
-const alnum = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+const words = (s) => String(s || '').toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
 const pageOf = (lines) => {
   for (const l of lines) { const m = /page\s+(\d{1,3})\s+of\s+(\d{1,3})/i.exec(l.text); if (m) return { pageNo: +m[1], pageTotal: +m[2] }; }
   return {};
 };
 
-/** every word of a name appears in the page text (letters and digits only, so punctuation and spacing do not matter) */
+/** every word of the name appears as a whole word on the page ("Ana Lena" is not grounded by "BANANA ... ELENA") */
 function nameGrounded(value, text) {
-  const t = alnum(text);
-  const words = String(value || '').toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 1);
-  return words.length > 0 && words.every((w) => t.includes(w));
+  const page = new Set(words(text));
+  const w = words(value).filter((x) => x.length > 1);
+  return w.length > 0 && w.every((x) => page.has(x));
 }
-/** an ISO date is grounded if the page shows its year, its day, and its month (number or name) */
+/** an ISO date is grounded only if ONE line shows its year, day and month (number or name) */
 function dateGrounded(iso, text) {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
   if (!m) return false;
-  const low = String(text).toLowerCase();
-  const nums = new Set(low.match(/\d+/g) || []);
   const mon = MONTHS[+m[2] - 1];
-  const dayOk = nums.has(String(+m[3])) || nums.has(m[3]);
-  const monthOk = nums.has(String(+m[2])) || nums.has(m[2]) || low.includes(mon) || low.includes(mon.slice(0, 3));
-  return nums.has(m[1]) && dayOk && monthOk;
+  return String(text).toLowerCase().split('\n').some((line) => {
+    const nums = new Set(line.match(/\d+/g) || []);
+    const dayOk = nums.has(String(+m[3])) || nums.has(m[3]);
+    const monthOk = nums.has(String(+m[2])) || nums.has(m[2]) || new RegExp(`\\b${mon.slice(0, 3)}`).test(line);
+    return nums.has(m[1]) && dayOk && monthOk;
+  });
+}
+
+/** mask ID numbers (PhilSys 16 digits, UMID CRN 12, TIN, driver's licence) before any text reaches a model */
+function maskIds(text) {
+  return String(text)
+    .replace(/\b\d{4}[- ]?\d{4}[- ]?\d{4}(?:[- ]?\d{4})?\b/g, '[ID NUMBER]')
+    .replace(/\b\d{3}[- ]\d{3}[- ]\d{3}(?:[- ]\d{3,5})?\b/g, '[ID NUMBER]')
+    .replace(/\b[A-Z]\d{2}[- ]\d{2}[- ]\d{6}\b/gi, '[ID NUMBER]')
+    .replace(/\b\d{10,}\b/g, '[ID NUMBER]');
 }
 
 async function pool(items, n, fn) {
@@ -39,18 +53,25 @@ async function pool(items, n, fn) {
   return out;
 }
 
-/** pages: [{ bytes, mediaType }]. Returns { result, pages } where pages carries provenance for display. */
+/** pages: [{ bytes?, mediaType?, lines?, docType? (branch label) }]. Returns { result, pages, trace }. */
 async function processPacket(referral, pages, deps, opts = {}) {
-  const review = [];
+  const review = [], trace = [];
   const read = await pool(pages, CONCURRENCY, async (src, i) => {
-    const lines = await deps.detectLines(src.bytes);
+    const lines = await deps.detectLines(src.bytes, src);
     const text = lines.map((l) => l.text).join('\n');
+    const label = LABELS.has(src.docType) ? src.docType : null;
     let page = { ...classify(lines), ...pageOf(lines), fields: {}, conf: {}, srcIndex: i };
-    if (page.docType && lines.length < MIN_LINES) { review.push({ key: `PAGE_THIN:${i + 1}`, message: `Page ${i + 1} has very little text for a ${page.docType.replace(/_/g, ' ')}. Please check it.` }); return null; }
+    const t = { page: i + 1, lines: lines.length, classifiedAs: page.docType, label, model: false };
+    trace.push(t);
+    if (!page.docType && label) page.docType = label;
+    if (!page.docType) { review.push({ key: `PAGE_UNPLACED:${i + 1}`, message: `Page ${i + 1} is not a recognized document. Please label it.` }); return null; }
+    if (lines.length < MIN_LINES) { review.push({ key: `PAGE_THIN:${i + 1}`, message: `Page ${i + 1} has very little text for a ${page.docType.replace(/_/g, ' ')}. Please check it.` }); return null; }
     if (page.docType === 'application_form') {
-      Object.assign(page, mapForm(await deps.analyzeForm(src.bytes)));
-    } else if (!page.docType || NEEDS_MODEL_FIELDS.has(page.docType)) {
-      const m = await deps.readPage(src);
+      Object.assign(page, mapForm(await deps.analyzeForm(src.bytes, src)));
+    } else if (NEEDS_MODEL_FIELDS.has(page.docType)) {
+      t.model = true;
+      let m;
+      try { m = await deps.readPage({ ...src, text: maskIds(text) }); } catch (e) { t.modelError = String(e.message || e).slice(0, 160); m = null; } // a model outage sends the page to a person
       if (!m || m.unreadable) { review.push({ key: `PAGE_UNREADABLE:${i + 1}`, message: `Page ${i + 1} could not be read. Please rescan.` }); return null; }
       const fields = {}, conf = {};
       for (const k of ['owner_name', 'business_name']) {
@@ -60,16 +81,28 @@ async function processPacket(referral, pages, deps, opts = {}) {
       }
       const expiry = m.expiry && dateGrounded(m.expiry, text) ? m.expiry : undefined;
       if (m.expiry && !expiry) review.push({ key: `MODEL_UNGROUNDED:${i + 1}:expiry`, message: `Page ${i + 1}: a validity date was reported that is not visible in the page text. Please check it.` });
-      page = { ...page, docType: page.docType || m.docType, side: m.side, pageNo: page.pageNo ?? m.pageNo, pageTotal: page.pageTotal ?? m.pageTotal, fields, conf, expiry, srcIndex: i };
+      t.grounded = { ...Object.fromEntries(Object.keys(fields).map((k) => [k, true])), ...(m.expiry ? { expiry: Boolean(expiry) } : {}) };
+      page = { ...page, side: m.side, pageNo: page.pageNo ?? m.pageNo, pageTotal: page.pageTotal ?? m.pageTotal, fields, conf, expiry, srcIndex: i };
     }
-    if (!page.docType) { review.push({ key: `PAGE_UNPLACED:${i + 1}`, message: `Page ${i + 1} is not a recognized document. Please check it.` }); return null; }
+    t.docType = page.docType;
     return page;
   });
   const out = read.filter(Boolean);
+
+  // A government ID whose name is the spouse on the form (and not the owner) is the spouse's ID.
+  const spouse = out.filter((p) => p.docType === 'application_form').map((p) => p.fields.spouse_name).find((v) => v && String(v).trim());
+  if (spouse) for (const p of out) {
+    const n = p.docType === 'gov_id' && p.fields.owner_name;
+    if (n && nameCompare(n, spouse) !== 'different' && nameCompare(n, referral.name) === 'different') {
+      p.docType = 'spouse_id';
+      const t = trace.find((x) => x.page === p.srcIndex + 1); if (t) t.docType = 'spouse_id';
+    }
+  }
+
   const result = check(referral, { pages: out }, opts);
   result.needsReview.push(...review);
   result.complete = result.defects.length === 0 && result.needsReview.length === 0;
-  return { result, pages: out.map(({ docType, pageNo, pageTotal, side, srcIndex }) => ({ docType, pageNo, pageTotal, side, srcIndex })) };
+  return { result, trace, pages: out.map(({ docType, pageNo, pageTotal, side, srcIndex }) => ({ docType, pageNo, pageTotal, side, srcIndex })) };
 }
 
-module.exports = { processPacket, nameGrounded, dateGrounded };
+module.exports = { processPacket, nameGrounded, dateGrounded, maskIds };

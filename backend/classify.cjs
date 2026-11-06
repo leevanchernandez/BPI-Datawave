@@ -2,13 +2,18 @@
 // Cheap page classification from OCR lines. Model is only the fallback for pages this cannot place.
 const RULES = [
   ['application_form', /\bloan application( form)?\b|^application form\b/im],
-  ['audited_fs', /audited financial statements?/i],
-  ['financials', /statement of financial position|income statement|balance sheet|income tax return|\bitr\b/i],
+  ['audited_fs', /audited financial statements?|independent auditor/i],
+  ['itr', /income tax return|\bbir form (no\.? )?170[0-2]/i],
+  ['financials', /statement of financial position|income statement|balance sheet|financial statements?/i],
   ['bank_statements', /statement of account|bank statement/i],
+  ['gis', /general information sheet/i],
+  ['articles', /articles of (incorporation|partnership)/i],
+  ['bylaws', /\bby-?laws\b/i],
+  ['collateral', /transfer certificate of title|condominium certificate of title|tax declaration of real property|\btct\b/i],
   ['sanitary_permit', /sanitary permit|health permit/i],
   ['business_permit', /mayor'?s permit|business permit/i],
-  ['registration', /department of trade and industry|\bdti\b|securities and exchange commission|certificate of registration/i],
-  ['gov_id', /republic of the philippines[\s\S]*\b(umid|driver'?s? licen[sc]e|philsys|passport|prc|postal id|voter)\b|\bumid\b|\bphilsys\b/i],
+  ['registration', /department of trade and industry|\bdti\b|securities and exchange commission|certificate of (business name )?registration/i],
+  ['gov_id', /republic of the philippines[\s\S]*\b(umid|driver'?s? licen[sc]e|philsys|passport|prc|postal id|voter)\b|\bumid\b|\bphilsys\b|pambansang pagkakakilanlan|philippine identification/i],
 ];
 
 // lines: [{text, conf}] -> { docType | null, hits }
