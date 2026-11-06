@@ -54,6 +54,7 @@ if (role === 'bm') {
     id: $('f-id').value.trim(), business: $('f-business').value, name: $('f-name').value, type: $('f-type').value,
     industry: $('f-industry').value, amount: Number(String($('f-amount').value).replace(/[^\d.]/g, '')),
     civilStatus: $('f-civil').value, spouseName: $('f-civil').value === 'married' ? $('f-spouse').value : '', secured: $('f-secured').checked,
+    bpiAccount: $('f-bpi').checked,
   });
   $('f-civil').onchange = () => { $('f-spouse').disabled = $('f-civil').value !== 'married'; };
 
@@ -152,7 +153,7 @@ if (role === 'bm') {
 
   // load an existing case if there is one
   (async () => { try { const v = await api('GET', `/api/case?id=${encodeURIComponent(caseId())}`); fillForm(v.referral); $('checklist').innerHTML = checklistHtml(v.rules.rows); lastView = v; if (v.open.checked) renderResult(v); } catch { /* new case */ } })();
-  function fillForm(r) { $('f-business').value = r.business; $('f-name').value = r.name; $('f-type').value = r.type; $('f-industry').value = r.industry; $('f-amount').value = r.amount; $('f-civil').value = r.civilStatus; $('f-spouse').value = r.spouseName || ''; $('f-secured').checked = !!r.secured; }
+  function fillForm(r) { $('f-business').value = r.business; $('f-name').value = r.name; $('f-type').value = r.type; $('f-industry').value = r.industry; $('f-amount').value = r.amount; $('f-civil').value = r.civilStatus; $('f-spouse').value = r.spouseName || ''; $('f-secured').checked = !!r.secured; $('f-bpi').checked = r.bpiAccount !== false; }
 }
 
 // ================= BSO view =================
