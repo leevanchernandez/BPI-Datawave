@@ -48,6 +48,25 @@ scripts/
 - BSO handoff updates the local demo. It sends no messages and connects to no bank system.
 - This source includes no application sign-in, shared database, or production document storage. The access controls on the existing hosted preview come from its hosting service.
 
+## Counter Check backend (branch feat/aws-case-agent)
+
+A document checker that runs while the client is still at the counter, plus the AWS pieces to run it for real. The dashboard above is not wired to it yet.
+
+- `backend/rules.json` holds the requirements as data (illustrative, replace with the BPI guidebook).
+- `backend/checker.cjs` checks a scanned packet: missing documents and pages, ID sides, blank mandatory fields, name mismatches, expired permits. It abstains instead of guessing: unclear reads become "needs review", and "complete" is never reported while anything is open.
+- `backend/reconcile.cjs` compares a resubmission with the open lacking list and derives the status from events.
+- `backend/aws/` has the Textract and Bedrock adapters, `backend/lambda.cjs` the Lambda handlers, `infra/template.yaml` the SAM template. Nothing has been deployed or called against real AWS. See `docs/aws.md` for what is and is not verified.
+- `frontend/counter-check.html` is an offline demo of the real checker on made-up packets. Serve `frontend/` and open it, no AWS needed.
+
+```sh
+npm test                       # rules, checker, reconciler, simulated OCR noise experiment
+npm --prefix backend install   # once, for the AWS layer tests
+npm run test:aws               # handlers, pipeline, and model adapters against fakes
+npm run build:demo             # rebuild frontend/vendor/checker.js after changing backend code
+```
+
+`docs/challenges.md` logs what was attacked and what changed.
+
 ## Team workflow
 
 1. Clone the repository and create a branch for your feature.
