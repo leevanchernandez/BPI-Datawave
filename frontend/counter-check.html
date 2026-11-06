@@ -177,7 +177,7 @@ function show(res, rec, ms) {
     rec.resolved.map((d) => row('ok', `Fixed: ${d.message}`)).join('')}${
     rec.stillMissing.map((d) => row('bad', `Still open: ${d.message}`)).join('')}${
     rec.newIssues.map((d) => row('add', `New: ${d.message}`)).join('')}</ul></section>` : '';
-  const msg = res.complete ? 'Complete na ang requirements. Pwede nang i-refer sa BSO.' : C.draftMessage(rec || { resolved: [], stillMissing: [...res.defects], newIssues: res.needsReview });
+  const msg = res.complete ? 'Walang nakitang problema ng checker. Handa na para sa review ng BSO.' : C.draftMessage(rec || { resolved: [], stillMissing: [...res.defects], newIssues: res.needsReview });
   $('out').innerHTML = `<div class="verdict ${tone}"><h1>${headline}</h1><p class="soft">Checked in ${ms.toFixed(1)} ms</p></div>
     <div class="cols"><div><h2>Requirements</h2><ul>${checklist}</ul></div><div><h2>What needs attention</h2><ul>${problems || row('ok', 'Nothing flagged by these rules.')}</ul></div></div>
     ${diff}

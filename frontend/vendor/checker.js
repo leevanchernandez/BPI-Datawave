@@ -9,24 +9,33 @@ var CounterCheck = (() => {
   var require_rules = __commonJS({
     "rules.json"(exports, module) {
       module.exports = {
-        _note: "ILLUSTRATIVE rules mirrored from frontend/app.js. Replace with the BPI guidebook and fill `source` with the guidebook page. One row per requirement.",
+        _note: "Seed rules from BPI's PUBLIC Ka-Negosyo pages, which BPI calls 'indicative only and non-exhaustive'. Not BPI policy. In a pilot, BPI SME Lending owns and versions this table. Signatures are confirmed by the branch, not read by OCR.",
+        version: "2026-11-05-public-seed",
+        sources: {
+          B1: { title: "BPI Ka-Negosyo SME Term Loan, public page (undated, footer 2023)", url: "https://www.bpi.com.ph/sme-banking/loans/sme-term-loan" },
+          assumed: { title: "Team assumption, no public BPI source. The BSO confirms.", url: "" }
+        },
         forms: {
           application_form: {
-            mandatory: ["business_name", "owner_name", "address", "tin", "contact", "signature"],
-            ifMarried: ["spouse_name", "spouse_signature"]
+            mandatory: ["business_name", "owner_name", "address", "tin", "contact"],
+            ifMarried: ["spouse_name"]
           }
         },
         requirements: [
-          { id: "application_form", title: "Signed loan application form", docType: "application_form", when: {}, source: "illustrative" },
-          { id: "gov_id", title: "Valid government-issued ID (front and back)", docType: "gov_id", when: {}, source: "illustrative" },
-          { id: "registration_dti", title: "DTI business registration", docType: "registration", when: { type: ["Sole proprietorship"] }, source: "illustrative" },
-          { id: "registration_sec", title: "SEC registration and corporate documents", docType: "registration", when: { type: ["Corporation"] }, source: "illustrative" },
-          { id: "registration_sec_partner", title: "SEC partnership registration", docType: "registration", when: { type: ["Partnership"] }, source: "illustrative" },
-          { id: "business_permit", title: "Latest business permit", docType: "business_permit", when: {}, source: "illustrative" },
-          { id: "financials", title: "Financial statements and income tax return", docType: "financials", when: {}, source: "illustrative" },
-          { id: "bank_statements", title: "Bank statements (latest 6 months)", docType: "bank_statements", when: {}, source: "illustrative" },
-          { id: "sanitary_permit", title: "Sanitary or health permit", docType: "sanitary_permit", when: { industry: ["Food & beverage"] }, source: "illustrative conditional example" },
-          { id: "audited_fs", title: "Audited financial statements", docType: "audited_fs", when: { minAmount: 5e6 }, source: "illustrative conditional example" }
+          { id: "application_form", title: "Signed loan application form", docTypes: ["application_form"], when: {}, source: "B1" },
+          { id: "gov_id", title: "Valid government ID of the borrower or signatories (front and back)", docTypes: ["gov_id"], when: {}, source: "B1" },
+          { id: "spouse_id", title: "Valid government ID of the spouse", docTypes: ["spouse_id"], when: { type: ["Sole proprietorship"], civilStatus: ["married"] }, reason: "married", source: "B1" },
+          { id: "registration_dti", title: "DTI registration or business permit", docTypes: ["registration", "business_permit"], when: { type: ["Sole proprietorship"] }, source: "B1" },
+          { id: "registration_sec", title: "SEC registration", docTypes: ["registration"], when: { type: ["Partnership", "Corporation"] }, source: "B1" },
+          { id: "articles", title: "Articles of partnership or incorporation", docTypes: ["articles"], when: { type: ["Partnership", "Corporation"] }, source: "B1" },
+          { id: "bylaws", title: "By-laws", docTypes: ["bylaws"], when: { type: ["Corporation"] }, source: "B1" },
+          { id: "gis", title: "Latest General Information Sheet", docTypes: ["gis"], when: { type: ["Partnership", "Corporation"] }, source: "B1" },
+          { id: "itr_sole", title: "Income tax returns, last 3 years", docTypes: ["itr"], when: { type: ["Sole proprietorship"] }, source: "B1" },
+          { id: "fs_sole", title: "Financial statements, last 3 years (audited if gross sales are over PHP 3M, otherwise BIR-filed or in-house; the BSO confirms)", docTypes: ["audited_fs", "financials"], when: { type: ["Sole proprietorship"] }, source: "assumed" },
+          { id: "itr_entity", title: "Income tax returns, last 3 years", docTypes: ["itr"], when: { type: ["Partnership", "Corporation"], minAmount: 3000001 }, reason: "loan over PHP 3M", source: "B1" },
+          { id: "afs_entity", title: "Audited financial statements, last 3 years", docTypes: ["audited_fs"], when: { type: ["Partnership", "Corporation"], minAmount: 3000001 }, reason: "loan over PHP 3M", source: "B1" },
+          { id: "bank_statements", title: "Bank statements, latest 3 months", docTypes: ["bank_statements"], when: {}, source: "B1" },
+          { id: "collateral", title: "Collateral documents (for example title and tax declaration)", docTypes: ["collateral"], when: { secured: true }, reason: "secured loan", source: "B1" }
         ]
       };
     }
@@ -37,17 +46,43 @@ var CounterCheck = (() => {
     "rules.cjs"(exports, module) {
       "use strict";
       var table = require_rules();
+      var CIVIL_WORDS = {
+        single: "single",
+        "walang asawa": "single",
+        binata: "single",
+        dalaga: "single",
+        married: "married",
+        kasal: "married",
+        "may asawa": "married",
+        widowed: "widowed",
+        widow: "widowed",
+        widower: "widowed",
+        balo: "widowed",
+        biyuda: "widowed",
+        biyudo: "widowed",
+        separated: "separated",
+        hiwalay: "separated",
+        divorced: "separated",
+        annulled: "separated"
+      };
+      var civilOf = (v) => CIVIL_WORDS[String(v || "").trim().toLowerCase().replace(/\s+/g, " ")] || null;
       function applies(when, r) {
         if (when.type && !when.type.includes(r.type)) return false;
         if (when.industry && !when.industry.includes(r.industry)) return false;
         if (when.minAmount != null && !(Number(r.amount) >= when.minAmount)) return false;
         if (when.maxAmount != null && !(Number(r.amount) <= when.maxAmount)) return false;
+        if (when.civilStatus && !when.civilStatus.includes(civilOf(r.civilStatus))) return false;
+        if (when.secured != null && Boolean(r.secured) !== when.secured) return false;
         return true;
       }
       function checklist(r, rules = table) {
-        return rules.requirements.filter((row) => applies(row.when, r));
+        return rules.requirements.filter((row) => applies(row.when, r)).map((row) => {
+          const docTypes = row.docTypes || [row.docType];
+          const src = (rules.sources || {})[row.source] || { title: row.source, url: "" };
+          return { ...row, docTypes, docType: docTypes[0], sourceTitle: src.title, sourceUrl: src.url };
+        });
       }
-      module.exports = { checklist, table };
+      module.exports = { checklist, table, civilOf };
     }
   });
 
@@ -86,14 +121,13 @@ var CounterCheck = (() => {
   var require_checker = __commonJS({
     "checker.cjs"(exports, module) {
       "use strict";
-      var { checklist, table } = require_rules2();
+      var { checklist, table, civilOf } = require_rules2();
       var { nameCompare } = require_names();
       var HIGH_CONF = 0.9;
       var MAX_PAGES = 50;
       var PLACEHOLDER = /^(n\/?a|none|nil|null|-+|_+|x+|\.+|0+)$/i;
       var blank = (v) => v == null || String(v).trim() === "" || PLACEHOLDER.test(String(v).trim());
       var TIN = /^\d{3}[- ]?\d{3}[- ]?\d{3}([- ]?\d{3,5})?$/;
-      var CIVIL = /* @__PURE__ */ new Set(["single", "married", "widowed", "separated", "divorced", "annulled"]);
       var conf = (p, k) => {
         const c = (p.conf || {})[k];
         return typeof c === "number" && Number.isFinite(c) ? c : 0;
@@ -124,7 +158,7 @@ var CounterCheck = (() => {
         const review = (code, target, message) => needsReview.push({ key: `${code}:${target}`, message });
         const todayStr = manilaDay(today);
         for (const row of required) {
-          const found = byType(row.docType);
+          const found = pages.filter((p) => row.docTypes.includes(p.docType));
           if (!found.length) {
             add("MISSING_DOC", row.id, `${row.title} is missing.`, row.docType);
             continue;
@@ -149,20 +183,22 @@ var CounterCheck = (() => {
           for (const p of forms) for (const [k, v] of Object.entries(p.fields || {})) {
             if (!(k in f) || blank(f[k]) && !blank(v)) f[k] = v;
           }
-          const civil = [referral.civilStatus, f.civil_status].map((x) => String(x || "").trim().toLowerCase());
-          const married = civil.includes("married");
+          const formCivil = civilOf(f.civil_status), intakeCivil = civilOf(referral.civilStatus);
+          const formConf = Math.max(0, ...forms.map((p) => (p.fields || {}).civil_status === f.civil_status ? conf(p, "civil_status") : 0));
+          const married = formCivil === "married" || intakeCivil === "married";
           const must = [...rules.forms.application_form.mandatory];
           if (married) must.push(...rules.forms.application_form.ifMarried);
           for (const k of must) if (blank(f[k])) add("BLANK_FIELD", k, `Application form: "${k.replace(/_/g, " ")}" is blank.`, "application_form");
           if (blank(f.civil_status)) add("BLANK_FIELD", "civil_status", 'Application form: "civil status" is blank.', "application_form");
-          else if (!CIVIL.has(String(f.civil_status).trim().toLowerCase())) review("CIVIL_UNREADABLE", "civil_status", "Civil status on the form could not be read. Please check it.");
+          else if (!formCivil || formConf < HIGH_CONF) review("CIVIL_UNREADABLE", "civil_status", "Civil status on the form could not be read with confidence. Please check the paper.");
+          else if (intakeCivil && formCivil !== intakeCivil) review("CIVIL_DIFFERS", "civil_status", `Civil status on the form (${formCivil}) differs from the case (${intakeCivil}). Please check it.`);
           if (!blank(f.tin) && !TIN.test(String(f.tin).trim())) review("TIN_FORMAT", "tin", "The TIN does not look like a TIN. Please check it.");
         }
         const collect = (types, field) => {
           const out = [];
           for (const p of pages) {
             if (!types.includes(p.docType)) continue;
-            if (p.docType === "gov_id" && p.side === "back" || p.docType === "application_form" && Number(p.pageNo) > 1) continue;
+            if (p.docType === "gov_id" && p.side === "back" || ["application_form", "registration", "business_permit"].includes(p.docType) && Number(p.pageNo) > 1) continue;
             const v = (p.fields || {})[field];
             if (blank(v)) {
               if (p.docType !== "application_form") review("FIELD_UNREADABLE", `${p.docType}:${field}`, `${p.docType.replace(/_/g, " ")}: the ${field.replace(/_/g, " ")} could not be read. Please check it.`);
@@ -185,6 +221,17 @@ var CounterCheck = (() => {
           }
         };
         pairs(owners, "NAME_MISMATCH", "NAME_REVIEW", "Owner name");
+        const spouseOnForm = forms.map((p) => (p.fields || {}).spouse_name).find((v) => !blank(v));
+        for (const p of byType("spouse_id")) {
+          const v = (p.fields || {}).owner_name;
+          if (blank(v) || blank(spouseOnForm)) {
+            review("SPOUSE_REVIEW", "spouse_id", "Spouse ID name could not be matched to the form. Please check it.");
+            continue;
+          }
+          const res = compareNames(spouseOnForm, conf(forms[0], "spouse_name") || 1, v, conf(p, "owner_name"));
+          if (res === "mismatch") add("SPOUSE_MISMATCH", "spouse_id", "Spouse ID name does not match the spouse on the form.", "spouse_id");
+          else if (res === "review") review("SPOUSE_REVIEW", "spouse_id", "Spouse ID name could not be confirmed against the form. Please check it.");
+        }
         pairs(bizs, "BUSINESS_NAME_MISMATCH", "BUSINESS_REVIEW", "Business name");
         const against = (list, refValue, code, reviewCode, label) => {
           if (blank(refValue)) return;
@@ -324,7 +371,7 @@ var CounterCheck = (() => {
           const base = { docType: row.docType, fields: {} };
           if (row.docType === "application_form") {
             const [bn, bc] = nzc(biz), [on, oc] = nzc(asWritten(r, p, style));
-            pages.push(...[1, 2, 3].map((n) => ({ ...base, pageNo: n, pageTotal: 3, conf: n === 1 ? { business_name: bc, owner_name: oc } : {}, fields: n === 1 ? { business_name: bn, owner_name: on, address: "24 Market St", tin: "123-456-789", contact: "09170000000", signature: "signed", civil_status: "single" } : {} })));
+            pages.push(...[1, 2, 3].map((n) => ({ ...base, pageNo: n, pageTotal: 3, conf: n === 1 ? { business_name: bc, owner_name: oc, civil_status: 0.97 } : {}, fields: n === 1 ? { business_name: bn, owner_name: on, address: "24 Market St", tin: "123-456-789", contact: "09170000000", signature: "signed", civil_status: "single" } : {} })));
           } else if (row.docType === "gov_id") {
             const [on, oc] = nzc(asWritten(r, p, "plain"));
             pages.push({ ...base, side: "front", conf: { owner_name: oc }, fields: { owner_name: on }, expiry: "2030-01-31" }, { ...base, side: "back" });
@@ -334,14 +381,28 @@ var CounterCheck = (() => {
           } else if (row.docType === "business_permit") {
             const [bn, bc] = nzc(biz);
             pages.push({ ...base, conf: { business_name: bc }, fields: { business_name: bn }, expiry: "2027-03-31" });
+          } else if (row.docType === "spouse_id") {
+            pages.push({ ...base, fields: { owner_name: "Ramon Bautista" }, conf: { owner_name: 0.97 } });
           } else if (row.docType === "sanitary_permit") {
             pages.push({ ...base, expiry: "2027-06-30" });
           } else pages.push(base);
         }
+        if (req.some((x) => x.docType === "spouse_id")) {
+          const f = pages.find((x) => x.docType === "application_form" && x.pageNo === 1);
+          if (f) {
+            f.fields.civil_status = "married";
+            f.fields.spouse_name = "Ramon Bautista";
+            f.conf.spouse_name = 0.97;
+          }
+        }
+        if (!pages.some((x) => x.docType === "business_permit")) {
+          const [bn, bc] = nzc(biz);
+          pages.push({ docType: "business_permit", conf: { business_name: bc }, fields: { business_name: bn }, expiry: "2027-03-31" });
+        }
         const truth = /* @__PURE__ */ new Set();
         for (const d of inject) {
           if (d === "MISSING_DOC") {
-            const i = pages.findIndex((x) => x.docType === "financials");
+            const i = pages.findIndex((x) => x.docType === "bank_statements");
             pages.splice(i, 1);
             truth.add("MISSING_DOC");
           }
