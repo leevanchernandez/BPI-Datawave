@@ -1,0 +1,21 @@
+{
+  "_note": "ILLUSTRATIVE rules mirrored from frontend/app.js. Replace with the BPI guidebook and fill `source` with the guidebook page. One row per requirement.",
+  "forms": {
+    "application_form": {
+      "mandatory": ["business_name", "owner_name", "address", "tin", "contact", "signature"],
+      "ifMarried": ["spouse_name", "spouse_signature"]
+    }
+  },
+  "requirements": [
+    { "id": "application_form", "title": "Signed loan application form", "docType": "application_form", "when": {}, "source": "illustrative" },
+    { "id": "gov_id", "title": "Valid government-issued ID (front and back)", "docType": "gov_id", "when": {}, "source": "illustrative" },
+    { "id": "registration_dti", "title": "DTI business registration", "docType": "registration", "when": { "type": ["Sole proprietorship"] }, "source": "illustrative" },
+    { "id": "registration_sec", "title": "SEC registration and corporate documents", "docType": "registration", "when": { "type": ["Corporation"] }, "source": "illustrative" },
+    { "id": "registration_sec_partner", "title": "SEC partnership registration", "docType": "registration", "when": { "type": ["Partnership"] }, "source": "illustrative" },
+    { "id": "business_permit", "title": "Latest business permit", "docType": "business_permit", "when": {}, "source": "illustrative" },
+    { "id": "financials", "title": "Financial statements and income tax return", "docType": "financials", "when": {}, "source": "illustrative" },
+    { "id": "bank_statements", "title": "Bank statements (latest 6 months)", "docType": "bank_statements", "when": {}, "source": "illustrative" },
+    { "id": "sanitary_permit", "title": "Sanitary or health permit", "docType": "sanitary_permit", "when": { "industry": ["Food & beverage"] }, "source": "illustrative conditional example" },
+    { "id": "audited_fs", "title": "Audited financial statements", "docType": "audited_fs", "when": { "minAmount": 5000000 }, "source": "illustrative conditional example" }
+  ]
+}
