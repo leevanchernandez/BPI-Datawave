@@ -4,6 +4,8 @@
   "private": true,
   "description": "MSME loan-referral dashboard hackathon prototype",
   "scripts": {
-    "test": "node scripts/verify.cjs && node scripts/verify-backend.cjs"
+    "test": "node scripts/verify.cjs && node scripts/verify-backend.cjs",
+    "test:aws": "node scripts/verify-aws.cjs",
+    "build:demo": "cd backend && npx esbuild browser.cjs --bundle --format=iife --global-name=CounterCheck --target=es2020 --outfile=../frontend/vendor/checker.js"
   }
 }
