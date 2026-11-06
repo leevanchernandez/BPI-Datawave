@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Counter Check</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* Counter Check, live prototype. Product register, tokens shared with frontend/styles.css.
+     No uppercase labels, no letter-spaced kickers, no interpuncts, no side stripes. */
+  :root {
+    --color-paper: #f7f6f2; --color-surface: #ffffff; --color-ink: #352d2e; --color-ink-soft: #5f5755;
+    --color-line: #e3ddd6; --color-brand: #a32628; --color-brand-deep: #842024; --color-brand-tint: #fbefeb;
+    --color-ok: #1d6b45; --color-ok-tint: #e6f3ec; --color-warn: #8a5300; --color-warn-tint: #fbf0d9;
+    --color-info: #3f3590; --color-info-tint: #ece9f5;
+    --font-ui: 'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    --text-s: 0.8125rem; --text-m: 0.9375rem; --text-l: 1.125rem; --text-xl: 1.5rem;
+    --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 24px; --space-6: 40px;
+    --radius: 6px; --ease: cubic-bezier(0.25, 1, 0.5, 1); --dur: 160ms;
+  }
+  * { box-sizing: border-box; }
+  html, body { overflow-x: clip; }
+  body { margin: 0; background: var(--color-paper); color: var(--color-ink); font: var(--text-m)/1.5 var(--font-ui); }
+  h1, h2, h3, p { margin: 0; overflow-wrap: anywhere; }
+  h1 { font-size: var(--text-xl); line-height: 1.2; font-weight: 700; letter-spacing: -0.01em; color: var(--color-brand-deep); text-wrap: balance; }
+  h2 { font-size: var(--text-l); font-weight: 700; }
+  h3 { font-size: var(--text-m); font-weight: 700; }
+  .soft { color: var(--color-ink-soft); font-size: var(--text-s); }
+  a { color: var(--color-brand-deep); }
+
+  .top { border-top: 3px solid var(--color-brand); background: var(--color-surface); border-bottom: 1px solid var(--color-line); }
+  .top-inner { max-width: 1180px; margin: 0 auto; padding: var(--space-3) var(--space-5); display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); flex-wrap: wrap; }
+  .wordmark { font-weight: 800; font-size: var(--text-l); letter-spacing: -0.02em; color: var(--color-brand); }
+  .wordmark span { font-weight: 500; font-size: var(--text-m); letter-spacing: 0; color: var(--color-ink-soft); margin-left: var(--space-2); }
+  .roles { display: flex; gap: var(--space-1); }
+  .roles a { text-decoration: none; padding: 6px 12px; border-radius: var(--radius); color: var(--color-ink-soft); font-weight: 600; }
+  .roles a[aria-current="page"] { background: var(--color-brand-tint); color: var(--color-brand-deep); }
+
+  main { max-width: 1180px; margin: 0 auto; padding: var(--space-5); display: grid; grid-template-columns: minmax(0, 360px) minmax(0, 1fr); gap: var(--space-6); }
+  @media (max-width: 900px) { main { grid-template-columns: minmax(0, 1fr); gap: var(--space-5); padding: var(--space-4); } }
+  .full { grid-column: 1 / -1; }
+
+  section { padding-top: var(--space-4); border-top: 1px solid var(--color-line); }
+  section + section { margin-top: var(--space-5); }
+  .row { display: flex; gap: var(--space-3); align-items: baseline; justify-content: space-between; flex-wrap: wrap; }
+
+  label { display: block; margin-top: var(--space-3); font-weight: 600; font-size: var(--text-s); }
+  input, select, textarea { font: inherit; width: 100%; margin-top: var(--space-1); padding: 8px 10px; border: 1px solid var(--color-line); border-radius: var(--radius); background: var(--color-surface); color: var(--color-ink); }
+  input:hover, select:hover, textarea:hover { border-color: var(--color-ink-soft); }
+  .two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 var(--space-3); }
+  .check { display: flex; gap: var(--space-2); align-items: center; font-weight: 500; }
+  .check input { width: auto; margin: 0; }
+
+  .actions { display: flex; gap: var(--space-2); margin-top: var(--space-4); flex-wrap: wrap; }
+  button, .btn { font: inherit; font-weight: 600; white-space: nowrap; padding: 9px 16px; border-radius: var(--radius); border: 1px solid var(--color-brand); background: var(--color-brand); color: #fff; cursor: pointer; transition: background var(--dur) var(--ease), transform var(--dur) var(--ease); display: inline-block; }
+  button:hover, .btn:hover { background: var(--color-brand-deep); border-color: var(--color-brand-deep); }
+  button:active { transform: translateY(1px); }
+  button.secondary, .btn.secondary { background: var(--color-surface); color: var(--color-brand); }
+  button.secondary:hover, .btn.secondary:hover { background: var(--color-brand-tint); }
+  button.small { padding: 4px 10px; font-size: var(--text-s); }
+  button:disabled { opacity: 0.45; cursor: default; transform: none; }
+  button:disabled:hover { background: var(--color-brand); }
+  :focus-visible { outline: 3px solid var(--color-ink); outline-offset: 2px; }
+
+  .status { display: inline-block; padding: 2px 10px; border-radius: var(--radius); font-weight: 700; font-size: var(--text-s); background: var(--color-info-tint); color: var(--color-info); }
+  .status.missing { background: var(--color-warn-tint); color: var(--color-warn); }
+  .status.ready, .status.with { background: var(--color-ok-tint); color: var(--color-ok); }
+
+  ul.items { list-style: none; margin: var(--space-2) 0 0; padding: 0; }
+  ul.items li { padding: var(--space-2) 0; border-bottom: 1px solid var(--color-line); display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; gap: var(--space-2); align-items: start; }
+  ul.items li:last-child { border-bottom: 0; }
+  .src { font-size: var(--text-s); color: var(--color-ink-soft); }
+  .chip { display: inline-block; font-size: var(--text-s); padding: 0 8px; border-radius: var(--radius); background: var(--color-paper); border: 1px solid var(--color-line); color: var(--color-ink-soft); text-decoration: none; margin-top: 2px; }
+  .chip.assumed { border-style: dashed; }
+  svg { width: 18px; height: 18px; margin-top: 2px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .ok { color: var(--color-ok); } .bad { color: var(--color-brand); } .warn { color: var(--color-warn); }
+
+  .pages { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr)); gap: var(--space-3); margin-top: var(--space-3); }
+  .page { background: var(--color-surface); border: 1px solid var(--color-line); border-radius: var(--radius); padding: var(--space-2); font-size: var(--text-s); }
+  .page img { width: 100%; height: 110px; object-fit: cover; border-radius: 4px; background: var(--color-paper); display: block; }
+  .page select { padding: 4px 6px; font-size: var(--text-s); }
+  .bar { height: 4px; background: var(--color-line); border-radius: 2px; margin-top: var(--space-1); overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 100%; background: var(--color-brand); transform: scaleX(0); transform-origin: left; transition: transform var(--dur) var(--ease); }
+
+  .message { margin-top: var(--space-2); padding: var(--space-3) var(--space-4); background: var(--color-surface); border: 1px solid var(--color-line); border-radius: var(--radius); white-space: pre-wrap; }
+  .note { margin-top: var(--space-2); padding: var(--space-2) var(--space-3); background: var(--color-info-tint); color: var(--color-info); border-radius: var(--radius); font-size: var(--text-s); }
+  .clearform { grid-column: 2 / -1; display: grid; gap: var(--space-2); grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto; margin-top: var(--space-1); }
+  @media (max-width: 560px) { .clearform { grid-template-columns: minmax(0, 1fr); } .two { grid-template-columns: minmax(0, 1fr); } }
+
+  table.trace { width: 100%; border-collapse: collapse; font-size: var(--text-s); margin-top: var(--space-2); }
+  table.trace th, table.trace td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--color-line); vertical-align: top; }
+  table.trace th { color: var(--color-ink-soft); font-weight: 600; }
+  code, .mono { font-family: var(--font-mono); font-size: 0.8125rem; }
+  details { margin-top: var(--space-3); }
+  summary { cursor: pointer; font-weight: 600; }
+  .timeline li { grid-template-columns: 3.25rem minmax(0, 1fr); font-size: var(--text-s); }
+  .timeline time { white-space: nowrap; color: var(--color-ink-soft); font-variant-numeric: tabular-nums; }
+  .answer { margin-top: var(--space-2); }
+  .hidden { display: none !important; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<header class="top"><div class="top-inner">
+  <div class="wordmark">BPI <span>Counter Check, synthetic data only</span></div>
+  <nav class="roles" aria-label="View"><a id="nav-bm" href="#">Branch</a><a id="nav-bso" href="#">BSO</a></nav>
+</div></header>
+
+<main id="main">
+  <div class="full" id="keybox" hidden>
+    <label for="demokey">Demo key</label>
+    <div class="row"><input id="demokey" autocomplete="off" style="max-width:320px"><button id="savekey" class="secondary">Save</button></div>
+  </div>
+
+  <!-- Branch manager -->
+  <div id="bm-left" class="hidden">
+    <section>
+      <h2>Case</h2>
+      <p class="soft">The branch confirms these fields. The checklist comes from the rules, not from the AI.</p>
+      <div class="two">
+        <div><label for="f-id">Referral number</label><input id="f-id" value="RF-2026-042"></div>
+        <div><label for="f-type">Business structure</label><select id="f-type"><option>Sole proprietorship</option><option>Partnership</option><option>Corporation</option></select></div>
+      </div>
+      <label for="f-business">Business name</label><input id="f-business" value="Elena Artisan Bakery">
+      <label for="f-name">Owner or signatory</label><input id="f-name" value="Elena Santos">
+      <div class="two">
+        <div><label for="f-industry">Industry</label><select id="f-industry"><option>Food & beverage</option><option>Services</option><option>Wholesale & retail</option><option>Manufacturing</option></select></div>
+        <div><label for="f-amount">Loan amount (PHP)</label><input id="f-amount" inputmode="numeric" value="750000"></div>
+      </div>
+      <div class="two">
+        <div><label for="f-civil">Civil status</label><select id="f-civil"><option value="married">Married</option><option value="single">Single</option><option value="widowed">Widowed</option><option value="separated">Separated</option></select></div>
+        <div><label for="f-spouse">Spouse name</label><input id="f-spouse" value="Ramon Santos"></div>
+      </div>
+      <label class="check"><input type="checkbox" id="f-secured"> Secured loan (collateral)</label>
+      <div class="actions"><button id="save-case">Save case</button></div>
+    </section>
+    <section>
+      <h2>Requirements</h2>
+      <ul class="items" id="checklist"><li><span></span><span class="soft">Save the case to see its checklist.</span><span></span></li></ul>
+      <p class="soft" id="rules-note" style="margin-top:8px"></p>
+    </section>
+  </div>
+
+  <div id="bm-right" class="hidden">
+    <section>
+      <div class="row"><h2>Documents</h2><span class="soft">Photos stay on this device. Only the text read from them is sent.</span></div>
+      <div class="actions">
+        <label class="btn secondary" style="margin:0">Take or add photos<input id="files" type="file" accept="image/*" capture="environment" multiple hidden></label>
+        <button id="run-check" disabled>Check documents</button>
+        <button id="clear-pages" class="secondary" disabled>Remove photos</button>
+      </div>
+      <div class="pages" id="pages"></div>
+    </section>
+    <section id="result" class="hidden">
+      <div class="row"><h2 id="verdict"></h2><span id="status" class="status"></span></div>
+      <p class="soft" id="recline"></p>
+      <h3 style="margin-top:16px">Problems</h3>
+      <ul class="items" id="defects"></ul>
+      <h3 style="margin-top:16px">For a person to check</h3>
+      <ul class="items" id="reviews"></ul>
+      <h3 style="margin-top:16px">Message to send</h3>
+      <div class="message" id="message"></div>
+      <p class="soft" id="drafted"></p>
+      <div class="actions"><button id="handoff" disabled>Send to BSO</button></div>
+      <details><summary>How the AI worked on this check</summary>
+        <table class="trace"><thead><tr><th>Page</th><th>Lines read</th><th>Placed as</th><th>Model</th><th>Checked against the text</th></tr></thead><tbody id="trace"></tbody></table>
+        <p class="soft" id="trace-note"></p>
+      </details>
+    </section>
+  </div>
+
+  <!-- BSO -->
+  <div id="bso-left" class="hidden">
+    <section>
+      <h2>Case</h2>
+      <label for="b-id">Referral number</label>
+      <div class="row"><input id="b-id" value="RF-2026-042" style="max-width:200px"><button id="b-open" class="secondary">Open</button></div>
+      <div id="b-summary" style="margin-top:12px"></div>
+    </section>
+    <section>
+      <h2>Timeline</h2>
+      <ul class="items timeline" id="b-events"></ul>
+    </section>
+  </div>
+  <div id="bso-right" class="hidden">
+    <section>
+      <div class="row"><h2>Ask about this case</h2><span class="soft">Answers come only from the case record.</span></div>
+      <div class="row" style="margin-top:8px"><input id="b-q" aria-label="Question about this case"><button id="b-ask">Ask</button></div>
+      <div class="answer" id="b-answer"></div>
+      <details id="b-trace-box" class="hidden"><summary>Tools the assistant used</summary><pre class="mono" id="b-trace" style="white-space:pre-wrap"></pre></details>
+    </section>
+    <section>
+      <div class="row"><h2>Open items</h2><span id="b-status" class="status"></span></div>
+      <ul class="items" id="b-open-items"></ul>
+    </section>
+    <section>
+      <h2>Message from the last check</h2>
+      <div class="message" id="b-message">No check yet.</div>
+      <div class="actions"><button id="b-approve" class="secondary" disabled>Approve message</button></div>
+    </section>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
+<script src="live.js"></script>
+</body>
+</html>
