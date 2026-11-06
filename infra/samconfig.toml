@@ -1,0 +1,15 @@
+# SAM CLI config for the demo stack. scripts/deploy.sh passes this file and its own --parameter-overrides
+# (from env vars), which replace parameter_overrides below. DemoKey is never stored here.
+version = 0.1
+
+[default.global.parameters]
+stack_name = "counter-check-demo"
+region = "ap-southeast-1"
+
+[default.deploy.parameters]
+capabilities = "CAPABILITY_IAM"
+resolve_s3 = true
+confirm_changeset = true
+fail_on_empty_changeset = false
+# Placeholders for a manual `sam deploy`. Replace both, and add DemoKey on the command line.
+parameter_overrides = "BedrockModelId=\"REPLACE_WITH_MODEL_OR_PROFILE_ID\" ReviewOrigin=\"https://REPLACE.example\""

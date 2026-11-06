@@ -21,3 +21,6 @@ uploads/
 .wrangler/
 node_modules/
 .dev.vars
+
+# SAM build output
+.aws-sam/
