@@ -23,6 +23,7 @@ export default {
     const store = {
       get: async (id) => env.CASES.get(`case:${id}`, 'json'),
       put: async (id, c) => env.CASES.put(`case:${id}`, JSON.stringify(c), { expirationTtl: TTL }),
+      // ponytail: one KV list per load of the case list. The free plan allows 1,000 lists a day, so cache it if the demo gets real traffic.
       list: async () => (await env.CASES.list({ prefix: 'case:' })).keys.map((k) => k.name.slice(5)),
     };
     const llm = env.GEMINI_API_KEY ? geminiMod.makeGemini({ apiKey: env.GEMINI_API_KEY, model: env.GEMINI_MODEL || 'gemini-3.5-flash-lite' }) : null;
