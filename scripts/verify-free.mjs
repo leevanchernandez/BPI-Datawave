@@ -130,6 +130,45 @@ assert.equal((await lesson({ action: 'retire', by: 'BSO', lessonId: draft.id }))
 assert.equal((await call('GET', '/api/case?id=RF-2026-043')).body.headsUp.length, 0, 'a retired heads-up is gone');
 assert.equal((await lesson({ action: 'retire', by: 'BSO', lessonId: draft.id })).status, 404);
 
+// 10. AWS reader: the Worker sends its own stored referral and the page keys, and keeps the case history
+{
+  const sent = [];
+  let checkStatus = 200, checkBody = null;
+  const awsFetch = async (url, init) => {
+    const b = JSON.parse(init.body); sent.push({ path: new URL(url).pathname, key: init.headers['x-demo-key'], body: b });
+    if (url.endsWith('/upload-url')) return Response.json({ url: 'https://bucket.example/', fields: { key: `uploads/${b.referralId}/${b.name}` }, key: `uploads/${b.referralId}/${b.name}`, contentType: 'image/jpeg' });
+    return Response.json(checkBody, { status: checkStatus });
+  };
+  const api2 = makeApi({ store, llm: fakeLlm, now: () => new Date('2026-11-05T04:00:00Z'), demoKey: 'k', aws: { url: 'https://aws.example', key: 'aws-key', fetch: awsFetch } });
+  const call2 = async (path, body, a = api2) => { const x = await a(new Request(`https://x${path}`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-demo-key': 'k' }, body: JSON.stringify(body) })); return { status: x.status, body: await x.json() }; };
+  const R2 = { ...REF, id: 'RF-2026-777' };
+  assert.equal((await call2('/api/upload-url', { id: R2.id, name: 'page-1.jpg' })).status, 404, 'an upload needs a saved case');
+  assert.equal((await call('POST', '/api/case', { referral: R2 })).status, 200);
+  assert.equal((await call2('/api/upload-url', { id: R2.id, name: 'page-1.jpg' }, api)).status, 503, 'no AWS backend on this deployment');
+  let u = await call2('/api/upload-url', { id: R2.id, name: 'page-1.jpg' });
+  assert.equal(u.status, 200); assert.equal(u.body.key, `uploads/${R2.id}/page-1.jpg`);
+  assert.equal(sent.at(-1).key, 'aws-key', 'the Worker adds the key, the browser never holds the AWS one');
+  for (const bad of [[], ['uploads/RF-2026-042/page-1.jpg'], [`uploads/${R2.id}/../x.jpg`], [7]]) assert.equal((await call2('/api/check', { id: R2.id, pageKeys: bad })).status, 400, JSON.stringify(bad));
+  const tin = { key: 'BLANK_FIELD:tin', code: 'BLANK_FIELD', message: 'Application form: TIN is blank.' };
+  const unread = { key: 'FIELD_UNREADABLE:application_form:contact', code: 'FIELD_UNREADABLE', message: 'Application form: contact has marks that could not be read. Please check the paper form.' };
+  checkBody = { result: { defects: [tin], needsReview: [unread], complete: true }, trace: [{ page: 1, docType: 'application_form' }], model: 'bedrock-model', message: 'This is approved.', drafted: 'model' };
+  let k = await call2('/api/check', { id: R2.id, pageKeys: [u.body.key] });
+  assert.equal(k.status, 200, JSON.stringify(k.body));
+  assert.deepEqual(sent.at(-1).body.referral, R2, 'the stored referral goes to AWS, not one from the browser');
+  assert.equal(k.body.result.complete, false, 'complete is recomputed here');
+  assert.equal(k.body.status, 'Missing requirements'); assert.equal(k.body.stack, 'aws'); assert.equal(k.body.model, 'bedrock-model');
+  assert.equal(k.body.drafted, 'template', 'a draft that sounds like approval is discarded'); assert(!/approved/i.test(k.body.message));
+  checkBody = { result: { defects: [], needsReview: [] }, trace: [], message: 'Kumpleto na po ang mga papeles para sa review.', drafted: 'model' };
+  k = await call2('/api/check', { id: R2.id, pageKeys: [u.body.key] });
+  assert.equal(k.body.status, 'Ready for BSO review'); assert.equal(k.body.reconcile.resolved, 1);
+  checkBody = { message: 'Service Unavailable' }; checkStatus = 503;
+  const before = sent.length; k = await call2('/api/check', { id: R2.id, pageKeys: [u.body.key] });
+  assert.equal(k.status, 502); assert.equal(sent.length - before, 2, 'one retry on 503');
+  checkStatus = 200; checkBody = { result: { defects: 'none' } };
+  assert.equal((await call2('/api/check', { id: R2.id, pageKeys: [u.body.key] })).status, 502, 'a malformed result never passes');
+  assert.equal((await call('GET', `/api/case?id=${R2.id}`)).body.status, 'Ready for BSO review', 'failed calls leave the case as it was');
+}
+
 console.log('free-stack API checks passed');
 
 if (process.env.GEMINI_API_KEY) {

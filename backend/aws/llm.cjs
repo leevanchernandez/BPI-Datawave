@@ -54,6 +54,21 @@ async function readPage({ bytes, mediaType = 'image/jpeg' }, client) {
   return page;
 }
 
+/** Second look at form fields the Forms pass returned empty. Returns the fields whose space has any mark in it. */
+async function markedFields({ bytes, mediaType = 'image/jpeg' }, fields, client) {
+  const c = client || (await makeClient());
+  const msg = await c.messages.create({
+    model: MODEL,
+    max_tokens: 300,
+    output_config: { effort: 'low', format: { type: 'json_schema', schema: { type: 'object', additionalProperties: false, required: ['marked'], properties: { marked: { type: 'array', items: { type: 'string', enum: fields } } } } } },
+    system: 'You look at one page of a loan application form. For each field you are asked about, look only at the space where its value is written. A field is marked if that space holds any writing, typing, stamp, signature or other ink, even if you cannot read it. A field is not marked if the space is empty. Do not read out any value.',
+    messages: [{ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: mediaType, data: Buffer.from(bytes).toString('base64') } }, { type: 'text', text: `Which of these fields are marked? ${fields.map((f) => f.replace(/_/g, ' ')).join(', ')}. Answer with the field ids ${fields.join(', ')}.` }] }],
+  });
+  let o;
+  try { o = JSON.parse(text(msg)); } catch { return []; }
+  return (Array.isArray(o.marked) ? o.marked : []).filter((f) => fields.includes(f));
+}
+
 /** Reject model drafts that sound like approval or are empty or oversized. null makes the caller use the template. */
 const FORBIDDEN = /\b(approved?|na-?approve|complete\s+na|tapos\s+na|good\s+to\s+go|ok(?:ay)?\s+na|verified)\b/i;
 function safeDraft(out, items) {
@@ -114,4 +129,4 @@ async function ask(question, handlers, client, maxTurns = 4) {
   return { answer: 'I could not finish that. Please ask the BSO.', handoff: true };
 }
 
-module.exports = { readPage, draftMessage, safeDraft, ask, TOOLS, MODEL, DOC_TYPES };
+module.exports = { readPage, markedFields, draftMessage, safeDraft, ask, TOOLS, MODEL, DOC_TYPES };

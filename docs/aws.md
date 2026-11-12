@@ -1,6 +1,6 @@
 # AWS design and what is verified
 
-This is the AWS version of the backend. BPI's AI team pointed the team to Amazon Bedrock; no public source confirms BPI's cloud stack, so do not state it as fact. The backend was created on the hackathon AWS account on 2026-11-12 and passed the smoke test there (see the section on what was checked on the account). The live prototype page still runs on the free stack (see docs/free-stack.md).
+This is the AWS version of the backend. BPI's AI team pointed the team to Amazon Bedrock; no public source confirms BPI's cloud stack, so do not state it as fact. The backend was created on the hackathon AWS account on 2026-11-12 and passed the smoke test there (see the section on what was checked on the account). The live prototype page runs on the free stack by default (see docs/free-stack.md) and switches to this backend with `?stack=aws`.
 
 ## Flow
 
@@ -57,27 +57,40 @@ Eleven defects were planted, one per packet, at each level. Seven are a missing 
 
 - No defective packet passed in 33 tries. With 33 tries the true false-complete rate could still be as high as about 9 percent at 95 percent confidence. The tries reuse the same eleven pages, so the real uncertainty is wider than that.
 - At the heavy level the business name on the mayor's permit could not be matched to the referral, so the permit went to a person as a review item and the packet did not pass.
-- The one wrong defect was at the heavy level. The Forms pass returned no value for civil status on the first-visit form, and the checker reported that field as blank.
+- The one wrong defect was at the heavy level. The Forms pass returned no value for civil status on the first-visit form, and the checker reported that field as blank. The second look described below was added after this run, and this level was not rerun without the watermark.
 - A `/check` call took 12 to 19 seconds over these 36 calls (8 to 10 pages each), with a median near 15 seconds. That time does not include the uploads.
 
 ### Text printed over a form field
 
 The first run kept the red SPECIMEN watermark, which crosses the field values on the application form. On every damaged form the Forms pass returned no value for the spouse name, and on almost every one it returned none for the contact number. At the medium and heavy levels it usually lost civil status too. The checker reported those fields as blank. With no spouse name on the form, the spouse's ID was treated as a second owner ID, which added a missing spouse ID, two name mismatches and a referral mismatch. The 30 packets of that run carried 182 wrong defects. All 27 planted defects were still named and no packet passed. The clean specimens do not show this, and neither do the damaged ones once the watermark is gone. The script now drops the watermark by keeping only the red channel, and `KEEP_WATERMARK=1` brings it back.
 
-A stamp or a signature over a field on a real form could do the same. The checker reads an empty Forms value as a blank field and cannot tell blank from unreadable. One fix is to send the field to a person when the line pass shows text after the label. It is not built.
+A stamp or a signature over a field on a real form could do the same, because an empty Forms value alone cannot tell blank from unreadable.
+
+The fix is a second look. When the Forms pass returns no value for a text field on the form, the form image goes to Claude with one question, which is whether the space for that field holds any mark (`markedFields` in backend/aws/llm.cjs). A field with a mark becomes a review item for a person (`FIELD_UNREADABLE:application_form:<field>`). A field with no mark stays a blank-field defect. The model's answer can only move a defect to a person, and it can never clear one. If the model call fails, the field stays a blank-field defect. When the form shows no spouse name, the spouse named on the referral is used to tell the spouse's ID from the owner's, and the checker sends that ID to a person.
+
+The fix was measured on the deployed API with `KEEP_WATERMARK=1` on three packets at three levels (the complete packet, the blank TIN and the missing spouse ID). Eight of the 9 calls finished and one returned 503 after 30 seconds. The 8 calls carried 0 wrong defects, against 182 over 30 packets before the fix. All 6 planted defects were named. The complete packet with the watermark did not pass at the light and medium levels. It went to a person with unreadable-field and spouse items, which is the intended result. A check took 14 to 18 seconds.
+
+## Live page on the AWS reader (2026-11-12)
+
+The live page reads on this backend when the address has `?stack=aws` (for example `/live?id=RF-2026-042&stack=aws`). The page shrinks each photo to a JPEG of at most 2400 pixels, asks the Worker for a presigned upload (`POST /api/upload-url`), and posts the photo to S3 from the browser. `POST /api/check` then sends the page keys and the referral stored in the Worker to the AWS `/check` route. The Worker adds the demo key, so the browser never calls the AWS API. The Worker recomputes the complete flag from the defects and the review items, discards a draft that sounds like approval, and keeps the case history in its own store. Browser OCR and the page label menus are off on this path.
+
+- `scripts/verify-free.mjs` covers the Worker side with a fake AWS API (block 10).
+- The bucket's CORS preflight from the Worker origin returned 200, and 9 photos uploaded from Chrome with status 204.
+- A Node run through the live Worker returned "Missing requirements" on visit 1 with the two planted defects and a model-drafted Taglish message, then "Ready for BSO review" on visit 2 in 13.8 seconds.
+- A run in Chrome on visit 1 (9 pages) showed the same two problems and the drafted message. From the click to the result it took between 30 and 43 seconds with the uploads. That time was not measured more closely.
+- The problem line shows the field id in lowercase (`"tin" is blank`). It is cosmetic and not fixed.
 
 ## NOT verified
 
 - Textract accuracy on real phone photos, handwriting (English only) and Filipino names. Only the synthetic specimens were read, clean and with simulated photo damage.
-- Text printed over a form field (a stamp, a signature, a watermark). It can produce a wrong blank-field defect, as the simulated test showed.
+- Text printed over a form field on a real form (a stamp or a signature). The second look was measured only with the SPECIMEN watermark on simulated photos, on 8 calls.
 - Whether hackathon credits cover Marketplace-billed Claude, and the exact ARN a global profile resolves to (the wildcard resources in the template were enough).
 - The Textract AI-services opt-out. The participant role cannot read the Organizations policy, so BPI has to confirm it.
 - Taglish quality of drafted messages and extraction. No published benchmark found for Claude or Nova on Taglish.
 - `sam deploy` and scripts/teardown.sh, which need CloudFormation. The teardown mode of scripts/deploy-cli.sh has not been run either.
 - Authorization: callers share one demo key, which sits in the Lambda environment, and the referral (type, industry, amount, names) is supplied by the caller. Production needs an IAM or Cognito authorizer, must load the referral by id from the bank's system, and must authorize the caller for that case.
-- Bucket CORS for a POST from the browser, and the 403 returned for an oversized or wrong-type file. The smoke test uploads from Node, where CORS does not apply.
-- The live demo page talks to the free stack's API. Pointing it at the AWS API needs an adapter that is not built.
-- HTTP API integrations time out at 30 seconds. A request is capped at 20 pages with 4 pages read in parallel. It was measured only at 8 to 10 pages (12 to 20 seconds over about 70 calls), so 20 pages may pass 30 seconds under the Textract rate limit.
+- The 403 returned for an oversized or wrong-type file. The browser upload itself works (see the live page section).
+- HTTP API integrations time out at 30 seconds. A request is capped at 20 pages with 4 pages read in parallel. It was measured only at 8 to 10 pages (12 to 20 seconds over about 70 calls), so 20 pages may pass 30 seconds under the Textract rate limit. One 9-page call did pass it on 2026-11-12. The Lambda ran for 36.5 seconds and the API returned 503 after 30.1 seconds. The Worker retries a 503 once.
 - Textract checkbox fields (for example civil status tick boxes) are not parsed, so such a form raises a blank-field defect.
 - What "complete" means: no defects, nothing to review, every required signal present. It does not check authenticity, content accuracy, or that statements cover 6 months.
 - PDFs: the Bedrock vision call needs images. Multi-page PDFs need to be split to page images first (not built).

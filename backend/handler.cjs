@@ -53,14 +53,14 @@ function makeHandlers(deps) {
       if (!Array.isArray(keys) || !keys.length || keys.length > MAX_PAGES || !keys.every((k) => validKey(id, k))) return bad('invalid pageKeys');
       const pages = await Promise.all(keys.map((k) => deps.loadPage(k)));
       const prev = await deps.store.lastOpen(id);
-      const { result, pages: provenance } = await processPacket(body.referral, pages, deps);
+      const { result, pages: provenance, trace } = await processPacket(body.referral, pages, deps);
       const rec = reconcile(prev.defects, result.defects, result.needsReview);
       const items = msgs([...rec.stillMissing, ...rec.newIssues, ...result.needsReview]);
-      let message = null;
-      if (deps.draftMessage && items.length) { try { message = await deps.draftMessage({ items, audience: 'branch' }); } catch { /* template fallback below */ } }
+      let message = null, drafted = 'template';
+      if (deps.draftMessage && items.length) { try { message = await deps.draftMessage({ items, audience: 'branch' }); if (message) drafted = 'model'; } catch { /* template fallback below */ } }
       message = message || draftMessage({ ...rec, newIssues: [...rec.newIssues, ...result.needsReview] });
       await deps.store.record(id, { type: result.complete ? 'check_passed' : 'check_failed', defects: result.defects, needsReview: result.needsReview, at: new Date().toISOString() });
-      return json(200, { result, reconcile: rec, message, pages: provenance, status: deriveStatus(await deps.store.events(id)) });
+      return json(200, { result, reconcile: rec, message, drafted, trace, model: deps.model || null, pages: provenance, status: deriveStatus(await deps.store.events(id)) });
     },
     /** POST /ask  { referralId, question }. Tools are bound to that one referral. */
     async ask(event) {

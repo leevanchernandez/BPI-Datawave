@@ -1,5 +1,5 @@
 'use strict';
-// Pages in, check result out. OCR and model access are injected: deps = { detectLines, analyzeForm, readPage }.
+// Pages in, check result out. OCR and model access are injected: deps = { detectLines, analyzeForm, readPage, markedFields? }.
 // Model output is untrusted: any name or date it returns must be visible in the OCR text of the same page.
 // The model only sees pages the classifier placed as IDs, registrations or permits, as OCR text with ID numbers
 // masked. Pages the classifier cannot place go to the branch to label, never to the model.
@@ -11,6 +11,7 @@ const NEEDS_MODEL_FIELDS = new Set(['gov_id', 'registration', 'business_permit',
 const LABELS = new Set(['application_form', 'gov_id', 'spouse_id', 'registration', 'business_permit', 'sanitary_permit', 'itr', 'financials', 'audited_fs', 'bank_statements', 'articles', 'bylaws', 'gis', 'collateral', 'bir_cor', 'cal', 'endorsement_letter', 'pcab_license', 'project_list', 'contract', 'tax_declaration', 'tax_clearance', 'tax_receipt', 'appraisal_letter', 'authorization_letter']);
 const MIN_LINES = 3;     // a page with fewer text lines than this is not trusted to be the document its title says
 const CONCURRENCY = 4;
+const FORM_TEXT = ['business_name', 'owner_name', 'address', 'tin', 'contact', 'civil_status', 'spouse_name'];
 const MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
 
 const words = (s) => String(s || '').toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
@@ -68,6 +69,12 @@ async function processPacket(referral, pages, deps, opts = {}) {
     if (lines.length < MIN_LINES) { review.push({ key: `PAGE_THIN:${i + 1}`, message: `Page ${i + 1} has very little text for a ${page.docType.replace(/_/g, ' ')}. Please check it.` }); return null; }
     if (page.docType === 'application_form') {
       Object.assign(page, mapForm(await deps.analyzeForm(src.bytes, src)));
+      // Fields the Forms pass left empty get a second look. A field with any mark in it goes to a person, not to the client.
+      const empty = FORM_TEXT.filter((k) => !String(page.fields[k] ?? '').trim());
+      if (empty.length && deps.markedFields) {
+        t.model = true;
+        try { page.unread = (await deps.markedFields(src, empty)).filter((k) => empty.includes(k)); } catch (e) { t.modelError = String(e.message || e).slice(0, 160); } // on a model outage the field stays a blank-field defect
+      }
     } else if (NEEDS_MODEL_FIELDS.has(page.docType)) {
       t.model = true;
       let m;
@@ -90,7 +97,8 @@ async function processPacket(referral, pages, deps, opts = {}) {
   const out = read.filter(Boolean);
 
   // A government ID whose name is the spouse on the form (and not the owner) is the spouse's ID.
-  const spouse = out.filter((p) => p.docType === 'application_form').map((p) => p.fields.spouse_name).find((v) => v && String(v).trim());
+  // The spouse named on the referral stands in when the form shows none. The checker then sends that ID to a person.
+  const spouse = out.filter((p) => p.docType === 'application_form').map((p) => p.fields.spouse_name).find((v) => v && String(v).trim()) || referral.spouseName;
   if (spouse) for (const p of out) {
     const n = p.docType === 'gov_id' && p.fields.owner_name;
     if (n && nameCompare(n, spouse) !== 'different' && nameCompare(n, referral.name) === 'different') {

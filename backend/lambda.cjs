@@ -17,9 +17,11 @@ function build() {
   const events = async (id) => (await ddb.send(new QueryCommand({ TableName: TABLE, KeyConditionExpression: 'referralId = :r', ExpressionAttributeValues: { ':r': id } }))).Items || [];
   const deps = {
     demoKey: process.env.DEMO_KEY,
+    model: llm.MODEL,
     detectLines: (bytes) => textract.detectLines(bytes),
     analyzeForm: (bytes) => textract.analyzeForm(bytes),
     readPage: (page) => llm.readPage(page),
+    markedFields: (page, fields) => llm.markedFields(page, fields),
     draftMessage: (a) => llm.draftMessage(a),
     ask: (q, h) => llm.ask(q, h),
     async loadPage(key) {

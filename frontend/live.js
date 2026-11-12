@@ -1,9 +1,12 @@
 // Counter Check live prototype. Branch view (default) and BSO view (?role=bso).
-// OCR runs in this browser with Tesseract.js: photos never leave the device, only the lines of text do.
+// Default reader: OCR runs in this browser with Tesseract.js, so photos never leave the device and only the lines of text do.
+// With ?stack=aws the photos go to the AWS backend instead (S3, Textract and Bedrock). Synthetic documents only.
 'use strict';
 
 const params = new URLSearchParams(location.search);
 const role = params.get('role') === 'bso' ? 'bso' : 'bm';
+const stack = params.get('stack') === 'aws' ? 'aws' : 'free';
+const stackQuery = stack === 'aws' ? '&stack=aws' : '';
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const ICON = {
@@ -32,7 +35,7 @@ if (!demoKey) $('keybox').hidden = false;
 const caseId = () => (role === 'bm' ? $('f-id').value.trim() : $('b-id').value.trim());
 function navLinks() {
   const id = encodeURIComponent(caseId() || 'RF-2026-042');
-  $('nav-bm').href = `?id=${id}`; $('nav-bso').href = `?role=bso&id=${id}`;
+  $('nav-bm').href = `?id=${id}${stackQuery}`; $('nav-bso').href = `?role=bso&id=${id}${stackQuery}`;
   $(role === 'bm' ? 'nav-bm' : 'nav-bso').setAttribute('aria-current', 'page');
 }
 for (const id of role === 'bm' ? ['bm-left', 'bm-right'] : ['bso-left', 'bso-right']) $(id).classList.remove('hidden');
@@ -75,6 +78,11 @@ if (role === 'bm') {
     $('headsup').innerHTML = v.headsUp.map((l) => `<li>${ICON.warn}<span>${esc(l.text)}</span><span></span></li>`).join('');
   }
   $('save-case').onclick = saveCase;
+  if (stack === 'aws') $('photo-note').textContent = 'Photos are uploaded to the AWS backend (S3 in Singapore, deleted after 1 day). Use synthetic documents only.';
+  const switchLink = () => `?id=${encodeURIComponent(caseId() || 'RF-2026-042')}${stack === 'aws' ? '' : '&stack=aws'}`;
+  $('stack-switch').innerHTML = stack === 'aws'
+    ? `Reading with Amazon Textract and Claude on Amazon Bedrock. <a href="${switchLink()}">Switch to the browser reader</a>`
+    : `Reading in this browser, with Gemini for IDs and permits. <a href="${switchLink()}">Switch to Textract and Bedrock on AWS</a>`;
 
   // ---- photos and OCR ----
   let worker = null;
@@ -97,6 +105,7 @@ if (role === 'bm') {
       const p = { n: ++counter, file, url: URL.createObjectURL(file), lines: null, status: 'Reading', label: '' };
       pages.push(p); renderPages();
     }
+    if (stack === 'aws') for (const p of pages.filter((x) => !x.lines)) { p.lines = []; p.status = 'Ready to upload'; } // Textract reads the photo, so there is no OCR here
     for (const p of pages.filter((x) => !x.lines)) {
       current = p;
       try {
@@ -116,17 +125,33 @@ if (role === 'bm') {
     $('pages').innerHTML = pages.map((p) => `<div class="page" data-page="${p.n}"><img src="${p.url}" alt="Page ${p.n}">
       <div class="row" style="margin-top:4px"><strong>Page ${p.n}</strong><span class="soft">${esc(p.status)}</span></div>
       ${p.lines ? '' : '<div class="bar"><i></i></div>'}
-      <select aria-label="Label for page ${p.n}" data-label="${p.n}">${Object.entries(DOC_LABELS).map(([k, v]) => `<option value="${k}" ${p.label === k ? 'selected' : ''}>${v}</option>`).join('')}</select></div>`).join('');
+      <select aria-label="Label for page ${p.n}" data-label="${p.n}" ${stack === 'aws' ? 'disabled title="Page labels are not used on the AWS reader yet"' : ''}>${Object.entries(DOC_LABELS).map(([k, v]) => `<option value="${k}" ${p.label === k ? 'selected' : ''}>${v}</option>`).join('')}</select></div>`).join('');
     document.querySelectorAll('[data-label]').forEach((s) => { s.onchange = () => { pages.find((x) => x.n === +s.dataset.label).label = s.value; }; });
     $('clear-pages').disabled = pages.length === 0;
   }
 
   // ---- check ----
+  // AWS reader: a resized JPEG goes straight to S3 with a presigned POST. The size cap and the file type are in the signed policy.
+  async function uploadPage(id, p) {
+    if (p.key && p.key.startsWith(`uploads/${id}/`)) return p.key;
+    const c = await downscale(p.file, 2400);
+    const blob = await new Promise((done) => c.toBlob(done, 'image/jpeg', 0.85));
+    const u = await api('POST', '/api/upload-url', { id, name: `page-${p.n}-${Date.now()}.jpg` });
+    const form = new FormData();
+    for (const [k, v] of Object.entries(u.fields)) form.append(k, v);
+    form.append('file', blob, 'page.jpg'); // the file goes last
+    const r = await fetch(u.url, { method: 'POST', body: form });
+    if (r.status !== 204) throw new Error(`Page ${p.n} could not be uploaded (${r.status}).`);
+    p.key = u.key; p.status = 'Uploaded'; renderPages();
+    return p.key;
+  }
   $('run-check').onclick = async () => {
     $('run-check').disabled = true; $('run-check').textContent = 'Checking';
     try {
-      const v = await api('POST', '/api/check', { id: caseId(), pages: pages.map((p) => ({ lines: p.lines, ...(p.label ? { docType: p.label } : {}) })) });
-      renderResult(v);
+      const id = caseId();
+      const body = stack === 'aws' ? { id, pageKeys: await Promise.all(pages.map((p) => uploadPage(id, p))) }
+        : { id, pages: pages.map((p) => ({ lines: p.lines, ...(p.label ? { docType: p.label } : {}) })) };
+      renderResult(await api('POST', '/api/check', body));
     } catch (e) { alertInline(e.message); }
     $('run-check').disabled = false; $('run-check').textContent = 'Check documents';
   };
@@ -156,7 +181,9 @@ if (role === 'bm') {
     $('handoff').disabled = v.status !== 'Ready for BSO review';
     if (v.trace) {
       $('trace').innerHTML = v.trace.map((t) => `<tr><td>${t.page}</td><td>${t.lines}</td><td>${esc(DOC_LABELS[t.docType] || (t.label ? `${DOC_LABELS[t.label]} (labeled)` : 'Not placed'))}</td><td>${t.model ? esc(v.model) : 'Rules only'}</td><td>${t.grounded ? Object.entries(t.grounded).map(([k, ok]) => `${k.replace('_', ' ')}: ${ok ? 'found' : 'not found, sent to a person'}`).join('<br>') : ''}</td></tr>`).join('');
-      $('trace-note').textContent = 'The model sees only ID, registration and permit pages, as text with ID numbers masked. Bank statements and forms are read by rules.';
+      $('trace-note').textContent = v.stack === 'aws'
+        ? 'Textract reads every page. The model reads ID, registration and permit pages. On the form it only tells an empty field from one that has marks in it. Rules decide what is missing.'
+        : 'The model sees only ID, registration and permit pages, as text with ID numbers masked. Bank statements and forms are read by rules.';
     }
   }
   $('handoff').onclick = async () => { try { const nv = await api('POST', '/api/event', { id: caseId(), type: 'handed_off', by: 'BM' }); renderResult({ ...lastView, ...nv }); } catch (e) { alertInline(e.message); } };

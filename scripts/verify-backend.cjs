@@ -119,6 +119,13 @@ for (const d of DEFECTS.filter((x) => x !== 'NAME_MISMATCH')) {
   assert(dateGrounded('2027-03-31', 'Valid until March 31, 2027'));
   const m = maskIds('PhilSys 1234-5678-9012-3456\nTIN 123-456-789-000\nValid until 2027-03-31');
   assert(!/1234|123-456/.test(m) && m.includes('2027-03-31'), m); }
+{ // 13. an empty form field with marks in it goes to a person, and a truly blank one stays a defect
+  const form = (pk) => pk.pages.find((p) => p.docType === 'application_form' && p.pageNo === 1);
+  const pk = clean(); form(pk).fields.tin = ''; form(pk).fields.contact = ''; form(pk).unread = ['contact'];
+  const o = run(REF, pk);
+  assert(!o.complete && o.defects.some((d) => d.key === 'BLANK_FIELD:tin'), 'blank TIN is still a defect');
+  assert(!o.defects.some((d) => d.key === 'BLANK_FIELD:contact') && o.needsReview.some((d) => d.key === 'FIELD_UNREADABLE:application_form:contact'), 'marked contact goes to review: ' + JSON.stringify([o.defects, o.needsReview]));
+  const full = clean(); form(full).unread = ['tin']; assert(run(REF, full).complete, 'unread is ignored for a field that has a value'); }
 
 // ---- reconcile + status ----
 { const prev = [{ key: 'MISSING_DOC:financials', message: 'Financial statements missing.' }, { key: 'MISSING_PAGE:application_form#2', message: 'Form page 2 missing.' }];

@@ -37,3 +37,5 @@ OCR and the model sit behind two adapters:
 - `backend/free/gemini.cjs` / `backend/aws/llm.cjs`
 
 The rules, checker, reconciler and event logic are plain JavaScript with no cloud SDK.
+
+The live page can already read on the AWS backend. Add `?stack=aws` to the address, and the photos go to S3 and are read by Textract and Claude on Bedrock (docs/aws.md). The case, its history and the BSO view stay in this Worker.

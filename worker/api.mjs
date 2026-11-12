@@ -1,6 +1,8 @@
 // Counter Check API on Cloudflare Workers (free stack). Pure functions over a small store, so it is testable in Node.
 // TRUST BOUNDARY: the referral is saved once (POST /api/case) and every check reads it from the store, never from the
 // caller. There is no bank login: a shared demo key protects the model quota. Synthetic data only.
+// A check runs on one of two backends. Text lines from the browser run here (the free stack). Page keys run on the AWS
+// backend (Textract and Bedrock), which gets the stored referral and the demo key from this Worker.
 import pipelineMod from '../backend/pipeline.cjs';
 import reconcileMod from '../backend/reconcile.cjs';
 import rulesMod from '../backend/rules.cjs';
@@ -53,6 +55,9 @@ function validPages(pages) {
     && p.lines.every((l) => l && typeof l.text === 'string' && l.text.length <= MAX_LINE && typeof l.conf === 'number' && l.conf >= 0 && l.conf <= 1));
 }
 
+const KEY = /^uploads\/RF-\d{4}-\d{3}\/[\w.-]{1,100}$/;
+const validKeys = (id, keys) => Array.isArray(keys) && keys.length > 0 && keys.length <= MAX_PAGES && keys.every((k) => typeof k === 'string' && k.startsWith(`uploads/${id}/`) && KEY.test(k));
+
 const rulesView = (r) => ({ version: table.version, note: table._note, rows: checklist(r).map(({ id, title, docTypes, reason, source, sourceTitle, sourceUrl }) => ({ id, title, docTypes, reason, source, sourceTitle, sourceUrl })) });
 
 /** open items = the last check's items minus what a person cleared or waived after it */
@@ -69,7 +74,10 @@ export function statusOf(events) {
   return s;
 }
 
-export function makeApi({ store, llm, now = () => new Date(), demoKey }) {
+/** aws: { url, key, fetch? } for the AWS backend, or null. */
+export function makeApi({ store, llm, now = () => new Date(), demoKey, aws = null }) {
+  const awsPost = (path, payload) => (aws.fetch || fetch)(aws.url + path, { method: 'POST', headers: { 'content-type': 'application/json', 'x-demo-key': aws.key }, body: JSON.stringify(payload) });
+  const noAws = () => json(503, { error: 'the AWS backend is not set up on this deployment' });
   const json = (code, body) => new Response(JSON.stringify(body), { status: code, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } });
   const bad = (m) => json(400, { error: m });
   const view = (c) => {
@@ -88,7 +96,7 @@ export function makeApi({ store, llm, now = () => new Date(), demoKey }) {
   async function body(req) { try { return await req.json(); } catch { return null; } }
 
   const routes = {
-    'GET /api/health': async (req) => json(200, { ok: true, model: llm ? llm.model : null, rules: table.version, colo: (req.cf || {}).colo || null }),
+    'GET /api/health': async (req) => json(200, { ok: true, model: llm ? llm.model : null, aws: Boolean(aws), rules: table.version, colo: (req.cf || {}).colo || null }),
     'GET /api/rules': async (req) => {
       const u = new URL(req.url).searchParams;
       return json(200, rulesView({ type: u.get('type'), industry: u.get('industry'), amount: Number(u.get('amount')), civilStatus: u.get('civilStatus'), secured: u.get('secured') === 'true', bpiAccount: u.get('bpiAccount') === 'true' }));
@@ -107,25 +115,46 @@ export function makeApi({ store, llm, now = () => new Date(), demoKey }) {
       const c = await store.get(id); if (!c) return json(404, { error: 'unknown referral' });
       return json(200, await full(c));
     },
+    'POST /api/upload-url': async (req) => {
+      const b = await body(req); if (!b || !ID.test(b.id || '') || !str(b.name, 200)) return bad('invalid upload');
+      if (!aws) return noAws();
+      if (!(await store.get(b.id))) return json(404, { error: 'save the case first' });
+      const r = await awsPost('/upload-url', { referralId: b.id, name: b.name });
+      return json(r.status === 200 ? 200 : 502, await r.json().catch(() => ({ error: 'the upload could not start' })));
+    },
     'POST /api/check': async (req) => {
       const b = await body(req); if (!b || !ID.test(b.id || '')) return bad('invalid id');
-      if (!validPages(b.pages)) return bad('invalid pages');
+      const onAws = b.pageKeys !== undefined;
+      if (onAws ? !validKeys(b.id, b.pageKeys) : !validPages(b.pages)) return bad('invalid pages');
+      if (onAws && !aws) return noAws();
       const c = await store.get(b.id); if (!c) return json(404, { error: 'save the case first' });
-      const deps = {
-        detectLines: async (_bytes, src) => src.lines,
-        analyzeForm: async (_bytes, src) => formFromLines(src.lines),
-        readPage: async (page) => (llm ? llm.readPage(page) : { unreadable: true }),
-      };
-      const prev = openItems(c.events);
-      const { result, trace } = await processPacket(c.referral, b.pages, deps, { today: now() });
-      const rec = reconcile(prev.defects, result.defects, result.needsReview);
+      let result, trace, message = null, drafted = 'template', model = llm ? llm.model : null;
+      if (onAws) {
+        const send = () => awsPost('/check', { referral: c.referral, pageKeys: b.pageKeys });
+        let r = await send();
+        if (r.status === 503) r = await send(); // ponytail: the HTTP API stops at 30 seconds and one retry covers a slow call. Move the check to a queue if it happens often.
+        const a = await r.json().catch(() => null);
+        if (r.status !== 200 || !a || !a.result || !Array.isArray(a.result.defects) || !Array.isArray(a.result.needsReview)) return json(502, { error: `the AWS check did not finish (${r.status}). Try again.` });
+        result = { ...a.result, complete: a.result.defects.length + a.result.needsReview.length === 0 };
+        trace = Array.isArray(a.trace) ? a.trace : [];
+        model = a.model || 'Amazon Bedrock';
+        if (a.drafted === 'model' && str(a.message, 2000) && !FORBIDDEN.test(a.message)) { message = a.message; drafted = 'model'; }
+      } else {
+        const deps = {
+          detectLines: async (_bytes, src) => src.lines,
+          analyzeForm: async (_bytes, src) => formFromLines(src.lines),
+          readPage: async (page) => (llm ? llm.readPage(page) : { unreadable: true }),
+        };
+        ({ result, trace } = await processPacket(c.referral, b.pages, deps, { today: now() }));
+      }
+      const rec = reconcile(openItems(c.events).defects, result.defects, result.needsReview);
       const items = [...rec.stillMissing, ...rec.newIssues, ...result.needsReview].map((d) => d.message);
-      let message = null, drafted = 'template';
-      if (llm && items.length) { try { message = await llm.draftMessage({ items, audience: 'branch' }); if (message) drafted = 'model'; } catch { /* template below */ } }
+      if (!onAws && llm && items.length) { try { message = await llm.draftMessage({ items, audience: 'branch' }); if (message) drafted = 'model'; } catch { /* template below */ } }
       message = message || templateDraft({ ...rec, newIssues: [...rec.newIssues, ...result.needsReview] });
-      c.events.push({ type: result.complete ? 'check_passed' : 'check_failed', by: 'BM', at: at(), defects: result.defects, needsReview: result.needsReview, message, pages: b.pages.length });
+      const pages = (b.pageKeys || b.pages).length;
+      c.events.push({ type: result.complete ? 'check_passed' : 'check_failed', by: 'BM', at: at(), defects: result.defects, needsReview: result.needsReview, message, pages, ...(onAws ? { stack: 'aws' } : {}) });
       await store.put(b.id, c);
-      return json(200, { result, reconcile: { resolved: rec.resolved.length, stillMissing: rec.stillMissing.length, newIssues: rec.newIssues.length }, message, drafted, trace, model: llm ? llm.model : null, ...(await full(c)) });
+      return json(200, { result, reconcile: { resolved: rec.resolved.length, stillMissing: rec.stillMissing.length, newIssues: rec.newIssues.length }, message, drafted, trace, model, stack: onAws ? 'aws' : 'free', ...(await full(c)) });
     },
     'POST /api/event': async (req) => {
       const b = await body(req); if (!b || !ID.test(b.id || '') || !EVENT_TYPES.has(b.type)) return bad('invalid event');

@@ -13,6 +13,8 @@ export default {
       put: async (id, c) => env.CASES.put(`case:${id}`, JSON.stringify(c), { expirationTtl: TTL }),
     };
     const llm = env.GEMINI_API_KEY ? geminiMod.makeGemini({ apiKey: env.GEMINI_API_KEY, model: env.GEMINI_MODEL || 'gemini-3.5-flash-lite' }) : null;
-    return makeApi({ store, llm, demoKey: env.DEMO_KEY })(req);
+    // The AWS backend takes the same demo key as this Worker.
+    const aws = env.AWS_API_URL ? { url: env.AWS_API_URL, key: env.DEMO_KEY } : null;
+    return makeApi({ store, llm, demoKey: env.DEMO_KEY, aws })(req);
   },
 };
