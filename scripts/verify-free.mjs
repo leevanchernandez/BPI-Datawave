@@ -21,7 +21,7 @@ const fakeLlm = {
   async draftMessage({ items }) { return `Kulang pa po: ${items.length} item.`; },
   async intake() { return this.intakeOut; },
   async draftLesson({ reason }) { return `Reminder from a BSO return. ${reason}`; },
-  async ask(q, h) { const r = await h.get_lacking(); return { answer: `Kulang pa: ${(r.missing || []).join('; ')}`, handoff: false, trace: [{ tool: 'get_lacking', result: r }] }; },
+  async ask(q, h) { if (q.startsWith('general')) { const g = await h.get_requirements({ type: 'Corporation', industry: 'Construction', amount: 5e6 }); return { answer: g.requirements.map((x) => x.requirement).join('; '), handoff: false, trace: [{ tool: 'get_requirements', result: g, bad: await h.get_requirements({ type: 'OPC' }) }] }; } const r = await h.get_lacking(); return { answer: `Kulang pa: ${(r.missing || []).join('; ')}`, handoff: false, trace: [{ tool: 'get_lacking', result: r }] }; },
 };
 const api = makeApi({ store, llm: fakeLlm, now: () => new Date('2026-11-05T04:00:00Z'), demoKey: 'k' });
 const call = async (method, path, body, key = 'k') => {
@@ -221,6 +221,13 @@ assert.equal((await lesson({ action: 'retire', by: 'BSO', lessonId: draft.id }))
   assert.deepEqual(xb.fields, { name: 'Elena Santos' }, 'fields from AWS pass the same rules');
   assert.equal(xb.model, 'bedrock-model'); assert.equal(sent[0].url, 'https://aws.example/ask'); assert.equal(sent[0].key, 'aws-key'); assert.equal(sent[0].body.intake, note);
   assert.equal(mem.has('RF-2026-778'), false, 'the intake saves nothing');
+}
+
+{ // 11b. a general question gets the rules checklist for any structure, not only this case
+  const r = await call('POST', '/api/ask', { id: REF.id, question: 'general: ano requirements ng corporation sa construction?' });
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  assert.match(r.body.answer, /PCAB license/, 'construction corporation rows come from the rules');
+  assert.ok(r.body.trace[0].bad.error, 'an unknown structure is not answered');
 }
 
 { // 12. the BSO's list shows every case with its status, and no heads-up record

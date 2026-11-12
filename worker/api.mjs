@@ -264,6 +264,11 @@ export function makeApi({ store, llm, now = () => new Date(), demoKey, aws = nul
         get_heads_up: async () => ({ reminders: shown((await lessons()).list, c.referral).map((l) => l.text) }),
         get_status: async () => ({ status: statusOf(c.events) }),
         get_lacking: async () => { const o = openItems(c.events); return o.checked ? { missing: o.defects.map((d) => d.message), toCheck: o.needsReview.map((d) => d.message) } : { checked: false }; },
+        get_requirements: async (i = {}) => {
+          if (!['Sole proprietorship', 'Partnership', 'Corporation'].includes(i.type)) return { error: 'Ask which business structure: sole proprietorship, partnership or corporation.' };
+          const p = { type: i.type, industry: String(i.industry || ''), amount: Number(i.amount) || 0, civilStatus: i.married ? 'married' : 'single', secured: i.secured === true, bpiAccount: i.bpiAccount !== false };
+          return { requirements: checklist(p).map((r) => ({ requirement: r.title, source: r.sourceTitle })), assumed: `${p.civilStatus}, ${p.secured ? 'secured' : 'no collateral'}, ${p.bpiAccount ? 'BPI working account' : 'no BPI account'}${p.amount ? '' : ', amount not given so rows for larger loans are left out'}` };
+        },
         get_checklist: async () => checklist(c.referral).map((r) => ({ requirement: r.title, why: r.reason || (r.when.type ? `for a ${c.referral.type.toLowerCase()}` : 'all cases'), source: r.sourceTitle })),
       };
       const out = await llm.ask(q.trim(), handlers);

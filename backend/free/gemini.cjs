@@ -80,6 +80,7 @@ function makeGemini({ apiKey, model = 'gemini-3.5-flash-lite', fetchFn = fetch, 
     { name: 'get_status', description: 'Status of this referral.', parameters: { type: 'object', properties: {} } },
     { name: 'get_lacking', description: 'What is still missing or flagged for a person to check on this referral.', parameters: { type: 'object', properties: {} } },
     { name: 'get_checklist', description: 'Initial requirements for this referral, each with its source.', parameters: { type: 'object', properties: {} } },
+    { name: 'get_requirements', description: 'Initial requirements for any client profile, for general questions such as what a corporation needs. Not for this referral.', parameters: { type: 'object', required: ['type'], properties: { type: { type: 'string', enum: ['Sole proprietorship', 'Partnership', 'Corporation'] }, industry: { type: 'string' }, amount: { type: 'number' }, married: { type: 'boolean' }, secured: { type: 'boolean' }, bpiAccount: { type: 'boolean' } } } },
   ] }];
 
   /** Tools are already bound to one referral by the caller. Returns { answer, handoff, trace }. */
@@ -99,7 +100,7 @@ function makeGemini({ apiKey, model = 'gemini-3.5-flash-lite', fetchFn = fetch, 
       for (const p of calls) {
         const { name } = p.functionCall;
         let result;
-        try { const h = handlers[name]; if (!h) throw new Error('unknown tool'); result = await h(); }
+        try { const h = handlers[name]; if (!h) throw new Error('unknown tool'); result = await h(p.functionCall.args || {}); }
         catch { result = { error: 'Tool failed or has no data.' }; }
         trace.push({ tool: name, result });
         parts.push({ functionResponse: { name, response: { result } } });
