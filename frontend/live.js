@@ -244,7 +244,7 @@ async function loadCases() {
     const { cases } = await api('GET', '/api/cases');
     const counts = {};
     for (const c of cases) counts[c.status] = (counts[c.status] || 0) + 1;
-    $('cases-count').textContent = Object.entries(counts).map(([s, n]) => `${n} ${s}`).join(', ');
+    $('cases-count').innerHTML = Object.entries(counts).map(([s, n]) => `<span class="status ${statusClass(s)}">${n} ${esc(s)}</span>`).join(' ');
     $('cases').innerHTML = cases.map((c) => `<tr data-id="${esc(c.id)}" tabindex="0"${c.id === caseId() ? ' aria-current="true"' : ''}><td class="mono">${esc(c.id)}</td><td>${esc(c.business)}</td><td><span class="status ${statusClass(c.status)}">${esc(c.status)}</span></td><td>${c.open || ''}</td><td>${c.updated ? new Date(c.updated).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Manila' }) : ''}</td><td>PHP ${Number(c.amount).toLocaleString('en-PH')}</td><td>${esc(c.type)}, ${esc(c.industry)}</td></tr>`).join('')
       || '<tr><td colspan="7" class="soft">No cases yet.</td></tr>';
   } catch (e) { $('cases').innerHTML = `<tr><td colspan="7" class="soft">${esc(e.message)}</td></tr>`; }
