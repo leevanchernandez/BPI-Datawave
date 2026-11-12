@@ -128,13 +128,15 @@ No Philippine region for Textract or Bedrock. Singapore (ap-southeast-1) has Tex
 | `/check`, visit 2 | 10 | 1 | 6 | 14,622 | 322 |
 | `/ask`, one question | | | 2 | 1,611 | 92 |
 
+After the text-only reader (Nov 13, one run) visit 1 used 6,847 input and 430 output tokens and visit 2 used 4,230 and 305. The model share fell to under $0.001 per check, and the total stays about $0.065 because Textract is most of it.
+
 At list price one check costs about $0.065, which is about 4 pesos at 58 pesos per dollar (assumed rate). The Textract Forms pass is $0.05 of that, the Textract text pass is about $0.015, and Claude Haiku 5.5 is under $0.002. One question to the assistant costs about $0.0002. Lambda, API Gateway, S3 and DynamoDB add less than $0.001 per check (estimated from 512 MB for 20 seconds, not measured).
 
 The prices are $0.0015 per page for text and $0.05 per page for Forms (AWS Textract pricing page, US West Oregon, which does not show Singapore) and $0.10 per million input tokens and $0.50 per million output tokens for Haiku 5.5 (Anthropic list price, and the Bedrock price was not checked). The token counts are from one run, so treat them as a sample.
 
 The specimen application form is one page. A three-page form would cost about $0.17 per check, which is about 10 pesos (assumed page count). A case costs one check per visit, and the demo case takes two.
 
-The BSO said on Nov 12 that an average month has 35 complete applications and a Q4 month has 50 to 60 (BSO-stated, and the scope of that count is not stated). At two checks each, 35 applications cost about 280 pesos a month and 60 cost about 480 pesos. The 350 applications from the kickoff (BPI-stated, period not stated) would cost about 2,800 pesos. Cloud cost is not the constraint. The limits that matter are the Textract rate limit and the 30 second API Gateway timeout (see the section on what is not verified).
+The BSO said on Nov 12 that an average month has 35 complete applications and a Q4 month has 50 to 60 (BSO-stated, and the scope of that count is not stated). At two checks each, 35 applications cost about 280 pesos a month and 60 cost about 480 pesos. The 350 applications from the kickoff (BPI-stated, period not stated) would cost about 2,800 pesos. Cloud cost is not the constraint. The limit that matters is the Textract rate limit. The check now has its own function URL, so the 30 second API Gateway timeout no longer applies to it (see the section on what is not verified).
 
 ## Data handling
 
