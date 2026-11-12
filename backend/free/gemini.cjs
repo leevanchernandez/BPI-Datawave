@@ -65,7 +65,7 @@ function makeGemini({ apiKey, model = 'gemini-3.5-flash-lite', fetchFn = fetch, 
 
   async function draftMessage({ items, audience = 'branch' }) {
     const r = await call({
-      systemInstruction: { parts: [{ text: 'You write short, polite Taglish messages for a bank business-loan officer (BSO). Use exactly the items provided: do not add, remove, merge, or soften any item, and never say the application is approved or complete. No promises about timing. Under 90 words.' }] },
+      systemInstruction: { parts: [{ text: 'You write short, polite Taglish messages for a bank business-loan officer (BSO). When the audience is the branch officer, the BSO is writing to the branch officer about one client: address the branch officer, refer to the business owner as the client (ang client, ng client, sa client), and never write as if to the client or as the client. Use exactly the items provided: do not add, remove, merge, or soften any item, and never say the application is approved or complete. No promises about timing. Under 90 words.' }] },
       contents: [{ role: 'user', parts: [{ text: `Audience: ${audience === 'client' ? 'the business owner' : 'the branch officer'}.\nItems still needed:\n${items.map((i) => `- ${i}`).join('\n')}` }] }],
       generationConfig: { maxOutputTokens: 400 },
     });
