@@ -133,7 +133,10 @@ export function makeApi({ store, llm, now = () => new Date(), demoKey, aws = nul
       const ids = (await store.list()).filter((id) => ID.test(id)).slice(0, MAX_LIST);
       const cases = (await Promise.all(ids.map((id) => store.get(id)))).filter(Boolean).map((c) => {
         const o = openItems(c.events), r = c.referral;
-        return { id: r.id, business: r.business, type: r.type, industry: r.industry, amount: r.amount, status: statusOf(c.events), open: o.defects.length + o.needsReview.length, updated: (c.events[c.events.length - 1] || {}).at || null };
+        // A handed-off case was complete at the first handoff if the BSO never returned it.
+        const h = c.events.findIndex((e) => e.type === 'handed_off');
+        const firstHandoff = h < 0 ? null : c.events.slice(h).some((e) => e.type === 'returned') ? 'returned' : 'complete';
+        return { id: r.id, business: r.business, type: r.type, industry: r.industry, amount: r.amount, status: statusOf(c.events), open: o.defects.length + o.needsReview.length, updated: (c.events[c.events.length - 1] || {}).at || null, firstHandoff };
       });
       cases.sort((a, b) => String(b.updated).localeCompare(String(a.updated)));
       return json(200, { cases });

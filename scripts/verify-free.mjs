@@ -226,6 +226,8 @@ assert.equal((await lesson({ action: 'retire', by: 'BSO', lessonId: draft.id }))
   assert.ok(r.body.cases.length >= 1 && r.body.cases.every((c) => /^RF-\d{4}-\d{3}$/.test(c.id) && typeof c.status === 'string' && Number.isInteger(c.open)), JSON.stringify(r.body));
   const elena = r.body.cases.find((c) => c.id === 'RF-2026-042');
   assert.ok(elena && elena.business === REF.business);
+  assert.equal(elena.firstHandoff, 'returned', 'Elena was returned after her first handoff');
+  assert.equal(r.body.cases.find((c) => c.id === 'RF-2026-043').firstHandoff, null, 'never handed off');
 }
 
 { // 13. a model outage sends the ID page to a person, and the case cannot pass
