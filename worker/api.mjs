@@ -275,7 +275,7 @@ export function makeApi({ store, llm, now = () => new Date(), demoKey, aws = nul
         const a = await r.json().catch(() => null);
         if (r.status !== 200 || !a) return json(502, { error: 'The assistant is not available. Please ask the BSO.' });
         out = a; model = a.model || 'Amazon Bedrock';
-      } else out = await llm.ask(q.trim(), handlers);
+      } else { try { out = await llm.ask(q.trim(), handlers); } catch { return json(502, { error: 'The assistant is not available. Please ask the BSO.' }); } }
       const raw = String(out.answer || '').replace(/\*\*?|__/g, '').trim(); // plain text on screen
       const answer = raw && raw.length <= 1500 && !FORBIDDEN.test(raw) ? raw : 'Hindi ko masagot nang tiyak. Pakitanong sa BSO.';
       return json(200, { answer, handoff: out.handoff || answer !== out.answer, trace: out.trace, model });
