@@ -9,5 +9,5 @@
   "durable_objects": { "bindings": [{ "name": "QUOTA", "class_name": "Quota" }] },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Quota"] }],
   "kv_namespaces": [{ "binding": "CASES", "id": "81cfd7da1e0f481fa523d2afec067e27" }],
-  "vars": { "GEMINI_MODEL": "gemini-3.5-flash-lite", "AWS_API_URL": "https://7ye3pqs8h4.execute-api.ap-southeast-1.amazonaws.com" }
+  "vars": { "GEMINI_MODEL": "gemini-3.5-flash-lite", "AWS_API_URL": "https://7ye3pqs8h4.execute-api.ap-southeast-1.amazonaws.com", "AWS_CHECK_URL": "https://2zl4dqe74nxd7bwkc4bphuy7ju0voqls.lambda-url.ap-southeast-1.on.aws/" }
 }
