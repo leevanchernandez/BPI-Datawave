@@ -277,6 +277,15 @@ assert.equal((await lesson({ action: 'retire', by: 'BSO', lessonId: draft.id }))
   assert.deepEqual(hit, ['a', 'b', 'b'], 'the used-up model is not called again');
 }
 
+{ // 15. a model that hangs goes to the next model
+  const { makeGemini } = require('../backend/free/gemini.cjs');
+  const hit = [];
+  const fetchFn = async (url) => { const m = url.split('/models/')[1].split(':')[0]; hit.push(m); if (m === 'a') throw new DOMException('timed out', 'TimeoutError'); return Response.json({ candidates: [{ content: { parts: [{ text: '{"amount":7}' }] } }] }); };
+  const g = makeGemini({ apiKey: 'x', model: 'a, b', fetchFn, sleep: async () => {} });
+  assert.deepEqual(await g.intake('7 pesos'), { amount: 7 });
+  assert.deepEqual(hit, ['a', 'b'], 'a timeout is not retried on the same model');
+}
+
 console.log('free-stack API checks passed');
 
 if (process.env.GEMINI_API_KEY) {

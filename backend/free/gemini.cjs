@@ -15,8 +15,8 @@ function makeGemini({ apiKey, model = 'gemini-3.5-flash-lite', fetchFn = fetch, 
     for (let m = current; m < models.length; m++) {
       for (let attempt = 0; attempt < 3; attempt++) {
         let res;
-        try { res = await fetchFn(`${BASE}/${models[m]}:generateContent`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey }, body: JSON.stringify(body) }); }
-        catch (e) { last = 'network'; await sleep(800 * (attempt + 1)); continue; }
+        try { res = await fetchFn(`${BASE}/${models[m]}:generateContent`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey }, body: JSON.stringify(body), signal: AbortSignal.timeout(20000) }); }
+        catch (e) { if (e.name === 'TimeoutError') { last = 'timeout'; break; } last = 'network'; await sleep(800 * (attempt + 1)); continue; } // a hung model goes to the next one
         if (res.ok) { current = m; return res.json(); }
         const t = (await res.text().catch(() => '')).replace(/\s+/g, ' ');
         last = `${res.status} ${t.slice(0, 160)}`;
