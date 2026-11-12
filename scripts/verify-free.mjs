@@ -249,6 +249,8 @@ assert.equal((await lesson({ action: 'retire', by: 'BSO', lessonId: draft.id }))
   assert.equal(r.status, 200, JSON.stringify(r.body));
   assert.match(r.body.answer, /PCAB license/, 'construction corporation rows come from the rules');
   assert.ok(r.body.trace[0].bad.error, 'an unknown structure is not answered');
+  const unsaved = await call('POST', '/api/ask', { id: 'RF-2026-799', question: 'general: ano requirements ng corporation sa construction?' });
+  assert.equal(unsaved.status, 200, 'an unsaved case still gets general questions');
 }
 
 { // 11c. a model that is down gives a plain message, not a server error

@@ -276,8 +276,15 @@ export function makeApi({ store, llm, now = () => new Date(), demoKey, aws = nul
       if (refuseCredit(q)) return json(200, { answer: 'Hindi ko masasagot iyan. Ang Credit ang nagdedesisyon sa approval. Ang kaya kong sabihin: ano pa ang kulang at ano ang status.', handoff: true, trace: [{ rule: 'refuse_credit_question' }], model: null });
       const onAws = useAws(b.stack);
       if (!llm && !onAws) return json(503, { error: 'no model configured' });
-      const c = await store.get(b.id); if (!c) return json(404, { error: 'unknown referral' });
-      const handlers = {
+      const c = await store.get(b.id);
+      // an unsaved case can still get general requirement questions
+      const handlers = !c ? {
+        get_heads_up: async () => ({ reminders: [] }),
+        get_status: async () => ({ status: 'Not saved yet', next: 'Fill the form and save the case first.' }),
+        get_lacking: async () => ({ checked: false }),
+        get_requirements: async (i) => requirementsFor(i),
+        get_checklist: async () => null,
+      } : {
         get_heads_up: async () => ({ reminders: shown((await lessons()).list, c.referral).map((l) => l.text) }),
         get_status: async () => { const status = statusOf(c.events), o = openItems(c.events); return { status, next: status === 'Missing requirements' && !o.defects.length ? 'May items na titingnan ng tao sa branch (toCheck). Hindi ito kailangang kunin sa client.' : NEXT[status] || null }; },
         get_lacking: async () => { const o = openItems(c.events); return o.checked ? { missing: o.defects.map((d) => d.message), toCheck: o.needsReview.map((d) => d.message) } : { checked: false }; },
