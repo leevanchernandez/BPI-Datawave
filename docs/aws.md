@@ -82,6 +82,17 @@ The live page reads on this backend when the address has `?stack=aws` (for examp
 - The note intake runs on Claude through the `/ask` function (`POST /ask { intake }`), so it needed no new API route. Three notes were tried on 2026-11-12. The Elena note filled all eight stated fields in 3.6 to 5.2 seconds. A vague note about a corporation filled the structure, industry and amount and left the names empty. A note with an instruction to change the owner and say the loan is approved filled the real client's name only. Three notes are a smoke test and not a measurement.
 - A full run was recorded in Chrome on case `RF-2026-043` (note, save, visit 1 with 2 problems, visit 2 "Ready for BSO review", hand-off, one question and one refused approval question).
 
+## Form fill from the branch's note (2026-11-13)
+
+`scripts/eval-intake.mjs` sends 20 synthetic Taglish and English notes to the live `/api/intake` and scores each field against what the note says. The team wrote the notes and the answers, so this measures our own notes, not real branch notes. A field the note leaves unclear (the industry of a water refilling station, for example) is not scored. A missed field is left empty for the branch to type. A wrong field is the one that matters, because the branch could save it without noticing.
+
+| Stack | Fields scored | Correct | Wrong | Missed |
+|---|---|---|---|---|
+| AWS (Claude Haiku 5.5 on Bedrock) | 135 | 130 | 0 | 5 |
+| Free (Gemini Flash-Lite) | 135 | 111 | 0 | 24 |
+
+The first AWS run had 2 wrong names ("Mang Tonyo Reyes" and "Engr. Carlo Mendoza"). `cleanIntake` now drops a title before a name, and the run above is after that fix. Most free-stack misses are the business name. Run it with `DEMO_KEY=<key> STACK=aws node scripts/eval-intake.mjs` from `app/`.
+
 ## NOT verified
 
 - Textract accuracy on real phone photos, handwriting (English only) and Filipino names. Only the synthetic specimens were read, clean and with simulated photo damage.

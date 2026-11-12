@@ -209,6 +209,7 @@ assert.equal((await lesson({ action: 'retire', by: 'BSO', lessonId: draft.id }))
   assert.equal((await call('POST', '/api/intake', { text: 'x'.repeat(1001) })).status, 400);
   assert.equal((await call('POST', '/api/intake', { text: note, stack: 'aws' })).status, 503, 'no AWS backend on this deployment');
   fakeLlm.intakeOut = { secured: false, bpiAccount: false }; assert.deepEqual((await call('POST', '/api/intake', { text: 'Si Elena Santos, sole prop, 750k' })).body.fields, {}, 'a box the note never mentions stays as it was');
+  fakeLlm.intakeOut = { name: 'Engr. Carlo Mendoza' }; assert.deepEqual((await call('POST', '/api/intake', { text: 'Signatory si Engr. Carlo Mendoza' })).body.fields, { name: 'Carlo Mendoza' }, 'a title before the name is dropped');
   fakeLlm.intakeOut = null; assert.deepEqual((await call('POST', '/api/intake', { text: note })).body.fields, {});
   const sent = [];
   const awsFetch = async (url, init) => { sent.push({ url, key: init.headers['x-demo-key'], body: JSON.parse(init.body) }); return Response.json({ fields: { name: 'Elena Santos', spouseName: 'Somebody Else', amount: -5 }, model: 'bedrock-model' }); };

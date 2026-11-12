@@ -35,12 +35,14 @@ const INTAKE_SCHEMA = {
     bpiAccount: { type: 'boolean', description: 'true when the note says the business account is with BPI' },
   },
 };
+const TITLES = /^((mang|aling|engr|atty|dr|mr|mrs|ms|sir|ma'?am|pres|kuya|ate)\.?\s+)+/i;
 /** Keeps the intake fields that pass the rules. A name is kept only when every word of it is in the note. */
 function cleanIntake(o, note) {
   const out = {}, words = new Set(String(note).toLowerCase().split(/[^a-z0-9ñ'&]+/));
   if (!o || typeof o !== 'object') return out;
   for (const k of ['business', 'name', 'spouseName']) {
-    const v = typeof o[k] === 'string' ? o[k].trim() : '';
+    let v = typeof o[k] === 'string' ? o[k].trim() : '';
+    if (k !== 'business') v = v.replace(TITLES, '');
     if (v && v.length <= 120 && v.toLowerCase().split(/[^a-z0-9ñ'&]+/).filter(Boolean).every((w) => words.has(w))) out[k] = v;
   }
   if (INTAKE_TYPES.includes(o.type)) out.type = o.type;
