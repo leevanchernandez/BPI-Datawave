@@ -258,18 +258,21 @@ if (role === 'bso') {
   $('b-drafts').onsubmit = (e) => { e.preventDefault(); const f = e.target; lesson({ lessonId: f.dataset.lesson, action: 'publish', text: f.querySelector('textarea').value, scope: f.querySelector('select').value }); };
   $('b-drafts').onclick = (e) => { if (e.target.dataset.discard) lesson({ lessonId: e.target.dataset.discard, action: 'retire' }); };
   $('b-headsup').onclick = (e) => { if (e.target.dataset.retire) lesson({ lessonId: e.target.dataset.retire, action: 'retire' }); };
-  $('b-ask').onclick = async () => {
-    $('b-answer').textContent = 'Asking';
-    try {
-      const v = await api('POST', '/api/ask', { id: caseId(), question: $('b-q').value });
-      $('b-answer').innerHTML = `<div class="message">${esc(v.answer)}</div>${v.handoff ? '<p class="note">The assistant handed this to a person.</p>' : ''}`;
-      $('b-trace-box').classList.remove('hidden');
-      $('b-trace').textContent = (v.trace || []).map((t) => (t.rule ? `rule: ${t.rule} (the model was not asked)` : `tool: ${t.tool}\n${JSON.stringify(t.result, null, 1)}`)).join('\n\n') + (v.model ? `\n\nmodel: ${v.model}` : '');
-    } catch (e) { $('b-answer').textContent = e.message; }
-  };
   window.addEventListener('focus', () => { document.title = 'Counter Check'; });
   $('b-open').onclick();
 }
+
+// The ask box is shared by both views.
+if (role === 'bm') $('bm-right').append($('ask-box'));
+$('b-ask').onclick = async () => {
+  $('b-answer').textContent = 'Asking';
+  try {
+    const v = await api('POST', '/api/ask', { id: caseId(), question: $('b-q').value });
+    $('b-answer').innerHTML = `<div class="message">${esc(v.answer)}</div>${v.handoff ? '<p class="note">The assistant handed this to a person.</p>' : ''}`;
+    $('b-trace-box').classList.remove('hidden');
+    $('b-trace').textContent = (v.trace || []).map((t) => (t.rule ? `rule: ${t.rule} (the model was not asked)` : `tool: ${t.tool}\n${JSON.stringify(t.result, null, 1)}`)).join('\n\n') + (v.model ? `\n\nmodel: ${v.model}` : '');
+  } catch (e) { $('b-answer').textContent = e.message; }
+};
 
 function alertInline(msg) {
   let el = document.getElementById('flash');
