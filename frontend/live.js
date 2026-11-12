@@ -145,7 +145,9 @@ if (role === 'bm') {
     return c;
   }
   let counter = 0;
+  const markStale = (text = 'These results are from the last check. The photos changed since then, so press Check documents again.') => { if ($('result').classList.contains('hidden')) return; $('stale').textContent = text; $('stale').classList.remove('hidden'); };
   async function addFiles(files) {
+    markStale();
     for (const file of files) {
       const p = { n: ++counter, file, url: URL.createObjectURL(file), lines: null, status: 'Reading', label: '' };
       pages.push(p); renderPages();
@@ -165,7 +167,7 @@ if (role === 'bm') {
     $('run-check').disabled = !lastView || pages.some((x) => !x.lines);
   }
   $('files').onchange = (e) => { addFiles([...e.target.files]); e.target.value = ''; };
-  $('clear-pages').onclick = () => { pages.forEach((p) => URL.revokeObjectURL(p.url)); pages.splice(0); counter = 0; renderPages(); $('run-check').disabled = true; };
+  $('clear-pages').onclick = () => { pages.forEach((p) => URL.revokeObjectURL(p.url)); pages.splice(0); counter = 0; renderPages(); $('run-check').disabled = true; markStale(); };
   function renderPages() {
     $('pages').innerHTML = pages.map((p) => `<div class="page" data-page="${p.n}"><img src="${p.url}" alt="Page ${p.n}">
       <div class="row" style="margin-top:4px"><strong>Page ${p.n}</strong><span class="soft">${esc(p.status)}</span></div>
@@ -202,6 +204,7 @@ if (role === 'bm') {
   };
 
   function renderResult(v) {
+    $('stale').classList.add('hidden');
     loadCases();
     lastView = v;
     renderChecklist(v);
@@ -235,7 +238,7 @@ if (role === 'bm') {
   $('handoff').onclick = async () => { try { const nv = await api('POST', '/api/event', { id: caseId(), type: 'handed_off', by: 'BM' }); renderResult({ ...lastView, ...nv }); } catch (e) { alertInline(e.message); } };
 
   // load an existing case if there is one
-  (async () => { try { const v = await api('GET', `/api/case?id=${encodeURIComponent(caseId())}`); fillForm(v.referral); renderChecklist(v); lastView = v; if (v.open.checked) renderResult(v); } catch { /* new case */ } })();
+  (async () => { try { const v = await api('GET', `/api/case?id=${encodeURIComponent(caseId())}`); fillForm(v.referral); renderChecklist(v); lastView = v; if (v.open.checked) { renderResult(v); markStale('These results are from the last saved check. Photos are not kept after a refresh, so add them again and press Check documents to update.'); } } catch { /* new case */ } })();
   function fillForm(r) { $('f-business').value = r.business; $('f-name').value = r.name; $('f-type').value = r.type; $('f-industry').value = r.industry; $('f-amount').value = r.amount; $('f-civil').value = r.civilStatus; $('f-spouse').value = r.spouseName || ''; $('f-secured').checked = !!r.secured; $('f-bpi').checked = r.bpiAccount !== false; }
 }
 
