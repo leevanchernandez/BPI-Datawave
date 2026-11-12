@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Counter Check</title>
+<link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -109,6 +110,7 @@
   .bubble.wait { color: var(--color-ink-soft); }
   .composer { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-2); align-items: end; margin-top: var(--space-3); }
   .tablewrap { overflow-x: auto; }
+  #bm-right table.cases th:last-child, #bm-right table.cases td:last-child { display: none; }
   .counts { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
   table.cases td { white-space: nowrap; vertical-align: middle; }
   table.cases tbody tr { cursor: pointer; }
@@ -134,7 +136,7 @@
       </div>
       <div class="log" id="chat-log" aria-live="polite"></div>
       <div class="composer">
-        <textarea id="chat-in" rows="3" maxlength="1000" aria-label="Message to the assistant">Si Elena Santos, may-ari ng Elena's Artisan Bakery, sole prop, food business. 750k ang loan. Married kay Ramon Santos, may BPI account.</textarea>
+        <textarea id="chat-in" rows="5" maxlength="1000" aria-label="Message to the assistant">Si Elena Santos, may-ari ng Elena's Artisan Bakery, sole prop, food business. 750k ang loan. Married kay Ramon Santos, may BPI account.</textarea>
         <button id="chat-send">Send</button>
       </div>
       <p class="soft" id="chat-hint">Tell it what the client said. It fills the form below, and you check it before you save. The note here is a sample.</p>
