@@ -18,7 +18,7 @@ const { refuseCredit, FORBIDDEN, cleanIntake, INTAKE_MAX } = guardsMod;
 const ID = /^RF-\d{4}-\d{3}$/;
 const TYPES = ['Sole proprietorship', 'Partnership', 'Corporation'];
 const MAX_PAGES = 20, MAX_LINES = 300, MAX_LINE = 300;
-const MAX_LIST = 200; // ponytail: one read per case. Keep a summary in the KV metadata if the list grows past this.
+const MAX_LIST = 200; // ponytail: the list reads every case (up to 1,000 ids). Keep a summary in the KV metadata if that gets slow.
 const EVENT_TYPES = new Set(['cleared', 'waived', 'handed_off', 'draft_approved', 'special_case', 'returned', 'endorsed']);
 const str = (v, max) => typeof v === 'string' && v.trim().length > 0 && v.length <= max;
 
@@ -141,7 +141,7 @@ export function makeApi({ store, llm, now = () => new Date(), demoKey, aws = nul
     },
     // Every case with its status, newest first, for the BSO's list.
     'GET /api/cases': async () => {
-      const ids = (await store.list()).filter((id) => ID.test(id)).slice(0, MAX_LIST);
+      const ids = (await store.list()).filter((id) => ID.test(id));
       const cases = (await Promise.all(ids.map((id) => store.get(id)))).filter(Boolean).map((c) => {
         const o = openItems(c.events), r = c.referral;
         // After the first handoff: 'returned' if the BSO ever sent it back, 'complete' if endorsed with no return, else 'pending'.
@@ -149,8 +149,8 @@ export function makeApi({ store, llm, now = () => new Date(), demoKey, aws = nul
         const firstHandoff = h < 0 ? null : after.some((e) => e.type === 'returned') ? 'returned' : after.some((e) => e.type === 'endorsed') ? 'complete' : 'pending';
         return { id: r.id, business: r.business, type: r.type, industry: r.industry, amount: r.amount, status: statusOf(c.events), open: o.defects.length + o.needsReview.length, updated: (c.events[c.events.length - 1] || {}).at || null, firstHandoff };
       });
-      cases.sort((a, b) => String(b.updated).localeCompare(String(a.updated)));
-      return json(200, { cases });
+      cases.sort((a, b) => String(b.updated || '').localeCompare(String(a.updated || '')));
+      return json(200, { cases: cases.slice(0, MAX_LIST) });
     },
     'GET /api/case': async (req) => {
       const id = new URL(req.url).searchParams.get('id');
@@ -279,7 +279,7 @@ export function makeApi({ store, llm, now = () => new Date(), demoKey, aws = nul
       const c = await store.get(b.id); if (!c) return json(404, { error: 'unknown referral' });
       const handlers = {
         get_heads_up: async () => ({ reminders: shown((await lessons()).list, c.referral).map((l) => l.text) }),
-        get_status: async () => { const status = statusOf(c.events); return { status, next: NEXT[status] || null }; },
+        get_status: async () => { const status = statusOf(c.events), o = openItems(c.events); return { status, next: status === 'Missing requirements' && !o.defects.length ? 'May items na titingnan ng tao sa branch (toCheck). Hindi ito kailangang kunin sa client.' : NEXT[status] || null }; },
         get_lacking: async () => { const o = openItems(c.events); return o.checked ? { missing: o.defects.map((d) => d.message), toCheck: o.needsReview.map((d) => d.message) } : { checked: false }; },
         get_requirements: async (i) => requirementsFor(i),
         get_checklist: async () => checklist(c.referral).map((r) => ({ requirement: r.title, why: r.reason || (r.when.type ? `for a ${c.referral.type.toLowerCase()}` : 'all cases'), source: r.sourceTitle })),

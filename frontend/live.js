@@ -36,6 +36,10 @@ function navLinks() {
   $(role === 'bm' ? 'nav-bm' : 'nav-bso').setAttribute('aria-current', 'page');
 }
 for (const id of role === 'bm' ? ['bm-left', 'bm-right'] : ['bso-left', 'bso-right']) $(id).classList.remove('hidden');
+// a branch link without a case number gets its own random one, so visitors do not share a case
+const freshCase = role === 'bm' && !params.get('id');
+const randomId = () => `RF-2026-${300 + Math.floor(Math.random() * 500)}`;
+if (freshCase) { params.set('id', randomId()); history.replaceState(null, '', `?${params}`); }
 if (params.get('id')) { $('f-id').value = params.get('id'); $('b-id').value = params.get('id'); }
 navLinks();
 
@@ -263,17 +267,16 @@ if (role === 'bm') {
   }
   $('handoff').onclick = async () => { try { const nv = await api('POST', '/api/event', { id: caseId(), type: 'handed_off', by: 'BM' }); renderResult({ ...lastView, ...nv }); } catch (e) { alertInline(e.message); } };
 
-  // a link without a case number gets an unused one, so visitors do not share a case
-  async function freshId() {
-    for (let i = 0; i < 5; i++) {
-      const id = `RF-2026-${300 + Math.floor(Math.random() * 500)}`;
-      if ((await fetch(`/api/case?id=${id}`, { headers: { 'x-demo-key': demoKey } })).status === 404) return id;
-    }
-    return caseId();
-  }
   // load an existing case if there is one
   (async () => {
-    if (!params.get('id')) { const id = await freshId(); $('f-id').value = $('b-id').value = id; history.replaceState(null, '', `?id=${id}${stackQuery}`); navLinks(); return; }
+    if (freshCase) { // pick another number if this one is taken
+      for (let i = 0; i < 5; i++) {
+        const r = await fetch(`/api/case?id=${caseId()}`, { headers: { 'x-demo-key': demoKey } }).catch(() => null);
+        if (!r || r.status !== 200) return;
+        params.set('id', randomId()); history.replaceState(null, '', `?${params}`); $('f-id').value = $('b-id').value = params.get('id'); navLinks();
+      }
+      return;
+    }
     try { const v = await api('GET', `/api/case?id=${encodeURIComponent(caseId())}`); fillForm(v.referral); renderChecklist(v); lastView = v; if (v.open.checked) { renderResult(v); markStale('These results are from the last saved check. Photos are not kept after a refresh, so add them again and press Check documents to update.'); } } catch { /* new case */ } })();
   function fillForm(r) { $('f-business').value = r.business; $('f-name').value = r.name; $('f-type').value = r.type; $('f-industry').value = r.industry; $('f-amount').value = r.amount; $('f-civil').value = r.civilStatus; $('f-spouse').value = r.spouseName || ''; $('f-secured').checked = !!r.secured; $('f-bpi').checked = r.bpiAccount !== false; }
 }
@@ -340,7 +343,7 @@ if (role === 'bso') {
     } catch (e) { $('b-summary').innerHTML = `<p class="soft">${esc(e.message)}</p>`; $('b-endorse').disabled = $('b-return-btn').disabled = true; }
   }
   $('b-q').value = `Ano pa ang kulang sa ${caseId()}?`;
-  $('b-open').onclick = () => { loadCases(); navLinks(); $('b-q').value = `Ano pa ang kulang sa ${caseId()}?`; load(); if (!timer) timer = setInterval(() => document.hidden || load(), 4000); }; // skips polling in a hidden tab
+  $('b-open').onclick = () => { loadCases(); navLinks(); $('b-q').value = `Ano pa ang kulang sa ${caseId()}?`; load(); if (!timer) { let tick = 0; timer = setInterval(() => { if (!document.hidden || ++tick % 5 === 0) load(); }, 4000); } }; // every 20 seconds in a hidden tab
   $('b-approve').onclick = async () => { try { await api('POST', '/api/event', { id: caseId(), type: 'draft_approved', by: 'BSO' }); load(); } catch (e) { alertInline(e.message); } };
   $('b-id').addEventListener('input', () => { $('b-endorse').disabled = $('b-return-btn').disabled = true; });
   $('b-endorse').onclick = async () => { try { await api('POST', '/api/event', { id: caseId(), type: 'endorsed', by: 'BSO' }); load(); loadCases(); } catch (e) { alertInline(e.message); } };
@@ -355,7 +358,7 @@ if (role === 'bso') {
   window.addEventListener('focus', () => { document.title = 'Counter Check'; });
   // without a case number, open the newest case that is with the BSO
   if (params.get('id')) $('b-open').onclick();
-  else api('GET', '/api/cases').then(({ cases }) => { const c = cases.find((x) => x.status === 'With BSO') || cases[0]; if (c) $('b-id').value = c.id; }).catch(() => {}).finally(() => $('b-open').onclick());
+  else { const start = $('b-id').value; api('GET', '/api/cases').then(({ cases }) => { const c = cases.find((x) => x.status === 'With BSO') || cases[0]; if (c && $('b-id').value === start) { $('b-id').value = c.id; history.replaceState(null, '', `?role=bso&id=${c.id}${stackQuery}`); } }).catch(() => {}).finally(() => $('b-open').onclick()); }
 }
 
 $('b-ask').onclick = async () => {
