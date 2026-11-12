@@ -195,6 +195,15 @@ if (role === 'bm') {
     $('run-check').disabled = !lastView || pages.some((x) => !x.lines);
   }
   $('files').onchange = (e) => { addFiles([...e.target.files]); e.target.value = ''; };
+  // the synthetic specimens, as the branch would photograph them on each visit
+  const PAPERS = ['02-owner-id-front', '03-owner-id-back', '04-spouse-id-front', '05-dti-page-1', '08-bank-statement', '09-bir-cor', '10-mayors-permit', '11-client-authorization-letter'];
+  const SAMPLES = { 1: ['01-application-form-first-visit', ...PAPERS], 2: ['01b-application-form-corrected', ...PAPERS, '05b-dti-page-2'] };
+  for (const v of [1, 2]) $(`sample-${v}`).onclick = async () => {
+    try {
+      const files = await Promise.all(SAMPLES[v].map(async (f) => new File([await (await fetch(`specimens/${f}.png`)).blob()], `${f}.png`, { type: 'image/png' })));
+      $('clear-pages').onclick(); addFiles(files);
+    } catch { alertInline('The sample papers could not load.'); }
+  };
   $('clear-pages').onclick = () => { pages.forEach((p) => URL.revokeObjectURL(p.url)); pages.splice(0); counter = 0; renderPages(); $('run-check').disabled = true; markStale(); };
   function renderPages() {
     $('pages').innerHTML = pages.map((p) => `<div class="page" data-page="${p.n}"><img src="${p.url}" alt="Page ${p.n}">
