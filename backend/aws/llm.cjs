@@ -113,7 +113,7 @@ const ASK_SYSTEM = 'You answer branch staff questions about loan referrals for a
 const noInput = { type: 'object', additionalProperties: false, properties: {} };
 /** Tools for one referral whose facts the caller already loaded, plus requirements for any profile. */
 const CASE_TOOLS = [
-  { name: 'get_status', description: 'Status of this referral.', input_schema: noInput },
+  { name: 'get_status', description: 'Status of this referral and the next step for the branch.', input_schema: noInput },
   { name: 'get_lacking', description: 'What is still missing or flagged for a person to check on this referral.', input_schema: noInput },
   { name: 'get_checklist', description: 'Initial requirements for this referral, each with its source.', input_schema: noInput },
   { name: 'get_heads_up', description: 'Reminders a BSO published for cases like this one. They are reminders, not requirements.', input_schema: noInput },

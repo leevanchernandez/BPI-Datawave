@@ -84,7 +84,7 @@ function makeGemini({ apiKey, model = 'gemini-3.5-flash-lite', fetchFn = fetch, 
 
   const TOOLS = [{ functionDeclarations: [
     { name: 'get_heads_up', description: 'Reminders a BSO published for cases like this one, from past returns. They are reminders, not requirements.', parameters: { type: 'object', properties: {} } },
-    { name: 'get_status', description: 'Status of this referral.', parameters: { type: 'object', properties: {} } },
+    { name: 'get_status', description: 'Status of this referral and the next step for the branch.', parameters: { type: 'object', properties: {} } },
     { name: 'get_lacking', description: 'What is still missing or flagged for a person to check on this referral.', parameters: { type: 'object', properties: {} } },
     { name: 'get_checklist', description: 'Initial requirements for this referral, each with its source.', parameters: { type: 'object', properties: {} } },
     { name: 'get_requirements', description: 'Initial requirements for any client profile, for general questions such as what a corporation needs. Not for this referral.', parameters: { type: 'object', required: ['type'], properties: { type: { type: 'string', enum: ['Sole proprietorship', 'Partnership', 'Corporation'] }, industry: { type: 'string' }, amount: { type: 'number' }, married: { type: 'boolean' }, secured: { type: 'boolean' }, bpiAccount: { type: 'boolean' } } } },

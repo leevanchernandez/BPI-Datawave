@@ -75,6 +75,16 @@ export function statusOf(events) {
   return s;
 }
 
+// The next step for each status, for the assistant to quote. It never gives a date.
+const NEXT = {
+  Draft: 'I-save ang case at i-upload ang mga papel, then press Check documents.',
+  'Missing requirements': 'Kunin sa client ang mga kulang, then check the documents again.',
+  'Ready for BSO review': 'Press Send to BSO.',
+  'With BSO': 'Nasa BSO na. Hintayin ang BSO review.',
+  'Returned by BSO': 'Ayusin ang sinabi ng BSO, then check the documents again before sending.',
+  'Endorsed to Credit': 'Nasa Credit na. Credit ang nagdedesisyon sa loan.',
+};
+
 /** aws: { url, key, checkUrl?, fetch? } for the AWS backend, or null. checkUrl is the check function's own URL, which has no 30 second gateway limit. */
 const MODEL_ROUTES = new Set(['/api/intake', '/api/check', '/api/ask']);
 // Per address per minute for all routes and for model routes, and per UTC day for the model calls of all addresses together.
@@ -269,7 +279,7 @@ export function makeApi({ store, llm, now = () => new Date(), demoKey, aws = nul
       const c = await store.get(b.id); if (!c) return json(404, { error: 'unknown referral' });
       const handlers = {
         get_heads_up: async () => ({ reminders: shown((await lessons()).list, c.referral).map((l) => l.text) }),
-        get_status: async () => ({ status: statusOf(c.events) }),
+        get_status: async () => { const status = statusOf(c.events); return { status, next: NEXT[status] || null }; },
         get_lacking: async () => { const o = openItems(c.events); return o.checked ? { missing: o.defects.map((d) => d.message), toCheck: o.needsReview.map((d) => d.message) } : { checked: false }; },
         get_requirements: async (i) => requirementsFor(i),
         get_checklist: async () => checklist(c.referral).map((r) => ({ requirement: r.title, why: r.reason || (r.when.type ? `for a ${c.referral.type.toLowerCase()}` : 'all cases'), source: r.sourceTitle })),
