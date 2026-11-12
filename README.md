@@ -68,7 +68,7 @@ A document checker that runs while the client is still at the counter, plus the 
 - `backend/rules.json` holds the requirements as data (illustrative, replace with the BPI guidebook).
 - `backend/checker.cjs` checks a scanned packet: missing documents and pages, ID sides, blank mandatory fields, name mismatches, expired permits. It abstains instead of guessing: unclear reads become "needs review", and "complete" is never reported while anything is open.
 - `backend/reconcile.cjs` compares a resubmission with the open lacking list and derives the status from events.
-- `backend/aws/` has the Textract and Bedrock adapters, `backend/lambda.cjs` the Lambda handlers, `infra/template.yaml` the SAM template. Nothing has been deployed or called against real AWS. See `docs/aws.md` for what is and is not verified.
+- `backend/aws/` has the Textract and Bedrock adapters, `backend/lambda.cjs` the Lambda handlers, `infra/template.yaml` the SAM template. It ran on the hackathon AWS account on 2026-11-12 through `scripts/deploy-cli.sh`. See `docs/aws.md` for what is and is not verified.
 - `frontend/counter-check.html` is an offline demo of the real checker on made-up packets. Serve `frontend/` and open it, no AWS needed.
 
 ```sh

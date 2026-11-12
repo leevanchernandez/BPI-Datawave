@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: BPI Datawave case agent backend. SYNTHETIC DATA ONLY until BPI compliance review. NOT YET DEPLOYED OR VALIDATED.
+Description: BPI Datawave case agent backend. SYNTHETIC DATA ONLY until BPI compliance review. The same resources ran on the hackathon account through scripts/deploy-cli.sh. This template has not been deployed through CloudFormation.
 
 # Region note: there is no Philippine region for Textract or Bedrock. Singapore (ap-southeast-1) has Textract;
 # Claude Haiku 5.5 reaches Singapore only through global cross-region inference (data may be processed elsewhere).
@@ -9,10 +9,9 @@ Description: BPI Datawave case agent backend. SYNTHETIC DATA ONLY until BPI comp
 Parameters:
   BedrockModelId:
     Type: String
-    Default: anthropic.claude-haiku-5-5
-    # UNVERIFIED: this default id and its availability. In ap-southeast-1, Haiku 5.5 is reported to be reachable only
-    # through a global cross-region inference profile, so pass that profile's id here (copy it from the Bedrock console,
-    # do not guess it). Sonnet 5 is reported to be available in-region. IAM below is scoped to this value.
+    Default: global.anthropic.claude-haiku-5-5
+    # Checked on the hackathon account on 2026-11-12. In ap-southeast-1, Haiku 5.5 answers through this global
+    # cross-region inference profile on the InvokeModel path. IAM below is scoped to this value.
     Description: Bedrock model id or inference profile id for Claude. Copy the exact id from the Bedrock console.
   DemoKey:
     Type: String
@@ -103,10 +102,10 @@ Resources:
             - Effect: Allow
               Action: [textract:DetectDocumentText, textract:AnalyzeDocument]
               Resource: '*'   # Textract has no resource-level permissions for these actions, so '*' is the only option
-            # Bedrock, scoped to BedrockModelId. UNVERIFIED: which IAM action and resource the Mantle (Messages API) endpoint
-            # checks, and the ARN form for a global profile (assumed to have an empty region, which bedrock:* matches).
-            # If calls fail with AccessDenied after model access is enabled, use the commented '*' line, read the denied
-            # ARN in CloudTrail, then narrow again.
+            # Bedrock, scoped to BedrockModelId. Checked on 2026-11-12 with the global Haiku 5.5 profile on the InvokeModel
+            # path. Roles made by scripts/deploy-cli.sh with these same three resources could call the model.
+            # If another model id fails with AccessDenied, use the commented '*' line, read the denied ARN in
+            # CloudTrail, then narrow again.
             - Effect: Allow
               Action: [bedrock:InvokeModel, bedrock:InvokeModelWithResponseStream]
               Resource:
@@ -126,10 +125,10 @@ Resources:
       Policies:
         - DynamoDBReadPolicy: { TableName: !Ref EventsTable }
         - Statement:
-            # Bedrock, scoped to BedrockModelId. UNVERIFIED: which IAM action and resource the Mantle (Messages API) endpoint
-            # checks, and the ARN form for a global profile (assumed to have an empty region, which bedrock:* matches).
-            # If calls fail with AccessDenied after model access is enabled, use the commented '*' line, read the denied
-            # ARN in CloudTrail, then narrow again.
+            # Bedrock, scoped to BedrockModelId. Checked on 2026-11-12 with the global Haiku 5.5 profile on the InvokeModel
+            # path. Roles made by scripts/deploy-cli.sh with these same three resources could call the model.
+            # If another model id fails with AccessDenied, use the commented '*' line, read the denied ARN in
+            # CloudTrail, then narrow again.
             - Effect: Allow
               Action: [bedrock:InvokeModel, bedrock:InvokeModelWithResponseStream]
               Resource:

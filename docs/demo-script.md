@@ -20,7 +20,7 @@ We catch the missing page, the blank TIN and the wrong-name ID while the client 
 1. Deploy `/check` against real Textract and run 60 printed and phone-photographed synthetic documents with labeled defects. Report recall, false-complete and review rate with ranges. This is the most important item.
 2. Measure real end-to-end seconds including upload.
 3. Run the Taglish test on real Bedrock with a BSO reading the drafts.
-4. Confirm hackathon AWS and Bedrock access (the team's open question for the consultation).
+4. Done on 2026-11-12. The hackathon AWS role reaches Bedrock and Textract, and the backend runs there (docs/aws.md).
 5. A shared store so the status is not one browser tab.
 6. Answers from consultation 2: why a branch officer would open the tool (KPI credit for complete referrals?), how branches submit today, baselines (period behind 350, share incomplete at first submission, cycles per referral).
 

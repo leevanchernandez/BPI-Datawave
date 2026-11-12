@@ -1,16 +1,17 @@
 'use strict';
-// Claude on Amazon Bedrock through the Anthropic SDK's Mantle client. The client is injectable for tests.
-// UNVERIFIED without AWS access: model id, region availability, IAM actions for the Mantle endpoint, and whether
-// hackathon credits cover Marketplace-billed Claude. See docs/aws.md.
+// Claude on Amazon Bedrock through the Anthropic SDK's Bedrock client (the InvokeModel path). The client is injectable for tests.
+// Checked on the hackathon account on 2026-11-12 in ap-southeast-1. The global Haiku 5.5 profile answers on this path.
+// The Mantle endpoint returned 404 for Haiku and 403 for Sonnet there, so it is not used.
+// Still unverified is whether hackathon credits cover Marketplace-billed Claude. See docs/aws.md.
 // Haiku 5.5 rules (Anthropic docs): no temperature/top_p, no assistant prefill, no forced tool_choice, thinking is adaptive.
 
 const { validDate } = require('../checker.cjs');
-const MODEL = process.env.BEDROCK_MODEL_ID || 'anthropic.claude-haiku-5-5';
+const MODEL = process.env.BEDROCK_MODEL_ID || 'global.anthropic.claude-haiku-5-5';
 const DOC_TYPES = ['application_form', 'gov_id', 'registration', 'business_permit', 'sanitary_permit', 'financials', 'audited_fs', 'bank_statements'];
 
 async function makeClient() {
-  const { AnthropicBedrockMantle } = await import('@anthropic-ai/bedrock-sdk');
-  return new AnthropicBedrockMantle({ awsRegion: process.env.BEDROCK_REGION || process.env.AWS_REGION });
+  const { AnthropicBedrock } = await import('@anthropic-ai/bedrock-sdk');
+  return new AnthropicBedrock({ awsRegion: process.env.BEDROCK_REGION || process.env.AWS_REGION });
 }
 
 const text = (msg) => (msg.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('');

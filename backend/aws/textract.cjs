@@ -2,9 +2,12 @@
 // Textract adapter. Returns plain objects; the client is injectable so tests need no AWS.
 // Confidence is 0..1 (Textract reports 0..100).
 
+// One shared client with adaptive retries. Synchronous Textract calls are rate limited per account, and the
+// hackathon account in ap-southeast-1 threw ProvisionedThroughputExceededException at 4 pages in parallel on 2026-11-12.
+let shared;
 async function defaultClient() {
   const { TextractClient } = require('@aws-sdk/client-textract'); // bundled in the Lambda nodejs runtime
-  return new TextractClient({ region: process.env.TEXTRACT_REGION || process.env.AWS_REGION });
+  return (shared ||= new TextractClient({ region: process.env.TEXTRACT_REGION || process.env.AWS_REGION, maxAttempts: 10, retryMode: 'adaptive' }));
 }
 
 /** bytes: Buffer of one page image/PDF page. Cheap pass for every page. */

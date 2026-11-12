@@ -206,8 +206,8 @@ const GOOD = ['form', 'idf', 'idb', 'reg', 'cor', 'permit', 'bank', 'cal'];
   const bad = await processPacket(REF, ['form', 'liarName', 'idb', 'reg', 'permit', 'itr', 'fin', 'bank'].map(page), deps, { today: TODAY });
   assert.doesNotThrow(() => marshall({ defects: bad.result.defects, needsReview: bad.result.needsReview }), 'events marshal without removeUndefinedValues');
 
-  const { AnthropicBedrockMantle } = await import('../backend/node_modules/@anthropic-ai/bedrock-sdk/index.mjs');
-  assert.equal(typeof new AnthropicBedrockMantle({ awsRegion: 'ap-southeast-1' }).messages.create, 'function');
+  const { AnthropicBedrock } = await import('../backend/node_modules/@anthropic-ai/bedrock-sdk/index.mjs');
+  assert.equal(typeof new AnthropicBedrock({ awsRegion: 'ap-southeast-1' }).messages.create, 'function');
 
   // ---- the real presigner (local signing only, dummy credentials, no network): the POST policy caps size and type ----
   Object.assign(process.env, { AWS_REGION: 'ap-southeast-1', AWS_ACCESS_KEY_ID: 'AKIDEXAMPLE', AWS_SECRET_ACCESS_KEY: 'dummy', UPLOAD_BUCKET: 'test-bucket', EVENTS_TABLE: 't', DEMO_KEY: KEY });

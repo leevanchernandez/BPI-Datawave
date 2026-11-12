@@ -1,10 +1,10 @@
 # AWS runbook
 
-What to do on the day AWS access arrives. Background and open questions are in docs/aws.md. Nothing here has been run against a real account yet.
+What to do on the day AWS access arrives. Background and open questions are in docs/aws.md. Steps 1, 2, 4, 5 and 6 were run on the hackathon account on 2026-11-12, with `scripts/deploy-cli.sh` in place of `scripts/deploy.sh`. The opt-out check and the teardown were not.
 
 ## Before any upload: Textract AI-services opt-out
 
-Unless the organization opts out, AWS may store and use content processed by Textract to improve its AI services. Opting out is an AWS Organizations policy, so it is set from the organization's management account. In BPI's account that is BPI's cloud admin, not the team. Ask them to confirm the policy is in place before the first upload, even though the uploads are synthetic.
+Unless the organization opts out, AWS may store and use content processed by Textract to improve its AI services. Opting out is an AWS Organizations policy, so it is set from the organization's management account. In BPI's account that is BPI's cloud admin, not the team. Ask them to confirm the policy is in place before the first upload, even though the uploads are synthetic. The hackathon participant role gets AccessDenied on `describe-effective-policy`, so the team cannot check it from its side.
 
 If the team does own the management account, these are the commands. Do not run them from a member account; they fail there.
 
@@ -25,7 +25,7 @@ aws organizations describe-effective-policy --policy-type AISERVICES_OPT_OUT_POL
 1. Tools. Install the AWS CLI v2 and the SAM CLI (`uv tool install aws-sam-cli`, `pipx install aws-sam-cli`, or the installer from the AWS docs), and have Node 22. Check with `aws --version`, `sam --version`, `node --version`.
 2. Credentials. If BPI gives IAM Identity Center access, run `aws configure sso` once, name the profile `bpi-demo`, then `aws sso login --profile bpi-demo`. If BPI gives access keys instead, run `aws configure --profile bpi-demo`. Then `export AWS_PROFILE=bpi-demo` and check with `aws sts get-caller-identity`.
 3. Opt-out. Confirm the Textract opt-out above is in place.
-4. Bedrock model access. In the Bedrock console, switch to Asia Pacific (Singapore), open the model access or model catalog page, and enable the chosen Claude model. Anthropic models can ask for a one-time use case form, and the first call may create an AWS Marketplace subscription. Copy the exact model or profile id from the console. Haiku 5.5 is reported to reach Singapore only through a global cross-region inference profile, so use that profile's id. Sonnet 5 is reported to be in-region. Both claims are unverified until the console shows them.
+4. Bedrock model access. In the Bedrock console, switch to Asia Pacific (Singapore), open the model access or model catalog page, and enable the chosen Claude model. Anthropic models can ask for a one-time use case form, and the first call may create an AWS Marketplace subscription. Copy the exact model or profile id from the console. On the hackathon account on 2026-11-12, `global.anthropic.claude-haiku-5-5` answered from Singapore on the InvokeModel path with no console step. The Mantle endpoint returned 404 for Haiku 5.5 and 403 for Sonnet 5, so the backend does not use it. Use the global profile id unless the console shows something else.
 5. Deploy.
    ```sh
    export AWS_REGION=ap-southeast-1
@@ -36,9 +36,10 @@ aws organizations describe-effective-policy --policy-type AISERVICES_OPT_OUT_POL
    scripts/deploy.sh
    ```
    The script checks the credentials, the region and Bedrock model access, then runs `sam build` and `sam deploy` and prints the stack outputs.
+   If the role cannot use CloudFormation (the hackathon participant role cannot), run `scripts/deploy-cli.sh` with the same four variables instead. It creates the same resources with plain CLI calls, prints the same two outputs, and can be rerun after a code change.
 6. Smoke test. `API_URL='<ApiUrl output>' node scripts/smoke.mjs` (DEMO_KEY is still exported). It checks that a wrong key gets 401, uploads the Elena specimens, runs `/check` for both visits, prints the defects and the drafted message, and asks one question. Each run calls Textract and Bedrock for real.
 7. Point the demo at it. The live demo (frontend/live.*) talks to the free stack's `/api/*` routes and sends OCR text from the browser. The AWS API takes uploads and page keys instead, so the page needs a small adapter before it can use this stack. That adapter is not built. Until then, record the smoke test output and the AWS console as the AWS path.
-8. Teardown after recording. `CONFIRM_TEARDOWN=counter-check-demo scripts/teardown.sh` empties the upload bucket, deletes the stack (functions, API, bucket, table) and the Lambda log groups. The `aws-sam-cli-managed-default` artifact stack is kept; delete it in CloudFormation if nothing else uses it.
+8. Teardown after recording. `CONFIRM_TEARDOWN=counter-check-demo scripts/teardown.sh` empties the upload bucket, deletes the stack (functions, API, bucket, table) and the Lambda log groups. The `aws-sam-cli-managed-default` artifact stack is kept; delete it in CloudFormation if nothing else uses it. For resources made by `scripts/deploy-cli.sh`, run `CONFIRM_TEARDOWN=counter-check-demo scripts/deploy-cli.sh teardown` instead. That mode has not been run yet.
 
 ## Troubleshooting
 
@@ -53,13 +54,15 @@ aws organizations describe-effective-policy --policy-type AISERVICES_OPT_OUT_POL
 | Browser shows a CORS error | REVIEW_ORIGIN does not match the page origin exactly (scheme, host, port, no trailing slash) | Redeploy with the right REVIEW_ORIGIN; the API and the bucket both use it |
 | `401 demo key required` | Missing or wrong `x-demo-key` header | Send the key used at deploy time |
 | S3 upload returns 403 | The presigned POST expired (5 minutes), the file is over 5 MB, or the file is not jpeg, png or pdf | Ask `/upload-url` again and upload right away |
-| `sam build` fails in the esbuild step | Backend dependencies missing | `npm --prefix backend ci`, then rerun |
+| `sam build` fails with "Cannot find esbuild" | Backend dependencies are missing, or esbuild is not on PATH | `npm --prefix backend ci`, then rerun. scripts/deploy.sh adds `backend/node_modules/.bin` to PATH |
+| `sam deploy` fails with AccessDenied on `cloudformation:CreateChangeSet` | The role has no CloudFormation rights | Use `scripts/deploy-cli.sh` |
+| `/check` returns 500 and the log shows `ProvisionedThroughputExceededException` | Textract's per-account rate limit for synchronous calls | The adapter already retries with adaptive backoff. If it still fails, lower CONCURRENCY in backend/pipeline.cjs |
 
 ## Services to request beyond the six
 
 The six requested services are Bedrock, Textract, Lambda, API Gateway, S3 and DynamoDB. A SAM deploy also needs these.
 
-- CloudFormation. SAM deploys through a stack and change sets, plus a small `aws-sam-cli-managed-default` stack for the artifact bucket.
+- CloudFormation. SAM deploys through a stack and change sets, plus a small `aws-sam-cli-managed-default` stack for the artifact bucket. The hackathon participant role does not have it, which is why `scripts/deploy-cli.sh` exists.
 - IAM role creation. SAM creates one execution role per function (`CAPABILITY_IAM`), so the deploying role needs to create, tag, update and pass roles.
 - CloudWatch Logs. Lambda writes its logs there; it is the only way to debug a failed call. Teardown deletes the log groups.
 - KMS with the default AWS managed keys. The upload bucket (SSE-KMS) and the table use the `aws/s3` and `aws/dynamodb` keys. No customer managed key is needed for the demo.

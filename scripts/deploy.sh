@@ -51,6 +51,7 @@ if [[ ${SKIP_BEDROCK_CHECK:-} != 1 ]]; then
   fi
 fi
 
+export PATH="$PWD/backend/node_modules/.bin:$PATH"   # sam build needs esbuild, and npm puts it here
 sam build -t infra/template.yaml --config-file "$CONFIG"
 mask() { while IFS= read -r line || [[ -n $line ]]; do printf '%s\n' "${line//"$DEMO_KEY"/****}"; done; }
 sam deploy --config-file "$CONFIG" --stack-name "$STACK" --region "$AWS_REGION" --no-confirm-changeset \
