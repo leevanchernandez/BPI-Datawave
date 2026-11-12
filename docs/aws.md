@@ -93,6 +93,8 @@ The live page reads on this backend when the address has `?stack=aws` (for examp
 
 The first AWS run had 2 wrong names ("Mang Tonyo Reyes" and "Engr. Carlo Mendoza"). `cleanIntake` now drops a title before a name, and the run above is after that fix. Most free-stack misses are the business name. Run it with `DEMO_KEY=<key> STACK=aws node scripts/eval-intake.mjs` from `app/`.
 
+Nico's 18 test cases (the team sheet "Testcases") also ran on both stacks on Nov 13. They found three faults, and all three are fixed. A correction such as "the amount is 850k, not 750k" used to clear the business and owner, a prompt-injection note got a made-up structure, industry and civil status from Haiku, and an empty note got the 1000-character error. A structure or civil status now needs a matching word in the note, and a note with two amounts and no correction leaves the amount empty. After the fixes all 18 match the expected result on the AWS stack, and the 20-note run above still has 0 wrong fields.
+
 ## NOT verified
 
 - Textract accuracy on real phone photos, handwriting (English only) and Filipino names. Only the synthetic specimens were read, clean and with simulated photo damage.
