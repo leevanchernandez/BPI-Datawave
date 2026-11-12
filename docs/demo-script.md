@@ -36,6 +36,19 @@ All documents are synthetic. Say that once on screen or in the voice-over.
 
 A silent real-time take of steps 1 to 7 was recorded on Nov 13 at about 6:05 AM with Playwright on case `RF-2026-051` (90 seconds at 1280 by 800, waits left in). It ends with the BSO pressing "Endorse to Credit" and the case list metric. The file is outside the repo, in Simonee's Downloads. A voice-over can go on top of it if a live take is not possible.
 
+Voice-over timed to that take. The times are read off the video in 5 second steps, so start each line on the change you see. All documents in it are synthetic.
+
+| Time | On screen | Voice-over |
+| --- | --- | --- |
+| 0 to 10 s | The note is sent and the form fills. The case is saved. | The branch types what the client said, in Taglish. The AI fills the form, and the branch checks it before saving. |
+| 10 to 35 s | Visit 1 photos go up and the check runs. | The branch photographs the papers at the counter. Textract reads every page, and the rules compare them with the checklist. This takes about 15 seconds. |
+| 35 to 40 s | Two problems and the drafted message appear. | It found a missing DTI page and a blank TIN while the client is still there. The follow-up is already drafted in Taglish. |
+| 40 to 50 s | "ano pa kulang?" is asked and answered. | The branch can ask what is still missing instead of calling the BSO. |
+| 50 to 65 s | Visit 2 photos go up and the check passes. | The client comes back with the missing page, and the case is ready for BSO review. |
+| 65 to 70 s | The branch presses "Send to BSO". | The branch hands it off, and both sides see the same status. |
+| 70 to 80 s | BSO view. "Approved na ba ito?" is refused. | The BSO sees every case in one list. The assistant refuses approval questions, because Credit decides the loan. |
+| 80 to 90 s | The BSO presses "Endorse to Credit", and the list shows the count. | The BSO endorses the complete packet to Credit. The list counts how many cases were endorsed with no return, which is the share complete the first time. |
+
 ## Voice-over for the slides after the demo
 
 These go with slides 5 to 8 of the Canva design "Counter Check prototype slides". Each takes about 30 to 40 seconds.
