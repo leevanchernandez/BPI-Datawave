@@ -36,7 +36,7 @@ All documents are synthetic. Say that once on screen or in the voice-over.
 
 A silent real-time take of steps 1 to 7 was recorded on Nov 13 at about 6:05 AM with Playwright on case `RF-2026-051` (90 seconds at 1280 by 800, waits left in). It ends with the BSO pressing "Endorse to Credit" and the case list metric. The file is outside the repo, in Simonee's Downloads. A voice-over can go on top of it if a live take is not possible.
 
-Voice-over timed to that take. The times are read off the video in 5 second steps, so start each line on the change you see. All documents in it are synthetic.
+This voice-over is timed to that take. The times are read off the video in 5 second steps, so start each line on the change you see. All documents in it are synthetic.
 
 | Time | On screen | Voice-over |
 | --- | --- | --- |
