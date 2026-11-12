@@ -136,4 +136,4 @@ Synthetic documents only. Set the Textract AI-services opt-out policy before any
 
 ## To deploy
 
-Follow docs/aws-runbook.md. In short, export AWS_REGION, DEMO_KEY, BEDROCK_MODEL_ID and REVIEW_ORIGIN, run `scripts/deploy.sh` (or `scripts/deploy-cli.sh` when the role cannot use CloudFormation), then `node scripts/smoke.mjs`, and tear down after recording. The shared demo key is for the demo only. Real use needs an IAM or Cognito authorizer.
+Follow docs/aws-runbook.md. In short, export AWS_REGION, DEMO_KEY, BEDROCK_MODEL_ID and REVIEW_ORIGIN, run `scripts/deploy.sh` (or `scripts/deploy-cli.sh` when the role cannot use CloudFormation), then `node scripts/smoke.mjs`. The demo stack stays up through scoring (Nov 17 to 20) and the Nov 27 pitch, and teardown runs only when the team asks. The shared demo key is for the demo only. Real use needs an IAM or Cognito authorizer.
