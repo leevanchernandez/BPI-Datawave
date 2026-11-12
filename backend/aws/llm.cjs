@@ -43,15 +43,15 @@ const PAGE_SCHEMA = {
   },
 };
 
-/** Case reader for pages the cheap classifier could not place, and for fields Textract forms do not cover. */
-async function readPage({ bytes, mediaType = 'image/jpeg' }, client) {
+/** Reads names and dates from the masked OCR text of an ID, registration or permit page. The photo is not sent. */
+async function readPage({ text: ocr }, client) {
   const c = client || (await makeClient());
   const msg = count(await c.messages.create({
     model: MODEL,
     max_tokens: 600,
     output_config: { effort: 'low', format: { type: 'json_schema', schema: PAGE_SCHEMA } },
-    system: 'You read one page from a Philippine business loan application packet. Report only what is printed on the page. Leave a field empty if you cannot read it. Never guess a name or date. If the page is blurry or cut off, set legibility to "unclear".',
-    messages: [{ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: mediaType, data: Buffer.from(bytes).toString('base64') } }, { type: 'text', text: 'Classify this page and extract the fields.' }] }],
+    system: 'You read the OCR text of one page from a Philippine business loan application packet. Report only what the text shows. Leave a field empty if it is not in the text. Never guess a name or date. If the text is garbled, set legibility to "unclear".',
+    messages: [{ role: 'user', content: `OCR text of the page:\n"""\n${String(ocr || '').slice(0, 6000)}\n"""\nClassify the page and extract the fields.` }],
   }));
   let o;
   try { o = JSON.parse(text(msg)); } catch { return { docType: null, unreadable: true }; }

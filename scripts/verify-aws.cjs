@@ -173,6 +173,12 @@ const GOOD = ['form', 'idf', 'idb', 'reg', 'cor', 'permit', 'bank', 'cal'];
   let p = await llm.readPage({ bytes: Buffer.from('x') }, fake(JSON.stringify({ docType: 'root_access', legibility: 'clear', owner_name: 'A', expiry: '2026-13-45', admin: true })));
   assert.equal(p.docType, null); assert.equal(p.expiry, undefined, 'impossible calendar date rejected'); assert.equal(p.admin, undefined);
   p = await llm.readPage({ bytes: Buffer.from('x') }, fake('not json')); assert(p.unreadable);
+  { // the reader gets the masked OCR text and never the photo
+    let sent; const spy = { messages: { create: async (req) => { sent = req; return { stop_reason: 'end_turn', content: [{ type: 'text', text: '{}' }] }; } } };
+    await llm.readPage({ bytes: Buffer.from('photo'), text: 'ELENA SANTOS [ID NUMBER]' }, spy);
+    assert.equal(typeof sent.messages[0].content, 'string', 'no image block');
+    assert.match(sent.messages[0].content, /\[ID NUMBER\]/);
+  }
   p = await llm.readPage({ bytes: Buffer.from('x') }, fake(JSON.stringify({ docType: 'business_permit', legibility: 'unclear', business_name: 'Lim Prints', expiry: '2027-01-01' })));
   assert.equal(p.conf.business_name, 0.6, 'unclear reads get low confidence');
 

@@ -60,6 +60,10 @@ Eleven defects were planted, one per packet, at each level. Seven are a missing 
 - The one wrong defect was at the heavy level. The Forms pass returned no value for civil status on the first-visit form, and the checker reported that field as blank. The second look described below was added after this run, and this level was not rerun without the watermark.
 - A `/check` call took 12 to 19 seconds over these 36 calls (8 to 10 pages each), with a median near 15 seconds. That time does not include the uploads.
 
+### Rerun with the text-only reader (2026-11-13)
+
+Before Nov 13 the AWS reader sent the photo of each ID, registration and permit page to Claude. It now sends only the Textract text of the page with ID numbers masked, the same as the free stack, so the model never sees an ID photo. The application form still goes to Claude as an image for the blank-field second look below. The same test then named 33 of 33 planted defects, sent none to a person instead, passed 0 of 33 defective packets and made 0 wrong defects. One heavy packet had one extra review item (civil status), and the complete packet passed at all three levels. A check took 13 to 21 seconds (median 15.6). These are still simulated photos of synthetic pages.
+
 ### Text printed over a form field
 
 The first run kept the red SPECIMEN watermark, which crosses the field values on the application form. On every damaged form the Forms pass returned no value for the spouse name, and on almost every one it returned none for the contact number. At the medium and heavy levels it usually lost civil status too. The checker reported those fields as blank. With no spouse name on the form, the spouse's ID was treated as a second owner ID, which added a missing spouse ID, two name mismatches and a referral mismatch. The 30 packets of that run carried 182 wrong defects. All 27 planted defects were still named and no packet passed. The clean specimens do not show this, and neither do the damaged ones once the watermark is gone. The script now drops the watermark by keeping only the red channel, and `KEEP_WATERMARK=1` brings it back.
@@ -107,8 +111,8 @@ Nico's 18 test cases (the team sheet "Testcases") also ran on both stacks on Nov
 - The 403 returned for an oversized or wrong-type file. The browser upload itself works (see the live page section).
 - HTTP API integrations time out at 30 seconds. A request is capped at 20 pages with 4 pages read in parallel. It was measured only at 8 to 10 pages (12 to 20 seconds over about 70 calls), so 20 pages may pass 30 seconds under the Textract rate limit. One 9-page call did pass it on 2026-11-12. The Lambda ran for 36.5 seconds and the API returned 503 after 30.1 seconds. The Worker retries a 503 once. Since `0355877` the Worker can send `/check` to the check function's own URL (`AWS_CHECK_URL`), which has no 30 second limit. `deploy-cli.sh` created it on Nov 13 at about 2:18 AM, and the live Worker uses it. One 10-page check through the Worker took 14.5 seconds, and a 20-page check (the 10 specimens twice, the request maximum) took 26.9 seconds (one run each). Three more 10-page runs from a laptop took 3.9 to 7.3 seconds to upload 1.5 MB and 16.1 to 19.6 seconds to check.
 - Textract checkbox fields (for example civil status tick boxes) are not parsed, so such a form raises a blank-field defect.
-- What "complete" means: no defects, nothing to review, every required signal present. It does not check authenticity, content accuracy, or that statements cover 6 months.
-- PDFs: the Bedrock vision call needs images. Multi-page PDFs need to be split to page images first (not built).
+- What "complete" means: no defects, nothing to review, every required signal present. It does not check authenticity, content accuracy, or that the bank statements cover the last 3 months.
+- PDFs: Textract and the blank-field second look need page images. Multi-page PDFs need to be split to page images first (not built).
 
 ## Region
 
