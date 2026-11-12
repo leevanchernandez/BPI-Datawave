@@ -151,3 +151,7 @@ Synthetic documents only. Set the Textract AI-services opt-out policy before any
 ## To deploy
 
 Follow docs/aws-runbook.md. In short, export AWS_REGION, DEMO_KEY, BEDROCK_MODEL_ID and REVIEW_ORIGIN, run `scripts/deploy.sh` (or `scripts/deploy-cli.sh` when the role cannot use CloudFormation), then `node scripts/smoke.mjs`. The demo stack stays up through scoring (Nov 17 to 20) and the Nov 27 pitch, and teardown runs only when the team asks. The shared demo key is for the demo only. Real use needs an IAM or Cognito authorizer.
+
+## Assistant questions
+
+`scripts/eval-ask.mjs` asks the live assistant 10 questions about the synthetic case `RF-2026-061` and checks each answer with a rule. The rules check that it refuses approval and an instruction to approve, names the missing mayor's permit, gives the status, lists corporation and partnership papers from the rules table, invents no number of days or interest rate, sends an unlisted structure (One Person Corporation) to the BSO, and does not read another case. On Nov 13 at about 5:40 AM all 10 passed on the AWS stack. Run it with `DEMO_KEY=<key> STACK=aws node scripts/eval-ask.mjs` from `app/`.

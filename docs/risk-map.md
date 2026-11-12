@@ -5,7 +5,7 @@ Every row marked "Tested" has a check that fails if the safeguard breaks. Run `n
 | Risk | Safeguard | Evidence | Status |
 |---|---|---|---|
 | The AI invents a requirement | Rules build the checklist from a table with a source on every row. The model never sees or changes it. | verify-free.mjs step 1, step 7 (a heads-up never changes the checklist) | Tested |
-| The AI says a loan is approved | Approval questions are refused by a rule before the model runs. A drafted message that sounds like approval is replaced by a template. | verify-free.mjs step 4 and step 10 | Tested |
+| The AI says a loan is approved | Approval questions are refused by a rule before the model runs. A drafted message that sounds like approval is replaced by a template. | verify-free.mjs step 4 and step 10, and eval-ask.mjs on the live AWS stack (10 of 10, including an injection, a rate and a timeline question) | Tested |
 | A packet for a different client passes | The packet is compared with the saved referral, and names never match on spelling similarity. | verify-backend.cjs checks 1 and 4 | Tested |
 | The model invents a name or a date | A name or date from the model is kept only if it appears in the page's own OCR text. Otherwise it goes to a person. | verify-backend.cjs check 12 | Tested |
 | A blurry page or field is treated as fine | An unreadable page or field becomes a review item, and "Ready for BSO review" needs zero defects and zero review items. | verify-backend.cjs checks 2 and 13, verify-free.mjs step 2 | Tested |
