@@ -95,6 +95,7 @@ export function takeQuota(s, ip, model, now = Date.now()) {
 
 /** limits: async (model) => 'ok' | 'rate' | 'daily', or null for no limits. */
 export function makeApi({ store, llm, now = () => new Date(), demoKey, aws = null, limits = null }) {
+  const useAws = (stack) => (stack ? stack === 'aws' : !!aws); // no stack given: AWS when it is set up, like the page
   const awsPost = (path, payload) => (aws.fetch || fetch)(path === '/check' && aws.checkUrl ? aws.checkUrl : aws.url + path, { method: 'POST', headers: { 'content-type': 'application/json', 'x-demo-key': aws.key }, body: JSON.stringify(payload) });
   const noAws = () => json(503, { error: 'the AWS backend is not set up on this deployment' });
   const json = (code, body) => new Response(JSON.stringify(body), { status: code, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } });
@@ -150,7 +151,7 @@ export function makeApi({ store, llm, now = () => new Date(), demoKey, aws = nul
     // Case fields from the branch officer's note. Nothing is saved here. The branch checks the form and saves the case.
     'POST /api/intake': async (req) => {
       const b = await body(req); if (!b || typeof b.text !== 'string' || !b.text.trim()) return bad('write the note first'); if (!str(b.text, INTAKE_MAX)) return bad(`write the note in ${INTAKE_MAX} characters or fewer`);
-      const onAws = b.stack === 'aws';
+      const onAws = useAws(b.stack);
       if (onAws ? !aws : !llm) return onAws ? noAws() : json(503, { error: 'no model configured' });
       const text = b.text.trim();
       const failed = () => json(502, { error: 'The AI could not read the note. Fill the form by hand.' });
@@ -263,7 +264,8 @@ export function makeApi({ store, llm, now = () => new Date(), demoKey, aws = nul
       const b = await body(req); if (!b || !ID.test(b.id || '')) return bad('invalid id');
       const q = b.question; if (typeof q !== 'string' || !q.trim() || q.length > 500) return bad('invalid question');
       if (refuseCredit(q)) return json(200, { answer: 'Hindi ko masasagot iyan. Ang Credit ang nagdedesisyon sa approval. Ang kaya kong sabihin: ano pa ang kulang at ano ang status.', handoff: true, trace: [{ rule: 'refuse_credit_question' }], model: null });
-      if (!llm && b.stack !== 'aws') return json(503, { error: 'no model configured' });
+      const onAws = useAws(b.stack);
+      if (!llm && !onAws) return json(503, { error: 'no model configured' });
       const c = await store.get(b.id); if (!c) return json(404, { error: 'unknown referral' });
       const handlers = {
         get_heads_up: async () => ({ reminders: shown((await lessons()).list, c.referral).map((l) => l.text) }),
@@ -273,7 +275,7 @@ export function makeApi({ store, llm, now = () => new Date(), demoKey, aws = nul
         get_checklist: async () => checklist(c.referral).map((r) => ({ requirement: r.title, why: r.reason || (r.when.type ? `for a ${c.referral.type.toLowerCase()}` : 'all cases'), source: r.sourceTitle })),
       };
       let out, model = llm && llm.model;
-      if (b.stack === 'aws') {
+      if (onAws) {
         if (!aws) return noAws();
         const facts = { status: await handlers.get_status(), lacking: await handlers.get_lacking(), checklist: await handlers.get_checklist(), headsUp: await handlers.get_heads_up() };
         const r = await awsPost('/ask', { question: q.trim(), facts });
