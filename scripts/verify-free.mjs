@@ -19,6 +19,7 @@ const fakeLlm = {
     return { docType: null, fields: { ...(name ? { owner_name: name[1].trim() } : {}), ...(biz ? { business_name: biz[1].trim() } : {}) }, conf: { owner_name: 0.95, business_name: 0.95 }, expiry: until ? until[1] : undefined, side };
   },
   async draftMessage({ items }) { return `Kulang pa po: ${items.length} item.`; },
+  async draftLesson({ reason }) { return `Reminder from a BSO return. ${reason}`; },
   async ask(q, h) { const r = await h.get_lacking(); return { answer: `Kulang pa: ${(r.missing || []).join('; ')}`, handoff: false, trace: [{ tool: 'get_lacking', result: r }] }; },
 };
 const api = makeApi({ store, llm: fakeLlm, now: () => new Date('2026-11-05T04:00:00Z'), demoKey: 'k' });
@@ -92,6 +93,42 @@ r = await call('POST', '/api/check', { id: REF.id, pages: [...pages2, { lines: L
 assert(keys(r.body).some((k) => k.startsWith('PAGE_UNPLACED')));
 r = await call('POST', '/api/check', { id: REF.id, pages: [...pages2.filter((p) => p !== BANK), { lines: L(['Statement', 'Aug', 'Sep', 'Oct']), docType: 'bank_statements' }] });
 assert.equal(r.body.result.complete, true, 'branch label places the page');
+
+// 7. heads-up from a BSO return: only a return drafts one, only a BSO publishes one, and the checklist never changes
+const ev = (body) => call('POST', '/api/event', { id: REF.id, ...body });
+const lesson = (body) => call('POST', '/api/lesson', body);
+assert.equal((await ev({ type: 'returned', by: 'BSO', reason: 'x' })).status, 400, 'a return needs a case that is with the BSO');
+assert.equal((await ev({ type: 'handed_off', by: 'BM' })).body.status, 'With BSO');
+assert.equal((await ev({ type: 'returned', by: 'BM', reason: 'x' })).status, 400, 'only the BSO returns');
+assert.equal((await ev({ type: 'returned', by: 'BSO' })).status, 400, 'a return needs a reason');
+r = await ev({ type: 'returned', by: 'BSO', reason: 'The bank statements cover two months, and the BSO needs three.' });
+assert.equal(r.body.status, 'Returned by BSO');
+assert.equal(r.body.lessonDrafts.length, 1);
+assert.equal(r.body.headsUp.length, 0, 'a draft is not shown to branches');
+const draft = r.body.lessonDrafts[0];
+assert.equal((await ev({ type: 'handed_off', by: 'BM' })).status, 400, 'a returned case needs a new check first');
+r = await call('POST', '/api/check', { id: REF.id, pages: pages2 });
+assert.equal(r.body.status, 'Ready for BSO review');
+const TEXT = 'Check that the bank statements cover the last three months before sending.';
+assert.equal((await lesson({ action: 'publish', by: 'BM', lessonId: draft.id, text: TEXT, scope: 'type' })).status, 400, 'only the BSO publishes');
+assert.equal((await lesson({ action: 'publish', by: 'BSO', lessonId: draft.id, text: `Elena sent two months only. ${TEXT}`, scope: 'type' })).status, 400, 'client names stay out');
+assert.equal((await lesson({ action: 'publish', by: 'BSO', lessonId: draft.id, text: 'Three months of statements gets it approved.', scope: 'type' })).status, 400, 'approval words stay out');
+assert.equal((await lesson({ action: 'publish', by: 'BSO', lessonId: draft.id, text: TEXT, scope: 'everyone' })).status, 400, 'scope must be known');
+assert.equal((await lesson({ action: 'publish', by: 'BSO', lessonId: draft.id, text: TEXT, scope: 'type' })).status, 200);
+const rowsBefore = (await call('GET', `/api/case?id=${REF.id}`)).body.rules.rows;
+const other = { ...REF, id: 'RF-2026-043', business: 'Santos Hardware', name: 'Maria Cruz', industry: 'Retail', civilStatus: 'single', spouseName: '' };
+r = await call('POST', '/api/case', { referral: other });
+assert.equal(r.status, 200, JSON.stringify(r.body));
+assert.deepEqual(r.body.headsUp.map((l) => l.text), [TEXT], 'another sole proprietorship sees it');
+assert(!/RF-2026-042|Elena|two months/.test(JSON.stringify(r.body.headsUp)), 'no source case and no raw reason');
+assert.equal(r.body.status, 'Draft', 'a heads-up does not change the status');
+assert.deepEqual((await call('GET', `/api/case?id=${REF.id}`)).body.rules.rows, rowsBefore, 'a heads-up does not change the checklist');
+r = await call('POST', '/api/case', { referral: { ...other, id: 'RF-2026-044', type: 'Corporation' } });
+assert.equal(r.status, 200, JSON.stringify(r.body));
+assert.equal(r.body.headsUp.length, 0, 'a corporation does not see a sole proprietorship heads-up');
+assert.equal((await lesson({ action: 'retire', by: 'BSO', lessonId: draft.id })).status, 200);
+assert.equal((await call('GET', '/api/case?id=RF-2026-043')).body.headsUp.length, 0, 'a retired heads-up is gone');
+assert.equal((await lesson({ action: 'retire', by: 'BSO', lessonId: draft.id })).status, 404);
 
 console.log('free-stack API checks passed');
 

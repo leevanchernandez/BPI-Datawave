@@ -65,7 +65,18 @@ function makeGemini({ apiKey, model = 'gemini-3.5-flash-lite', fetchFn = fetch, 
     return safeDraft(textOf(r), items);
   }
 
+  /** One general reminder from a BSO's return reason. null makes the caller use the reason itself. A BSO edits and publishes it. */
+  async function draftLesson({ reason, type, industry }) {
+    const r = await call({
+      systemInstruction: { parts: [{ text: 'A bank business-loan officer (BSO) returned a loan referral to the branch for the reason given. Rewrite the reason as ONE short reminder for branch staff handling similar cases later: what to check, on which document, before sending. Use only what the reason says. No client, person or business names, no amounts, and never say anything is approved or complete. Same language as the reason (English or Taglish). Under 30 words.' }] },
+      contents: [{ role: 'user', parts: [{ text: `Business structure: ${type}. Industry: ${industry}.\nReturn reason: ${reason}` }] }],
+      generationConfig: { maxOutputTokens: 400 },
+    });
+    return safeDraft(textOf(r));
+  }
+
   const TOOLS = [{ functionDeclarations: [
+    { name: 'get_heads_up', description: 'Reminders a BSO published for cases like this one, from past returns. They are reminders, not requirements.', parameters: { type: 'object', properties: {} } },
     { name: 'get_status', description: 'Status of this referral.', parameters: { type: 'object', properties: {} } },
     { name: 'get_lacking', description: 'What is still missing or flagged for a person to check on this referral.', parameters: { type: 'object', properties: {} } },
     { name: 'get_checklist', description: 'Initial requirements for this referral, each with its source.', parameters: { type: 'object', properties: {} } },
@@ -98,7 +109,7 @@ function makeGemini({ apiKey, model = 'gemini-3.5-flash-lite', fetchFn = fetch, 
     return { answer: 'I could not finish that. Please ask the BSO.', handoff: true, trace };
   }
 
-  return { readPage, draftMessage, ask, model };
+  return { readPage, draftMessage, draftLesson, ask, model };
 }
 
 module.exports = { makeGemini };

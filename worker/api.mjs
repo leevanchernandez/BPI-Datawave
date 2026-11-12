@@ -16,8 +16,25 @@ const { refuseCredit, FORBIDDEN } = guardsMod;
 const ID = /^RF-\d{4}-\d{3}$/;
 const TYPES = ['Sole proprietorship', 'Partnership', 'Corporation'];
 const MAX_PAGES = 20, MAX_LINES = 300, MAX_LINE = 300;
-const EVENT_TYPES = new Set(['cleared', 'waived', 'handed_off', 'bso_opened', 'draft_approved', 'special_case']);
+const EVENT_TYPES = new Set(['cleared', 'waived', 'handed_off', 'bso_opened', 'draft_approved', 'special_case', 'returned']);
 const str = (v, max) => typeof v === 'string' && v.trim().length > 0 && v.length <= max;
+
+// Heads-ups are reminders from confirmed BSO returns. Only a 'returned' event drafts one (a waiver or a clearance never
+// does), only a BSO publishes one, and none of this is read by the checklist, the checker or statusOf.
+const LESSONS = '_lessons'; // ponytail: one record, read-modify-write, last write wins. Move to one row per lesson once two BSOs publish at the same time.
+const SCOPES = ['industry', 'type', 'all'];
+const MAX_LESSON = 240;
+const appliesTo = (l, r) => l.status === 'published' && (!l.type || l.type === r.type) && (!l.industry || l.industry === r.industry);
+/** why a heads-up cannot be shown to other branches, or null. r is the referral it came from. */
+export function lessonProblem(text, r = {}) {
+  if (!str(text, MAX_LESSON)) return `write the heads-up in ${MAX_LESSON} characters or fewer`;
+  if (FORBIDDEN.test(text)) return 'a heads-up cannot use approval words';
+  // ponytail: this matches exact words of the client's names only. A nickname or an address gets past it, which is why a BSO reads it before publishing.
+  const t = text.toLowerCase(), words = new Set(t.split(/[^a-z0-9ñ]+/));
+  const people = [r.name, r.spouseName].flatMap((n) => String(n || '').toLowerCase().split(/[^a-z0-9ñ]+/)).filter((w) => w.length >= 3);
+  if ((r.business && t.includes(r.business.toLowerCase())) || people.some((w) => words.has(w))) return 'remove client details from the heads-up';
+  return null;
+}
 
 export function validReferral(r) {
   return !!r && typeof r === 'object' && ID.test(r.id || '') && TYPES.includes(r.type)
@@ -60,6 +77,13 @@ export function makeApi({ store, llm, now = () => new Date(), demoKey }) {
     return { referral: c.referral, events: c.events.map(({ defects, needsReview, ...e }) => e), status: statusOf(c.events), open: openItems(c.events), lastMessage: lastCheck ? lastCheck.message : null, rules: rulesView(c.referral) };
   };
   const at = () => now().toISOString();
+  const lessons = async () => (await store.get(LESSONS)) || { list: [] };
+  const shown = (list, r) => list.filter((l) => appliesTo(l, r)).map(({ id, text, type, industry }) => ({ id, text, type, industry })); // no source case, no raw reason
+  /** the case view plus its heads-ups. Drafts go only to the case they came from. */
+  const full = async (c) => {
+    const { list } = await lessons();
+    return { ...view(c), headsUp: shown(list, c.referral), lessonDrafts: list.filter((l) => l.status === 'draft' && l.fromCase === c.referral.id) };
+  };
 
   async function body(req) { try { return await req.json(); } catch { return null; } }
 
@@ -75,13 +99,13 @@ export function makeApi({ store, llm, now = () => new Date(), demoKey }) {
       const c = (await store.get(ref.id)) || { referral: ref, events: [] };
       c.referral = ref; c.events.push({ type: c.events.length ? 'updated' : 'created', by: 'BM', at: at() });
       await store.put(ref.id, c);
-      return json(200, view(c));
+      return json(200, await full(c));
     },
     'GET /api/case': async (req) => {
       const id = new URL(req.url).searchParams.get('id');
       if (!ID.test(id || '')) return bad('invalid id');
       const c = await store.get(id); if (!c) return json(404, { error: 'unknown referral' });
-      return json(200, view(c));
+      return json(200, await full(c));
     },
     'POST /api/check': async (req) => {
       const b = await body(req); if (!b || !ID.test(b.id || '')) return bad('invalid id');
@@ -101,7 +125,7 @@ export function makeApi({ store, llm, now = () => new Date(), demoKey }) {
       message = message || templateDraft({ ...rec, newIssues: [...rec.newIssues, ...result.needsReview] });
       c.events.push({ type: result.complete ? 'check_passed' : 'check_failed', by: 'BM', at: at(), defects: result.defects, needsReview: result.needsReview, message, pages: b.pages.length });
       await store.put(b.id, c);
-      return json(200, { result, reconcile: { resolved: rec.resolved.length, stillMissing: rec.stillMissing.length, newIssues: rec.newIssues.length }, message, drafted, trace, model: llm ? llm.model : null, ...view(c) });
+      return json(200, { result, reconcile: { resolved: rec.resolved.length, stillMissing: rec.stillMissing.length, newIssues: rec.newIssues.length }, message, drafted, trace, model: llm ? llm.model : null, ...(await full(c)) });
     },
     'POST /api/event': async (req) => {
       const b = await body(req); if (!b || !ID.test(b.id || '') || !EVENT_TYPES.has(b.type)) return bad('invalid event');
@@ -120,9 +144,36 @@ export function makeApi({ store, llm, now = () => new Date(), demoKey }) {
         Object.assign(ev, { key: b.key, reason });
       } else if (b.type === 'handed_off') {
         if (!o.checked || o.defects.length || o.needsReview.length) return bad('not ready for BSO review');
+        if (statusOf(c.events) === 'Returned by BSO') return bad('check the documents again before sending this back to the BSO');
+      } else if (b.type === 'returned') {
+        if (b.by !== 'BSO') return bad('only the BSO can return a case');
+        if (statusOf(c.events) !== 'With BSO' || !reason) return bad('a return needs a case that is with the BSO and a reason');
+        ev.reason = reason;
+        let text = null;
+        if (llm && llm.draftLesson) { try { text = await llm.draftLesson({ reason, type: c.referral.type, industry: c.referral.industry }); } catch { /* the reason itself below */ } }
+        const drafted = text && !lessonProblem(text, c.referral) ? 'model' : 'reason';
+        const ls = await lessons();
+        ls.list.push({ id: `L-${ls.list.length + 1}`, status: 'draft', text: drafted === 'model' ? text.trim() : reason.slice(0, MAX_LESSON), drafted, type: c.referral.type, industry: c.referral.industry, fromCase: b.id, reason, at: ev.at });
+        await store.put(LESSONS, ls);
       } else if (reason) ev.reason = reason;
       c.events.push(ev); await store.put(b.id, c);
-      return json(200, view(c));
+      return json(200, await full(c));
+    },
+    'POST /api/lesson': async (req) => {
+      const b = await body(req); if (!b || !['publish', 'retire'].includes(b.action)) return bad('invalid action');
+      if (b.by !== 'BSO') return bad('only the BSO can publish or retire a heads-up');
+      const ls = await lessons(), l = ls.list.find((x) => x.id === b.lessonId);
+      if (!l || l.status === 'retired') return json(404, { error: 'unknown heads-up' });
+      if (b.action === 'publish') {
+        if (l.status !== 'draft' || !SCOPES.includes(b.scope)) return bad('publish needs a draft and a scope');
+        const src = await store.get(l.fromCase);
+        const problem = lessonProblem(b.text, src ? src.referral : {});
+        if (problem) return bad(problem);
+        // The scope 'industry' keeps structure and industry, 'type' keeps the structure only, and 'all' shows it on every case.
+        Object.assign(l, { status: 'published', text: b.text.trim(), publishedAt: at() }, b.scope === 'industry' ? {} : { industry: null }, b.scope === 'all' ? { type: null } : {});
+      } else Object.assign(l, { status: 'retired', retiredAt: at() }); // A retired heads-up is kept, so ids stay unique and the history stays readable.
+      await store.put(LESSONS, ls);
+      return json(200, { ok: true, id: l.id, status: l.status });
     },
     'POST /api/ask': async (req) => {
       const b = await body(req); if (!b || !ID.test(b.id || '')) return bad('invalid id');
@@ -131,6 +182,7 @@ export function makeApi({ store, llm, now = () => new Date(), demoKey }) {
       if (!llm) return json(503, { error: 'no model configured' });
       const c = await store.get(b.id); if (!c) return json(404, { error: 'unknown referral' });
       const handlers = {
+        get_heads_up: async () => ({ reminders: shown((await lessons()).list, c.referral).map((l) => l.text) }),
         get_status: async () => ({ status: statusOf(c.events) }),
         get_lacking: async () => { const o = openItems(c.events); return o.checked ? { missing: o.defects.map((d) => d.message), toCheck: o.needsReview.map((d) => d.message) } : { checked: false }; },
         get_checklist: async () => checklist(c.referral).map((r) => ({ requirement: r.title, why: r.reason || (r.when.type ? `for a ${c.referral.type.toLowerCase()}` : 'all cases'), source: r.sourceTitle })),

@@ -18,6 +18,10 @@
   - Two devices see the same case.
   - Every check, clearance, waiver, handoff and approval is an event with who and when.
   - Status is derived from events.
+- A BSO can return a case to the branch with a reason, and the case then needs a new check before it goes back to the BSO.
+  - The model drafts a short "heads up from BSO" reminder from that reason. Only a BSO can edit, publish or retire it.
+  - A published reminder shows on later cases of the same business type or industry, with no client name and no case number.
+  - Reminders never change the checklist or the status.
 - **Worker placement:** the Worker runs in Singapore (`placement.region: gcp:asia-southeast1`), because Gemini refuses requests from Hong Kong, where Cloudflare would otherwise serve Manila.
 
 ## Not real (say so in the pitch)

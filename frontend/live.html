@@ -141,6 +141,11 @@
       <h2>Requirements</h2>
       <ul class="items" id="checklist"><li><span></span><span class="soft">Save the case to see its checklist.</span><span></span></li></ul>
       <p class="soft" id="rules-note" style="margin-top:8px"></p>
+      <div id="headsup-box" class="hidden">
+        <h3 style="margin-top:16px">Heads up from BSO</h3>
+        <ul class="items" id="headsup"></ul>
+        <p class="soft">These are reminders from past returns, and a BSO published each one. They do not change the checklist.</p>
+      </div>
     </section>
   </div>
 
@@ -200,6 +205,20 @@
       <h2>Message from the last check</h2>
       <div class="message" id="b-message">No check yet.</div>
       <div class="actions"><button id="b-approve" class="secondary" disabled>Approve message</button></div>
+    </section>
+    <section>
+      <h2>Return to branch</h2>
+      <p class="soft">Use this when the checklist passed but the branch still has something to fix. The branch sees your reason, and the AI drafts a heads-up from it for you to review.</p>
+      <form id="b-return">
+        <textarea id="b-return-reason" rows="2" maxlength="300" required aria-label="Reason for returning this case" placeholder="What does the branch need to fix?"></textarea>
+        <div class="actions"><button id="b-return-btn" disabled>Return to branch</button></div>
+      </form>
+    </section>
+    <section>
+      <h2>Heads up for branches</h2>
+      <p class="soft">Branches see a heads-up only after you publish it, and only on cases like the one it came from. It is a reminder and it never changes the checklist.</p>
+      <div id="b-drafts"></div>
+      <ul class="items" id="b-headsup"></ul>
     </section>
   </div>
 </main>

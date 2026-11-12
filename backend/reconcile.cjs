@@ -28,9 +28,10 @@ const STATUS_BY_EVENT = {
   check_passed: 'Draft',
   handed_off: 'With BSO',
   bso_opened: 'With BSO',
+  returned: 'Returned by BSO', // back at the branch: the next passing check makes it ready for BSO review again
   submitted_for_credit: 'For approval',
 };
-const RANK = { Draft: 0, 'Missing requirements': 0, 'With BSO': 1, 'For approval': 2 };
+const RANK = { Draft: 0, 'Missing requirements': 0, 'Returned by BSO': 0, 'With BSO': 1, 'For approval': 2 };
 function deriveStatus(events) {
   let s = 'Draft';
   for (const e of events) {

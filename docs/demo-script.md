@@ -15,7 +15,7 @@ We catch the missing page, the blank TIN and the wrong-name ID while the client 
 | 1:10 to 1:40 | Client fixes one problem, branch scans again. The screen shows fixed, still open and new. The BSO sees the Taglish message to approve. | Ready on the demo page |
 | 1:40 to 2:00 | One slide: recall and false-complete on the 60-document test with ranges, review rate, cost per completed referral, and "pilot task: scanner integration, hosted in BPI's own account". | NEEDS: the 60-document test on real Textract |
 
-## What must be built or measured before Nov 13
+## What must be built or measured before Nov 16
 
 1. Deploy `/check` against real Textract and run 60 printed and phone-photographed synthetic documents with labeled defects. Report recall, false-complete and review rate with ranges. This is the most important item.
 2. Measure real end-to-end seconds including upload.
@@ -30,4 +30,4 @@ We catch the missing page, the blank TIN and the wrong-name ID while the client 
 - "0 percent false-complete." That number came from a simulated generator. Quote only what the real test measures.
 - "BPI uses AWS." It is the team's statement, not a BPI source.
 - A management view of incomplete referrals by branch. It reads as surveillance of the BSO's partners. Cut it or anonymize it.
-- Self-learning in the deck. It targets the BSO's lowest-ranked pain and cannot tell a habit from a rule.
+- "Self-learning" or "the AI learns the requirements." The heads-up is a reminder that a BSO publishes after returning a real case. It cannot tell a habit from a rule, so it never changes the checklist or the status.

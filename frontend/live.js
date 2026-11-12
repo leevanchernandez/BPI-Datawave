@@ -13,7 +13,7 @@ const ICON = {
   doc: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z M14 3v6h6"/></svg>',
 };
 const DOC_LABELS = { '': 'Auto', application_form: 'Application form', gov_id: 'Government ID', spouse_id: 'Spouse ID', registration: 'DTI or SEC registration', business_permit: "Mayor's permit", itr: 'Income tax return', financials: 'Financial statements', audited_fs: 'Audited FS', bank_statements: 'Bank statement', articles: 'Articles', bylaws: 'By-laws', gis: 'GIS', collateral: 'Collateral' };
-const statusClass = (s) => (s === 'Missing requirements' ? 'missing' : s === 'Ready for BSO review' ? 'ready' : s === 'With BSO' ? 'with' : '');
+const statusClass = (s) => (s === 'Missing requirements' || s === 'Returned by BSO' ? 'missing' : s === 'Ready for BSO review' ? 'ready' : s === 'With BSO' ? 'with' : '');
 
 // ---- demo key ----
 let demoKey = params.get('key') || (() => { try { return localStorage.getItem('cc-key') || ''; } catch { return ''; } })();
@@ -42,8 +42,10 @@ navLinks();
 function checklistHtml(rows) {
   return rows.map((r) => `<li>${ICON.doc}<span>${esc(r.title)}${r.reason ? ` <span class="src">(because: ${esc(r.reason)})</span>` : ''}<br>${r.sourceUrl
     ? `<a class="chip" href="${esc(r.sourceUrl)}" target="_blank" rel="noopener">Source: BPI public page</a>`
+    : r.source === 'J1' ? `<span class="chip" title="${esc(r.sourceTitle)}">Source: BSO checklist</span>`
     : '<span class="chip assumed">Team assumption, BSO confirms</span>'}</span><span></span></li>`).join('');
 }
+const headsUpScope = (l) => (l.industry ? `${l.type}, ${l.industry}` : l.type || 'All cases');
 
 // ================= Branch view =================
 if (role === 'bm') {
@@ -62,10 +64,15 @@ if (role === 'bm') {
     try {
       const v = await api('POST', '/api/case', { referral: referral() });
       lastView = v; navLinks();
-      $('checklist').innerHTML = checklistHtml(v.rules.rows);
-      $('rules-note').textContent = `Rules version ${v.rules.version}. Seeded from BPI's public pages, which BPI calls indicative and non-exhaustive.`;
+      renderChecklist(v);
       $('run-check').disabled = pages.length === 0;
     } catch (e) { alertInline(e.message); }
+  }
+  function renderChecklist(v) {
+    $('checklist').innerHTML = checklistHtml(v.rules.rows);
+    $('rules-note').textContent = `Rules version ${v.rules.version}. Rows marked BSO checklist are what the BSO expects from the branch at referral. The other rows come from BPI's public page, which BPI calls indicative.`;
+    $('headsup-box').classList.toggle('hidden', !v.headsUp.length);
+    $('headsup').innerHTML = v.headsUp.map((l) => `<li>${ICON.warn}<span>${esc(l.text)}</span><span></span></li>`).join('');
   }
   $('save-case').onclick = saveCase;
 
@@ -126,12 +133,15 @@ if (role === 'bm') {
 
   function renderResult(v) {
     lastView = v;
+    renderChecklist(v);
     $('result').classList.remove('hidden');
     const o = v.open;
     const open = o.defects.length + o.needsReview.length;
-    $('verdict').textContent = open ? `${open} ${open === 1 ? 'thing' : 'things'} to fix before the BSO` : 'Ready for BSO review';
+    const back = v.status === 'Returned by BSO' && v.events.filter((e) => e.type === 'returned').pop();
+    $('verdict').textContent = back ? 'Returned by BSO' : open ? `${open} ${open === 1 ? 'thing' : 'things'} to fix before the BSO` : 'Ready for BSO review';
     $('status').textContent = v.status; $('status').className = `status ${statusClass(v.status)}`;
-    if (v.reconcile) $('recline').textContent = `Compared with the last check: ${v.reconcile.resolved} fixed, ${v.reconcile.stillMissing} still open, ${v.reconcile.newIssues} new.`;
+    if (back) $('recline').textContent = `The BSO returned this case and wrote "${back.reason}". Fix it with the client, then check the documents again.`;
+    else if (v.reconcile) $('recline').textContent = `Compared with the last check: ${v.reconcile.resolved} fixed, ${v.reconcile.stillMissing} still open, ${v.reconcile.newIssues} new.`;
     $('defects').innerHTML = o.defects.length ? o.defects.map((d) => `<li>${ICON.bad}<span>${esc(d.message)}</span><span></span></li>`).join('') : `<li>${ICON.ok}<span>None found by the rules.</span><span></span></li>`;
     $('reviews').innerHTML = o.needsReview.length ? o.needsReview.map((d) => `<li>${ICON.warn}<span>${esc(d.message)}</span><button class="small secondary" data-clear="${esc(d.key)}">Clear</button>
       <form class="clearform hidden" data-form="${esc(d.key)}"><input required placeholder="Value on the paper" aria-label="Value on the paper"><input required placeholder="Reason" aria-label="Reason"><button class="small">Save</button></form></li>`).join('') : `<li>${ICON.ok}<span>Nothing for a person to check.</span><span></span></li>`;
@@ -152,13 +162,13 @@ if (role === 'bm') {
   $('handoff').onclick = async () => { try { const nv = await api('POST', '/api/event', { id: caseId(), type: 'handed_off', by: 'BM' }); renderResult({ ...lastView, ...nv }); } catch (e) { alertInline(e.message); } };
 
   // load an existing case if there is one
-  (async () => { try { const v = await api('GET', `/api/case?id=${encodeURIComponent(caseId())}`); fillForm(v.referral); $('checklist').innerHTML = checklistHtml(v.rules.rows); lastView = v; if (v.open.checked) renderResult(v); } catch { /* new case */ } })();
+  (async () => { try { const v = await api('GET', `/api/case?id=${encodeURIComponent(caseId())}`); fillForm(v.referral); renderChecklist(v); lastView = v; if (v.open.checked) renderResult(v); } catch { /* new case */ } })();
   function fillForm(r) { $('f-business').value = r.business; $('f-name').value = r.name; $('f-type').value = r.type; $('f-industry').value = r.industry; $('f-amount').value = r.amount; $('f-civil').value = r.civilStatus; $('f-spouse').value = r.spouseName || ''; $('f-secured').checked = !!r.secured; $('f-bpi').checked = r.bpiAccount !== false; }
 }
 
 // ================= BSO view =================
 if (role === 'bso') {
-  let timer = null, lastAt = '';
+  let timer = null, lastAt = '', shownDrafts = null;
   async function load() {
     try {
       const v = await api('GET', `/api/case?id=${encodeURIComponent(caseId())}`);
@@ -174,6 +184,18 @@ if (role === 'bso') {
         if (!reason) return;
         try { await api('POST', '/api/event', { id: caseId(), type: 'waived', by: 'BSO', key: b.dataset.waive, reason }); load(); } catch (e) { alertInline(e.message); }
       }; });
+      $('b-return-btn').disabled = v.status !== 'With BSO';
+      const ids = v.lessonDrafts.map((l) => l.id).join();
+      if (ids !== shownDrafts) { // redraw only when the drafts change, so the 4 second poll does not wipe an edit
+        shownDrafts = ids;
+        $('b-drafts').innerHTML = v.lessonDrafts.map((l) => `<form data-lesson="${esc(l.id)}">
+          <p class="soft">${l.drafted === 'model' ? 'Drafted by the AI from your reason' : 'Your reason, word for word'}. Take out anything that names the client.</p>
+          <textarea rows="3" maxlength="240" required aria-label="Heads-up text">${esc(l.text)}</textarea>
+          <select aria-label="Who sees this heads-up"><option value="industry">${esc(l.type)} cases in ${esc(l.industry)}</option><option value="type">All ${esc(l.type)} cases</option><option value="all">All cases</option></select>
+          <div class="actions"><button>Publish heads-up</button><button type="button" class="secondary" data-discard="${esc(l.id)}">Discard</button></div></form>`).join('');
+      }
+      $('b-headsup').innerHTML = v.headsUp.map((l) => `<li>${ICON.warn}<span>${esc(l.text)}<br><span class="soft">Shown on ${esc(headsUpScope(l))}</span></span><button class="small secondary" data-retire="${esc(l.id)}">Retire</button></li>`).join('')
+        || (v.lessonDrafts.length ? '' : '<li><span></span><span class="soft">There is no heads-up for cases like this one yet.</span><span></span></li>');
       $('b-message').textContent = v.lastMessage || 'No check yet.';
       $('b-approve').disabled = !v.lastMessage || v.events.some((e) => e.type === 'draft_approved' && e.at > (v.events.filter((x) => x.type.startsWith('check')).pop() || {}).at);
       const newest = (v.events[v.events.length - 1] || {}).at || '';
@@ -184,6 +206,14 @@ if (role === 'bso') {
   $('b-q').value = `Ano pa ang kulang sa ${caseId()}?`;
   $('b-open').onclick = () => { navLinks(); $('b-q').value = `Ano pa ang kulang sa ${caseId()}?`; load(); if (!timer) timer = setInterval(load, 4000); };
   $('b-approve').onclick = async () => { try { await api('POST', '/api/event', { id: caseId(), type: 'draft_approved', by: 'BSO' }); load(); } catch (e) { alertInline(e.message); } };
+  $('b-return').onsubmit = async (e) => {
+    e.preventDefault();
+    try { await api('POST', '/api/event', { id: caseId(), type: 'returned', by: 'BSO', reason: $('b-return-reason').value }); $('b-return-reason').value = ''; load(); } catch (err) { alertInline(err.message); }
+  };
+  const lesson = async (body) => { try { await api('POST', '/api/lesson', { by: 'BSO', ...body }); load(); } catch (e) { alertInline(e.message); } };
+  $('b-drafts').onsubmit = (e) => { e.preventDefault(); const f = e.target; lesson({ lessonId: f.dataset.lesson, action: 'publish', text: f.querySelector('textarea').value, scope: f.querySelector('select').value }); };
+  $('b-drafts').onclick = (e) => { if (e.target.dataset.discard) lesson({ lessonId: e.target.dataset.discard, action: 'retire' }); };
+  $('b-headsup').onclick = (e) => { if (e.target.dataset.retire) lesson({ lessonId: e.target.dataset.retire, action: 'retire' }); };
   $('b-ask').onclick = async () => {
     $('b-answer').textContent = 'Asking';
     try {
