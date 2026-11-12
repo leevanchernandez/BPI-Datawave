@@ -1,6 +1,6 @@
 # AWS design and what is verified
 
-This is the AWS version of the backend. BPI's AI team pointed the team to Amazon Bedrock; no public source confirms BPI's cloud stack, so do not state it as fact. The backend was created on the hackathon AWS account on 2026-11-12 and passed the smoke test there (see the section on what was checked on the account). The live prototype page runs on the free stack by default (see docs/free-stack.md) and switches to this backend with `?stack=aws`.
+This is the AWS version of the backend. BPI's AI team pointed the team to Amazon Bedrock; no public source confirms BPI's cloud stack, so do not state it as fact. The backend was created on the hackathon AWS account on 2026-11-12 and passed the smoke test there (see the section on what was checked on the account). Since Nov 13 the live prototype page runs on this backend by default. `?stack=free` switches it to the free stack (see docs/free-stack.md), and old `?stack=aws` links still work.
 
 ## Flow
 
@@ -76,7 +76,7 @@ The fix was measured on the deployed API with `KEEP_WATERMARK=1` on three packet
 
 ## Live page on the AWS reader (2026-11-12)
 
-The live page reads on this backend when the address has `?stack=aws` (for example `/live?id=RF-2026-042&stack=aws`). The page shrinks each photo to a JPEG of at most 2400 pixels, asks the Worker for a presigned upload (`POST /api/upload-url`), and posts the photo to S3 from the browser. `POST /api/check` then sends the page keys and the referral stored in the Worker to the AWS `/check` route. The Worker adds the demo key, so the browser never calls the AWS API. The Worker recomputes the complete flag from the defects and the review items, discards a draft that sounds like approval, and keeps the case history in its own store. Browser OCR and the page label menus are off on this path.
+The live page reads on this backend by default (for example `/live?id=RF-2026-042`). The page shrinks each photo to a JPEG of at most 2400 pixels, asks the Worker for a presigned upload (`POST /api/upload-url`), and posts the photo to S3 from the browser. `POST /api/check` then sends the page keys and the referral stored in the Worker to the AWS `/check` route. The Worker adds the demo key, so the browser never calls the AWS API. The Worker recomputes the complete flag from the defects and the review items, discards a draft that sounds like approval, and keeps the case history in its own store. Browser OCR and the page label menus are off on this path.
 
 - `scripts/verify-free.mjs` covers the Worker side with a fake AWS API (block 10).
 - The bucket's CORS preflight from the Worker origin returned 200, and 9 photos uploaded from Chrome with status 204.
