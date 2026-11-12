@@ -18,18 +18,15 @@ const ICON = {
 const DOC_LABELS = { '': 'Auto', application_form: 'Application form', gov_id: 'Government ID', spouse_id: 'Spouse ID', registration: 'DTI or SEC registration', business_permit: "Mayor's permit", itr: 'Income tax return', financials: 'Financial statements', audited_fs: 'Audited FS', bank_statements: 'Bank statement', articles: 'Articles', bylaws: 'By-laws', gis: 'GIS', collateral: 'Collateral' };
 const statusClass = (s) => (s === 'Missing requirements' || s === 'Returned by BSO' ? 'missing' : s === 'Ready for BSO review' ? 'ready' : s === 'With BSO' ? 'with' : '');
 
-// ---- demo key ----
-let demoKey = params.get('key') || (() => { try { return localStorage.getItem('cc-key') || ''; } catch { return ''; } })();
+// ---- demo key: optional, a caller with the key is not rate limited ----
+const demoKey = params.get('key') || (() => { try { return localStorage.getItem('cc-key') || ''; } catch { return ''; } })();
 if (params.get('key')) { try { localStorage.setItem('cc-key', demoKey); } catch { /* private mode */ } }
 async function api(method, path, body) {
   const r = await fetch(path, { method, headers: { 'content-type': 'application/json', 'x-demo-key': demoKey }, body: body ? JSON.stringify(body) : undefined });
   const data = await r.json().catch(() => ({}));
-  if (r.status === 401) { $('keybox').hidden = false; throw new Error('Enter the demo key first.'); }
   if (!r.ok) throw new Error(data.error || `Request failed (${r.status})`);
   return data;
 }
-$('savekey').onclick = () => { demoKey = $('demokey').value.trim(); try { localStorage.setItem('cc-key', demoKey); } catch { /* ignore */ } $('keybox').hidden = true; };
-if (!demoKey) $('keybox').hidden = false;
 
 // ---- role switch ----
 const caseId = () => (role === 'bm' ? $('f-id').value.trim() : $('b-id').value.trim());

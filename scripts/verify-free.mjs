@@ -1,7 +1,7 @@
 // Free-stack API, end to end on the Elena storyline, with an in-memory store and a fake model.
 // Run: node scripts/verify-free.mjs        (add GEMINI_API_KEY=... to also run one live model read)
 import assert from 'node:assert/strict';
-import { makeApi, openItems } from '../worker/api.mjs';
+import { makeApi, openItems, takeQuota, QUOTA } from '../worker/api.mjs';
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 
@@ -42,7 +42,32 @@ const PERMIT = { lines: L(["MAYOR'S PERMIT", 'SPECIMEN', "Business name: Elena's
 const CAL = { lines: L(['CLIENT AUTHORIZATION LETTER', 'SPECIMEN', 'Signed: Elena Santos', 'Signed: Ramon Santos']) };
 
 // auth and validation
-assert.equal((await call('GET', '/api/case?id=RF-2026-042', null, 'wrong')).status, 401);
+// no key is needed. A caller without the key is counted, the health route is not, and a caller with the key skips the count.
+{
+  const asked = [];
+  const gate = (out) => makeApi({ store, llm: fakeLlm, demoKey: 'k', limits: async (model) => { asked.push(model); return out; } });
+  const get = (api, path, key, method = 'GET', body) => api(new Request(`https://x${path}`, { method, headers: { 'content-type': 'application/json', 'x-demo-key': key }, body: body ? JSON.stringify(body) : undefined }));
+  assert.equal((await get(gate('rate'), '/api/case?id=RF-2026-042', '')).status, 429);
+  assert.equal((await get(gate('daily'), '/api/intake', 'wrong', 'POST', { text: 'x' })).status, 429);
+  assert.equal((await get(gate('rate'), '/api/case?id=RF-2026-042', 'k')).status, 404, 'the key skips the limits');
+  assert.equal((await get(gate('rate'), '/api/health', '')).status, 200);
+  asked.length = 0; assert.equal((await get(gate('ok'), '/api/intake', '', 'POST', { text: 'Si Elena Santos' })).status, 200);
+  await get(gate('ok'), '/api/case?id=RF-2026-042', '');
+  assert.deepEqual(asked, [true, false], 'only model routes count toward the model limits');
+
+  const s = {}, t = Date.UTC(2026, 10, 12, 4, 0, 0);
+  for (let i = 0; i < QUOTA.modelPerMinute; i++) assert.equal(takeQuota(s, 'a', true, t), 'ok');
+  assert.equal(takeQuota(s, 'a', true, t), 'rate');
+  assert.equal(takeQuota(s, 'a', false, t), 'ok', 'other routes still pass');
+  assert.equal(takeQuota(s, 'b', true, t), 'ok', 'another address has its own minute');
+  assert.equal(takeQuota(s, 'a', true, t + 60000), 'ok', 'a new minute clears the count');
+  assert.equal(s.n, QUOTA.modelPerMinute + 2);
+  s.n = QUOTA.modelPerDay; assert.equal(takeQuota(s, 'c', true, t + 60000), 'daily');
+  assert.equal(takeQuota(s, 'c', true, t + 86400000), 'ok', 'a new day clears the cap');
+  const all = {}; for (let i = 0; i < QUOTA.perMinute; i++) takeQuota(all, 'a', false, t);
+  assert.equal(takeQuota(all, 'a', false, t), 'rate');
+}
+assert.equal((await call('GET', '/api/case?id=RF-2026-042', null, 'wrong')).status, 404, 'a wrong key is treated as no key');
 assert.equal((await call('POST', '/api/case', { referral: { ...REF, civilStatus: 'complicated' } })).status, 400, 'civil status must be known');
 assert.equal((await call('POST', '/api/check', { id: REF.id, pages: [FORM('', 'Kasal')] })).status, 404, 'check needs a saved case');
 
@@ -177,7 +202,6 @@ assert.equal((await lesson({ action: 'retire', by: 'BSO', lessonId: draft.id }))
   assert.equal(r.status, 200, JSON.stringify(r.body));
   assert.deepEqual(r.body.fields, { business: 'Elena Artisan Bakery', name: 'Elena Santos', type: 'Sole proprietorship', civilStatus: 'married', amount: 750000, bpiAccount: true }, 'a name not in the note, an unknown industry and a non-boolean are dropped');
   assert.equal((await call('POST', '/api/intake', { text: 'x'.repeat(1001) })).status, 400);
-  assert.equal((await call('POST', '/api/intake', { text: note }, 'wrong')).status, 401);
   assert.equal((await call('POST', '/api/intake', { text: note, stack: 'aws' })).status, 503, 'no AWS backend on this deployment');
   fakeLlm.intakeOut = { secured: false, bpiAccount: false }; assert.deepEqual((await call('POST', '/api/intake', { text: 'Si Elena Santos, sole prop, 750k' })).body.fields, {}, 'a box the note never mentions stays as it was');
   fakeLlm.intakeOut = null; assert.deepEqual((await call('POST', '/api/intake', { text: note })).body.fields, {});

@@ -5,6 +5,9 @@
   "account_id": "847a37119fd03f8765b62a6775a6c204",
   "assets": { "directory": "./frontend", "binding": "ASSETS", "not_found_handling": "none" },
   "placement": { "region": "gcp:asia-southeast1" },
+  // Quota counts callers without the demo key (worker/index.mjs). The limits are in worker/api.mjs.
+  "durable_objects": { "bindings": [{ "name": "QUOTA", "class_name": "Quota" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Quota"] }],
   "kv_namespaces": [{ "binding": "CASES", "id": "81cfd7da1e0f481fa523d2afec067e27" }],
   "vars": { "GEMINI_MODEL": "gemini-3.5-flash-lite", "AWS_API_URL": "https://7ye3pqs8h4.execute-api.ap-southeast-1.amazonaws.com" }
 }

@@ -75,7 +75,25 @@ export function statusOf(events) {
 }
 
 /** aws: { url, key, fetch? } for the AWS backend, or null. */
-export function makeApi({ store, llm, now = () => new Date(), demoKey, aws = null }) {
+const MODEL_ROUTES = new Set(['/api/intake', '/api/check', '/api/ask']);
+// Per address per minute for all routes and for model routes, and per UTC day for the model calls of all addresses together.
+export const QUOTA = { perMinute: 120, modelPerMinute: 10, modelPerDay: 300 };
+
+/** Counts one call in state { minute, hits, day, n } and returns 'ok', 'rate' or 'daily'. A refused call is not counted. */
+export function takeQuota(s, ip, model, now = Date.now()) {
+  const minute = Math.floor(now / 60000), day = new Date(now).toISOString().slice(0, 10);
+  if (s.minute !== minute) { s.minute = minute; s.hits = {}; }
+  if (s.day !== day) { s.day = day; s.n = 0; }
+  const h = s.hits[ip] || (s.hits[ip] = { all: 0, model: 0 });
+  if (h.all >= QUOTA.perMinute || (model && h.model >= QUOTA.modelPerMinute)) return 'rate';
+  if (model && s.n >= QUOTA.modelPerDay) return 'daily';
+  h.all++;
+  if (model) { h.model++; s.n++; }
+  return 'ok';
+}
+
+/** limits: async (model) => 'ok' | 'rate' | 'daily', or null for no limits. */
+export function makeApi({ store, llm, now = () => new Date(), demoKey, aws = null, limits = null }) {
   const awsPost = (path, payload) => (aws.fetch || fetch)(aws.url + path, { method: 'POST', headers: { 'content-type': 'application/json', 'x-demo-key': aws.key }, body: JSON.stringify(payload) });
   const noAws = () => json(503, { error: 'the AWS backend is not set up on this deployment' });
   const json = (code, body) => new Response(JSON.stringify(body), { status: code, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } });
@@ -245,7 +263,13 @@ export function makeApi({ store, llm, now = () => new Date(), demoKey, aws = nul
     const u = new URL(req.url);
     const route = routes[`${req.method} ${u.pathname}`];
     if (!route) return json(404, { error: 'not found' });
-    if (demoKey && u.pathname !== '/api/health' && req.headers.get('x-demo-key') !== demoKey) return json(401, { error: 'demo key required' });
+    // The page needs no key. A caller without the demo key is rate limited, and the model routes also share a daily cap.
+    const keyed = Boolean(demoKey) && req.headers.get('x-demo-key') === demoKey;
+    if (limits && !keyed && u.pathname !== '/api/health') {
+      const over = await limits(MODEL_ROUTES.has(u.pathname));
+      if (over === 'rate') return json(429, { error: 'Too many requests. Please try again in a minute.' });
+      if (over === 'daily') return json(429, { error: 'The demo has reached its limit for today. Please try again tomorrow.' });
+    }
     try { return await route(req); } catch (e) { return json(500, { error: 'server error', detail: String(e.message || e).slice(0, 200) }); }
   };
 }

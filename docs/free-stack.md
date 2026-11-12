@@ -25,7 +25,7 @@
 - **Worker placement:** the Worker runs in Singapore (`placement.region: gcp:asia-southeast1`), because Gemini refuses requests from Hong Kong, where Cloudflare would otherwise serve Manila.
 
 ## Not real (say so in the pitch)
-- **Bank systems and logins:** no BPI login and no BPI systems. A shared demo key protects the model quota.
+- **Bank systems and logins:** no BPI login and no BPI systems. The page needs no key. Each address is rate limited (120 requests a minute, 10 model calls a minute) and callers without the demo key share 300 model calls a day. The AWS backend still takes the demo key, and only the Worker sends it.
 - **Synthetic data only:** the Gemini free tier may use prompts to improve Google products.
 - **Form fields:** read as "Label: value" lines, which is how our SPECIMEN form is printed. Real BPI forms need a layout map.
 - **No handwriting reading:** handwriting is not read reliably. That is by design: low-confidence values go to a person, who types what the paper says.

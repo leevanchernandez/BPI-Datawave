@@ -50,7 +50,7 @@ scripts/
 
 ## Counter Check live prototype (free stack)
 
-Live: https://counter-check.h-847.workers.dev/live (branch view) and `/live?role=bso` (BSO view). A demo key is required; ask Simonee.
+Live: https://counter-check.h-847.workers.dev/live (branch view) and `/live?role=bso` (BSO view). No key is needed. The page is rate limited and has a daily cap on model calls.
 
 - Photos are read by Tesseract.js **in the browser**. Images never leave the device; only lines of text go to the server.
 - A Cloudflare Worker (`worker/`) runs the same rules, checker, grounding and reconciler as `backend/`, and keeps each case in KV.
