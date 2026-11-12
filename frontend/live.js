@@ -330,7 +330,7 @@ if (role === 'bso') {
     } catch (e) { $('b-summary').innerHTML = `<p class="soft">${esc(e.message)}</p>`; $('b-endorse').disabled = $('b-return-btn').disabled = true; }
   }
   $('b-q').value = `Ano pa ang kulang sa ${caseId()}?`;
-  $('b-open').onclick = () => { loadCases(); navLinks(); $('b-q').value = `Ano pa ang kulang sa ${caseId()}?`; load(); if (!timer) timer = setInterval(() => document.hidden || load(), 4000); }; // no polling in a hidden tab, to save KV reads
+  $('b-open').onclick = () => { loadCases(); navLinks(); $('b-q').value = `Ano pa ang kulang sa ${caseId()}?`; load(); if (!timer) timer = setInterval(() => document.hidden || load(), 4000); }; // skips polling in a hidden tab
   $('b-approve').onclick = async () => { try { await api('POST', '/api/event', { id: caseId(), type: 'draft_approved', by: 'BSO' }); load(); } catch (e) { alertInline(e.message); } };
   $('b-id').addEventListener('input', () => { $('b-endorse').disabled = $('b-return-btn').disabled = true; });
   $('b-endorse').onclick = async () => { try { await api('POST', '/api/event', { id: caseId(), type: 'endorsed', by: 'BSO' }); load(); loadCases(); } catch (e) { alertInline(e.message); } };
