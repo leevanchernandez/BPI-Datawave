@@ -52,7 +52,7 @@ These go with slides 5 to 8 of the Canva design "Counter Check prototype slides"
 3. Run the Taglish test on real Bedrock with a BSO reading the drafts.
 4. Done on 2026-11-12. The hackathon AWS role reaches Bedrock and Textract, and the backend runs there (docs/aws.md).
 5. Done. Cases live in the Worker's KV store, so the branch window and the BSO window see the same status.
-6. Answers from BPI: why a branch officer would open the tool (KPI credit for complete referrals?), how branches submit today, and baselines (share incomplete at first submission, cycles per referral). The BSO stated 35 complete applications a month on average and 50 to 60 in Q4. Whether that covers one area or all areas is still unanswered.
+6. Answers from BPI: why a branch officer would open the tool (KPI credit for complete referrals?), how branches submit today, and baselines (share incomplete at first submission, cycles per referral). The BSO stated 35 complete applications a month on average and 50 to 60 in Q4. On Nov 13 the BSO said 35 to 40 complete applications a month for the QC and CamaNava area (one area), with about 30 of them first coming in with requirements missing, and that applications endorsed to Credit each month are part of the BSO's KPI (BSO-stated).
 
 ## Claims to avoid
 
