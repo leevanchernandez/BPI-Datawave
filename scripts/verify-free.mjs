@@ -277,6 +277,14 @@ assert.equal((await lesson({ action: 'retire', by: 'BSO', lessonId: draft.id }))
   assert.equal((await ev({ type: 'returned', by: 'BSO', reason: 'x' })).status, 400, 'an endorsed case is not with the BSO');
   const list = (await call('GET', '/api/cases')).body.cases;
   assert.equal(list.find((c) => c.id === REF.id).firstHandoff, 'returned', 'returned once, so not complete the first time');
+  const twin = { ...REF, id: 'RF-2026-044' }, ev2 = (body) => call('POST', '/api/event', { id: twin.id, ...body });
+  assert.equal((await call('POST', '/api/case', { referral: twin })).status, 200);
+  assert.equal((await call('POST', '/api/check', { id: twin.id, pages: pages2 })).body.status, 'Ready for BSO review');
+  await ev2({ type: 'handed_off', by: 'BM' });
+  const first = async () => (await call('GET', '/api/cases')).body.cases.find((c) => c.id === twin.id).firstHandoff;
+  assert.equal(await first(), 'pending');
+  assert.equal((await ev2({ type: 'endorsed', by: 'BSO' })).body.status, 'Endorsed to Credit');
+  assert.equal(await first(), 'complete', 'endorsed with no return is complete the first time');
 }
 
 { // 13. a model outage sends the ID page to a person, and the case cannot pass
