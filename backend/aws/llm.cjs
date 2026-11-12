@@ -6,6 +6,7 @@
 // Haiku 5.5 rules (Anthropic docs): no temperature/top_p, no assistant prefill, no forced tool_choice, thinking is adaptive.
 
 const { validDate } = require('../checker.cjs');
+const { INTAKE_PROMPT, INTAKE_SCHEMA } = require('../free/guards.cjs');
 const MODEL = process.env.BEDROCK_MODEL_ID || 'global.anthropic.claude-haiku-5-5';
 const DOC_TYPES = ['application_form', 'gov_id', 'registration', 'business_permit', 'sanitary_permit', 'financials', 'audited_fs', 'bank_statements'];
 
@@ -129,4 +130,17 @@ async function ask(question, handlers, client, maxTurns = 4) {
   return { answer: 'I could not finish that. Please ask the BSO.', handoff: true };
 }
 
-module.exports = { readPage, markedFields, draftMessage, safeDraft, ask, TOOLS, MODEL, DOC_TYPES };
+/** Case fields from the branch officer's note. The caller checks them with cleanIntake. */
+async function intake(note, client) {
+  const c = client || (await makeClient());
+  const msg = await c.messages.create({
+    model: MODEL,
+    max_tokens: 400,
+    output_config: { effort: 'low', format: { type: 'json_schema', schema: { ...INTAKE_SCHEMA, additionalProperties: false, required: [] } } },
+    system: INTAKE_PROMPT,
+    messages: [{ role: 'user', content: `Note:\n"""\n${note}\n"""` }],
+  });
+  try { return JSON.parse(text(msg)); } catch { return {}; }
+}
+
+module.exports = { readPage, markedFields, draftMessage, safeDraft, ask, intake, TOOLS, MODEL, DOC_TYPES };

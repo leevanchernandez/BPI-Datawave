@@ -38,4 +38,6 @@ OCR and the model sit behind two adapters:
 
 The rules, checker, reconciler and event logic are plain JavaScript with no cloud SDK.
 
+The case form can be filled from a note. The branch types what the client said in English or Taglish, and `POST /api/intake` asks the model for the case fields (Gemini here, Claude on Bedrock with `?stack=aws`). `cleanIntake` in backend/free/guards.cjs keeps a field only when it passes the rules. A name is kept only when every word of it is in the note, the structure, industry and civil status must be on the fixed lists, and the two checkboxes change only when the note mentions collateral or the account. Nothing is saved until the branch checks the form and saves the case, and the checklist still comes from the rules.
+
 The live page can already read on the AWS backend. Add `?stack=aws` to the address, and the photos go to S3 and are read by Textract and Claude on Bedrock (docs/aws.md). The case, its history and the BSO view stay in this Worker.

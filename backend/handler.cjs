@@ -8,6 +8,7 @@ const crypto = require('node:crypto');
 const { processPacket } = require('./pipeline.cjs');
 const { reconcile, draftMessage, deriveStatus } = require('./reconcile.cjs');
 const { checklist } = require('./rules.cjs');
+const { cleanIntake, INTAKE_MAX } = require('./free/guards.cjs');
 
 const MAX_PAGES = 20; // HTTP API integrations time out at 30 seconds, so keep one request small
 const ID = /^RF-\d{4}-\d{3}$/;
@@ -62,9 +63,14 @@ function makeHandlers(deps) {
       await deps.store.record(id, { type: result.complete ? 'check_passed' : 'check_failed', defects: result.defects, needsReview: result.needsReview, at: new Date().toISOString() });
       return json(200, { result, reconcile: rec, message, drafted, trace, model: deps.model || null, pages: provenance, status: deriveStatus(await deps.store.events(id)) });
     },
-    /** POST /ask  { referralId, question }. Tools are bound to that one referral. */
+    /** POST /ask  { referralId, question }. Tools are bound to that one referral. POST /ask { intake } fills case fields from a note. */
     async ask(event) {
       let body; try { body = JSON.parse(event.body || '{}'); } catch { return bad('invalid json'); }
+      // ponytail: the intake shares this route, so the deploy needs no new API route. Give it its own route when it grows.
+      if (body.intake !== undefined) {
+        if (typeof body.intake !== 'string' || !body.intake.trim() || body.intake.length > INTAKE_MAX) return bad('invalid intake');
+        return json(200, { fields: cleanIntake(await deps.intake(body.intake.trim()), body.intake), model: deps.model || null });
+      }
       const q = body.question, id = body.referralId;
       if (typeof q !== 'string' || !q.trim() || q.length > 500) return bad('invalid question');
       if (!ID.test(id || '')) return bad('invalid referralId');

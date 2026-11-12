@@ -3,7 +3,7 @@
 // The model only ever receives OCR TEXT (ID numbers already masked by the pipeline), never images.
 // Synthetic data only: the Gemini free tier may use prompts to improve Google products.
 const { validDate } = require('../checker.cjs');
-const { safeDraft, DOC_TYPES } = require('./guards.cjs');
+const { safeDraft, DOC_TYPES, INTAKE_PROMPT, INTAKE_SCHEMA } = require('./guards.cjs');
 
 const BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 
@@ -109,7 +109,17 @@ function makeGemini({ apiKey, model = 'gemini-3.5-flash-lite', fetchFn = fetch, 
     return { answer: 'I could not finish that. Please ask the BSO.', handoff: true, trace };
   }
 
-  return { readPage, draftMessage, draftLesson, ask, model };
+  /** Case fields from the branch officer's note. The caller checks them with cleanIntake. */
+  async function intake(note) {
+    const r = await call({
+      systemInstruction: { parts: [{ text: INTAKE_PROMPT }] },
+      contents: [{ role: 'user', parts: [{ text: `Note:\n"""\n${note}\n"""` }] }],
+      generationConfig: { responseMimeType: 'application/json', responseJsonSchema: INTAKE_SCHEMA, maxOutputTokens: 400 },
+    });
+    try { return JSON.parse(textOf(r)); } catch { return {}; }
+  }
+
+  return { readPage, draftMessage, draftLesson, ask, intake, model };
 }
 
 module.exports = { makeGemini };

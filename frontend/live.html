@@ -98,6 +98,7 @@
   ul.items.timeline li { grid-template-columns: 3.75rem minmax(0, 1fr); font-size: var(--text-s); }
   .timeline time { white-space: nowrap; color: var(--color-ink-soft); font-variant-numeric: tabular-nums; }
   .answer { margin-top: var(--space-2); }
+  .ai { background: var(--color-info-tint); border-color: var(--color-info); }
   .hidden { display: none !important; }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
@@ -117,21 +118,28 @@
   <!-- Branch manager -->
   <div id="bm-left" class="hidden">
     <section>
+      <h2>Tell it in your own words</h2>
+      <p class="soft">Type what the client told you, in English or Taglish. The AI fills the form below, and you check it before you save. The note here is a sample.</p>
+      <textarea id="intake" rows="4" maxlength="1000" aria-label="Note about the client">Si Elena Santos, may-ari ng Elena's Artisan Bakery, sole prop, food business. 750k ang loan. Married kay Ramon Santos, may BPI account.</textarea>
+      <div class="actions"><button id="intake-btn" class="secondary">Fill the form</button></div>
+      <p class="soft" id="intake-note" role="status"></p>
+    </section>
+    <section>
       <h2>Case</h2>
       <p class="soft">The branch confirms these fields. The checklist comes from the rules, not from the AI.</p>
       <div class="two">
         <div><label for="f-id">Referral number</label><input id="f-id" value="RF-2026-042"></div>
         <div><label for="f-type">Business structure</label><select id="f-type"><option>Sole proprietorship</option><option>Partnership</option><option>Corporation</option></select></div>
       </div>
-      <label for="f-business">Business name</label><input id="f-business" value="Elena Artisan Bakery">
-      <label for="f-name">Owner or signatory</label><input id="f-name" value="Elena Santos">
+      <label for="f-business">Business name</label><input id="f-business">
+      <label for="f-name">Owner or signatory</label><input id="f-name">
       <div class="two">
         <div><label for="f-industry">Industry</label><select id="f-industry"><option>Food & beverage</option><option>Services</option><option>Wholesale & retail</option><option>Manufacturing</option><option>Construction</option></select></div>
-        <div><label for="f-amount">Loan amount (PHP)</label><input id="f-amount" inputmode="numeric" value="750000"></div>
+        <div><label for="f-amount">Loan amount (PHP)</label><input id="f-amount" inputmode="numeric"></div>
       </div>
       <div class="two">
         <div><label for="f-civil">Civil status</label><select id="f-civil"><option value="married">Married</option><option value="single">Single</option><option value="widowed">Widowed</option><option value="separated">Separated</option></select></div>
-        <div><label for="f-spouse">Spouse name</label><input id="f-spouse" value="Ramon Santos"></div>
+        <div><label for="f-spouse">Spouse name</label><input id="f-spouse"></div>
       </div>
       <label class="check"><input type="checkbox" id="f-secured"> Secured loan (property collateral)</label>
       <label class="check"><input type="checkbox" id="f-bpi" checked> Working account is with BPI</label>

@@ -19,6 +19,7 @@ const fakeLlm = {
     return { docType: null, fields: { ...(name ? { owner_name: name[1].trim() } : {}), ...(biz ? { business_name: biz[1].trim() } : {}) }, conf: { owner_name: 0.95, business_name: 0.95 }, expiry: until ? until[1] : undefined, side };
   },
   async draftMessage({ items }) { return `Kulang pa po: ${items.length} item.`; },
+  async intake() { return this.intakeOut; },
   async draftLesson({ reason }) { return `Reminder from a BSO return. ${reason}`; },
   async ask(q, h) { const r = await h.get_lacking(); return { answer: `Kulang pa: ${(r.missing || []).join('; ')}`, handoff: false, trace: [{ tool: 'get_lacking', result: r }] }; },
 };
@@ -167,6 +168,27 @@ assert.equal((await lesson({ action: 'retire', by: 'BSO', lessonId: draft.id }))
   checkStatus = 200; checkBody = { result: { defects: 'none' } };
   assert.equal((await call2('/api/check', { id: R2.id, pageKeys: [u.body.key] })).status, 502, 'a malformed result never passes');
   assert.equal((await call('GET', `/api/case?id=${R2.id}`)).body.status, 'Ready for BSO review', 'failed calls leave the case as it was');
+}
+
+{ // 11. note intake: the model fills fields, and the rules keep only what the note supports
+  const note = 'Si Elena Santos, may-ari ng Elena Artisan Bakery, sole prop, food. 750k ang loan, married kay Ramon Santos, may BPI account.';
+  fakeLlm.intakeOut = { business: 'Elena Artisan Bakery', name: 'Elena Santos', spouseName: 'Ramon Cruz', type: 'Sole proprietorship', industry: 'Mining', amount: 750000.4, civilStatus: 'married', secured: 'no', bpiAccount: true, approved: true };
+  let r = await call('POST', '/api/intake', { text: note });
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  assert.deepEqual(r.body.fields, { business: 'Elena Artisan Bakery', name: 'Elena Santos', type: 'Sole proprietorship', civilStatus: 'married', amount: 750000, bpiAccount: true }, 'a name not in the note, an unknown industry and a non-boolean are dropped');
+  assert.equal((await call('POST', '/api/intake', { text: 'x'.repeat(1001) })).status, 400);
+  assert.equal((await call('POST', '/api/intake', { text: note }, 'wrong')).status, 401);
+  assert.equal((await call('POST', '/api/intake', { text: note, stack: 'aws' })).status, 503, 'no AWS backend on this deployment');
+  fakeLlm.intakeOut = { secured: false, bpiAccount: false }; assert.deepEqual((await call('POST', '/api/intake', { text: 'Si Elena Santos, sole prop, 750k' })).body.fields, {}, 'a box the note never mentions stays as it was');
+  fakeLlm.intakeOut = null; assert.deepEqual((await call('POST', '/api/intake', { text: note })).body.fields, {});
+  const sent = [];
+  const awsFetch = async (url, init) => { sent.push({ url, key: init.headers['x-demo-key'], body: JSON.parse(init.body) }); return Response.json({ fields: { name: 'Elena Santos', spouseName: 'Somebody Else', amount: -5 }, model: 'bedrock-model' }); };
+  const api3 = makeApi({ store, llm: fakeLlm, demoKey: 'k', aws: { url: 'https://aws.example', key: 'aws-key', fetch: awsFetch } });
+  const x = await api3(new Request('https://x/api/intake', { method: 'POST', headers: { 'content-type': 'application/json', 'x-demo-key': 'k' }, body: JSON.stringify({ text: note, stack: 'aws' }) }));
+  const xb = await x.json();
+  assert.deepEqual(xb.fields, { name: 'Elena Santos' }, 'fields from AWS pass the same rules');
+  assert.equal(xb.model, 'bedrock-model'); assert.equal(sent[0].url, 'https://aws.example/ask'); assert.equal(sent[0].key, 'aws-key'); assert.equal(sent[0].body.intake, note);
+  assert.equal(mem.has('RF-2026-778'), false, 'the intake saves nothing');
 }
 
 console.log('free-stack API checks passed');

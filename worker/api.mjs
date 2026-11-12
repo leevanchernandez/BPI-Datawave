@@ -13,7 +13,7 @@ const { processPacket } = pipelineMod;
 const { reconcile, draftMessage: templateDraft, deriveStatus } = reconcileMod;
 const { checklist, table, civilOf } = rulesMod;
 const { formFromLines } = formMod;
-const { refuseCredit, FORBIDDEN } = guardsMod;
+const { refuseCredit, FORBIDDEN, cleanIntake, INTAKE_MAX } = guardsMod;
 
 const ID = /^RF-\d{4}-\d{3}$/;
 const TYPES = ['Sole proprietorship', 'Partnership', 'Corporation'];
@@ -114,6 +114,24 @@ export function makeApi({ store, llm, now = () => new Date(), demoKey, aws = nul
       if (!ID.test(id || '')) return bad('invalid id');
       const c = await store.get(id); if (!c) return json(404, { error: 'unknown referral' });
       return json(200, await full(c));
+    },
+    // Case fields from the branch officer's note. Nothing is saved here. The branch checks the form and saves the case.
+    'POST /api/intake': async (req) => {
+      const b = await body(req); if (!b || !str(b.text, INTAKE_MAX)) return bad(`write the note in ${INTAKE_MAX} characters or fewer`);
+      const onAws = b.stack === 'aws';
+      if (onAws ? !aws : !llm) return onAws ? noAws() : json(503, { error: 'no model configured' });
+      const text = b.text.trim();
+      const failed = () => json(502, { error: 'The AI could not read the note. Fill the form by hand.' });
+      let raw, model;
+      try {
+        if (onAws) {
+          const r = await awsPost('/ask', { intake: text });
+          const a = await r.json().catch(() => null);
+          if (r.status !== 200 || !a) return failed();
+          raw = a.fields; model = a.model || 'Amazon Bedrock';
+        } else { raw = await llm.intake(text); model = llm.model; }
+      } catch { return failed(); }
+      return json(200, { fields: cleanIntake(raw, text), model, stack: onAws ? 'aws' : 'free' });
     },
     'POST /api/upload-url': async (req) => {
       const b = await body(req); if (!b || !ID.test(b.id || '') || !str(b.name, 200)) return bad('invalid upload');

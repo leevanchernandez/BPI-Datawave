@@ -79,6 +79,8 @@ The live page reads on this backend when the address has `?stack=aws` (for examp
 - A Node run through the live Worker returned "Missing requirements" on visit 1 with the two planted defects and a model-drafted Taglish message, then "Ready for BSO review" on visit 2 in 13.8 seconds.
 - A run in Chrome on visit 1 (9 pages) showed the same two problems and the drafted message. From the click to the result it took between 30 and 43 seconds with the uploads. That time was not measured more closely.
 - The problem line shows the field id in lowercase (`"tin" is blank`). It is cosmetic and not fixed.
+- The note intake runs on Claude through the `/ask` function (`POST /ask { intake }`), so it needed no new API route. Three notes were tried on 2026-11-12. The Elena note filled all eight stated fields in 3.6 to 5.2 seconds. A vague note about a corporation filled the structure, industry and amount and left the names empty. A note with an instruction to change the owner and say the loan is approved filled the real client's name only. Three notes are a smoke test and not a measurement.
+- A full run was recorded in Chrome on case `RF-2026-043` (note, save, visit 1 with 2 problems, visit 2 "Ready for BSO review", hand-off, one question and one refused approval question).
 
 ## NOT verified
 

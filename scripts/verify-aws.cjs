@@ -123,6 +123,14 @@ const GOOD = ['form', 'idf', 'idb', 'reg', 'cor', 'permit', 'bank', 'cal'];
   await H3.ask(ev({ referralId: 'RF-2026-060', question: 'lacking?' }));
   assert.equal((await captured.get_lacking({ referralId: 'RF-2026-060' })).known, false, 'an unknown referral is "unknown", not "nothing lacking"');
 
+  // ---- /ask { intake }: case fields from a note, kept only when the rules allow them ----
+  const H5 = makeHandlers({ ...hdeps, intake: async () => ({ name: 'Elena Santos', business: 'Not In Note Inc', type: 'Corporation', amount: 750000 }) });
+  const filled = await H5.ask(ev({ intake: 'Si Elena Santos, corporation, 750k ang loan' }));
+  assert.equal(filled.statusCode, 200);
+  assert.deepEqual(JSON.parse(filled.body).fields, { name: 'Elena Santos', type: 'Corporation', amount: 750000 }, 'a name that is not in the note is dropped');
+  assert.equal((await H5.ask(ev({ intake: 'x'.repeat(1001) }))).statusCode, 400);
+  assert.equal((await H5.ask(ev({ intake: 'note' }, 'wrong'))).statusCode, 401);
+
   // ---- /upload-url: presigned POST for uploads/{referralId}/{safe name}, fake presigner ----
   let signed;
   const H4 = makeHandlers({ ...hdeps, presignUpload: async (o) => { signed = o; return { url: 'https://bucket.example', fields: { key: o.key } }; } });

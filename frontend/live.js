@@ -78,6 +78,26 @@ if (role === 'bm') {
     $('headsup').innerHTML = v.headsUp.map((l) => `<li>${ICON.warn}<span>${esc(l.text)}</span><span></span></li>`).join('');
   }
   $('save-case').onclick = saveCase;
+
+  // ---- note intake: the AI fills the form and the branch confirms it ----
+  const INTAKE = { business: ['f-business', 'business name'], name: ['f-name', 'owner'], type: ['f-type', 'business structure'], industry: ['f-industry', 'industry'], amount: ['f-amount', 'loan amount'], civilStatus: ['f-civil', 'civil status'], spouseName: ['f-spouse', 'spouse name'], secured: ['f-secured', 'collateral'], bpiAccount: ['f-bpi', 'BPI account'] };
+  for (const [id] of Object.values(INTAKE)) $(id).addEventListener('input', (e) => e.target.classList.remove('ai'));
+  $('intake-btn').onclick = async () => {
+    const text = $('intake').value.trim(); if (!text) return;
+    $('intake-btn').disabled = true; $('intake-note').textContent = 'Reading your note.';
+    try {
+      const { fields, model } = await api('POST', '/api/intake', { text, stack });
+      for (const id of ['f-business', 'f-name', 'f-spouse', 'f-amount']) $(id).value = ''; // values from an earlier client must not stay
+      for (const [k, [id]] of Object.entries(INTAKE)) {
+        const el = $(id); el.classList.toggle('ai', k in fields);
+        if (k in fields) { if (el.type === 'checkbox') el.checked = fields[k]; else el.value = fields[k]; }
+      }
+      $('f-civil').onchange();
+      const missing = Object.entries(INTAKE).filter(([k]) => !(k in fields)).map(([, [, label]]) => label);
+      $('intake-note').textContent = `Filled by ${model} from your note. Check the highlighted fields, then save the case.${missing.length ? ` Your note did not mention ${missing.join(', ')}.` : ''}`;
+    } catch (e) { $('intake-note').textContent = ''; alertInline(e.message); }
+    $('intake-btn').disabled = false;
+  };
   if (stack === 'aws') $('photo-note').textContent = 'Photos are uploaded to the AWS backend (S3 in Singapore, deleted after 1 day). Use synthetic documents only.';
   const switchLink = () => `?id=${encodeURIComponent(caseId() || 'RF-2026-042')}${stack === 'aws' ? '' : '&stack=aws'}`;
   $('stack-switch').innerHTML = stack === 'aws'
@@ -105,7 +125,7 @@ if (role === 'bm') {
       const p = { n: ++counter, file, url: URL.createObjectURL(file), lines: null, status: 'Reading', label: '' };
       pages.push(p); renderPages();
     }
-    if (stack === 'aws') for (const p of pages.filter((x) => !x.lines)) { p.lines = []; p.status = 'Ready to upload'; } // Textract reads the photo, so there is no OCR here
+    if (stack === 'aws') { for (const p of pages.filter((x) => !x.lines)) { p.lines = []; p.status = 'Ready to upload'; } renderPages(); } // Textract reads the photo, so there is no OCR here
     for (const p of pages.filter((x) => !x.lines)) {
       current = p;
       try {
