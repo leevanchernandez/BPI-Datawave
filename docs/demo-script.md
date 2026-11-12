@@ -48,7 +48,7 @@ These go with slides 5 to 8 of the Canva design "Counter Check prototype slides"
 ## What must be built or measured before Nov 16
 
 1. Deploy `/check` against real Textract and run 60 printed and phone-photographed synthetic documents with labeled defects. Report recall, false-complete and review rate with ranges. This is the most important item. A simulated stand-in ran on 2026-11-12 with `scripts/eval-degraded.mjs` (36 packets with ImageMagick damage on real Textract and Bedrock, results in docs/aws.md). The printed and phone-photographed run is still open.
-2. Measure real end-to-end seconds including upload. The `/check` call alone took 12 to 20 seconds on AWS for 8 to 10 pages.
+2. Measured on Nov 13 at about 2:35 AM through the live Worker from a laptop (not a phone). Three 10-page packets (1.5 MB in all, uploaded one page after another) took 3.9 to 7.3 seconds to upload and 16.1 to 19.6 seconds to check, so 20 to 27 seconds end to end. A phone on mobile data is not measured.
 3. Run the Taglish test on real Bedrock with a BSO reading the drafts.
 4. Done on 2026-11-12. The hackathon AWS role reaches Bedrock and Textract, and the backend runs there (docs/aws.md).
 5. Done. Cases live in the Worker's KV store, so the branch window and the BSO window see the same status.
