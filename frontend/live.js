@@ -100,14 +100,15 @@ if (role === 'bm') {
   $('mode-ask').onclick = () => setMode('ask');
   async function fill(text, wait) {
     const { fields, model } = await api('POST', '/api/intake', { text, stack });
-    for (const id of ['f-business', 'f-name', 'f-spouse', 'f-amount']) $(id).value = ''; // values from an earlier client must not stay
+    if (fields.name || fields.business) for (const id of ['f-business', 'f-name', 'f-spouse', 'f-amount']) $(id).value = ''; // a new client clears the last one's values, a correction keeps them
     for (const [k, [id]] of Object.entries(INTAKE)) {
       const el = $(id); el.classList.toggle('ai', k in fields);
       if (k in fields) { if (el.type === 'checkbox') el.checked = fields[k]; else el.value = fields[k]; }
     }
     $('f-civil').onchange();
-    const missing = Object.entries(INTAKE).filter(([k]) => !(k in fields)).map(([, [, label]]) => label);
-    wait.textContent = `I filled ${Object.keys(fields).length} fields from your note (${/claude/i.test(model) ? 'Claude Haiku' : /gemini/i.test(model) ? 'Gemini' : model}). Check the highlighted ones, then save the case.${missing.length ? ` Your note did not mention ${missing.join(', ')}.` : ''}`;
+    const missing = Object.entries(INTAKE).filter(([k, [id]]) => !(k in fields) && $(id).type !== 'checkbox' && !$(id).value).map(([, [, label]]) => label);
+    const n = Object.keys(fields).length;
+    wait.textContent = `I filled ${n} field${n === 1 ? '' : 's'} from your note (${/claude/i.test(model) ? 'Claude Haiku' : /gemini/i.test(model) ? 'Gemini' : model}). Check the highlighted ones, then save the case.${missing.length ? ` I did not fill ${missing.join(', ')}.` : ''}`;
   }
   async function ask(question, wait) {
     const v = await api('POST', '/api/ask', { id: caseId(), question, stack });

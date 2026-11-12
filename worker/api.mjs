@@ -149,7 +149,7 @@ export function makeApi({ store, llm, now = () => new Date(), demoKey, aws = nul
     },
     // Case fields from the branch officer's note. Nothing is saved here. The branch checks the form and saves the case.
     'POST /api/intake': async (req) => {
-      const b = await body(req); if (!b || !str(b.text, INTAKE_MAX)) return bad(`write the note in ${INTAKE_MAX} characters or fewer`);
+      const b = await body(req); if (!b || typeof b.text !== 'string' || !b.text.trim()) return bad('write the note first'); if (!str(b.text, INTAKE_MAX)) return bad(`write the note in ${INTAKE_MAX} characters or fewer`);
       const onAws = b.stack === 'aws';
       if (onAws ? !aws : !llm) return onAws ? noAws() : json(503, { error: 'no model configured' });
       const text = b.text.trim();
