@@ -17,7 +17,7 @@ We catch the missing page, the blank TIN and the wrong-name ID while the client 
 
 ## Recording the demo
 
-Use a case number nobody has touched. `RF-2026-050` was unused on 2026-11-12 at 11 PM, and `RF-2026-051` is the spare. Open https://counter-check.h-847.workers.dev/live?id=RF-2026-050 in one window and the same link with `&role=bso` in a second window. The page needs no key. Record the screen with your voice in one take, and leave the waits in, because the 15 to 20 seconds of reading is part of the claim.
+Use a case number nobody has touched. `RF-2026-050` was still unused on Nov 13 at 6 AM. `RF-2026-051` and `052` were used for the silent takes. Open https://counter-check.h-847.workers.dev/live?id=RF-2026-050 in one window and the same link with `&role=bso` in a second window. The page needs no key. Record the screen with your voice in one take, and leave the waits in, because the 15 to 20 seconds of reading is part of the claim.
 
 The files are in `frontend/specimens/`. Visit 1 uses `01-application-form-first-visit.png`, `02`, `03`, `04`, `05-dti-page-1.png`, `08`, `09`, `10` and `11`. Visit 2 adds `01b-application-form-corrected.png` and `05b-dti-page-2.png` and keeps the rest.
 
@@ -34,7 +34,7 @@ The files are in `frontend/specimens/`. Visit 1 uses `01-application-form-first-
 
 All documents are synthetic. Say that once on screen or in the voice-over.
 
-A silent real-time take of steps 1 to 7 was recorded on Nov 13 with Playwright on case `RF-2026-052` (76 seconds at 1280 by 800, waits left in). The file is outside the repo, in Simonee's Downloads. A voice-over can go on top of it if a live take is not possible.
+A silent real-time take of steps 1 to 7 was recorded on Nov 13 at about 6:05 AM with Playwright on case `RF-2026-051` (90 seconds at 1280 by 800, waits left in). It ends with the BSO pressing "Endorse to Credit" and the case list metric. The file is outside the repo, in Simonee's Downloads. A voice-over can go on top of it if a live take is not possible.
 
 ## Voice-over for the slides after the demo
 
