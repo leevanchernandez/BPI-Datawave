@@ -45,6 +45,8 @@ const sameKey = (given, want) => typeof given === 'string' && typeof want === 's
 // Dependencies are built once per container and injectable for tests. Every route needs deps.demoKey in x-demo-key;
 // with no key configured every request is refused.
 function makeHandlers(deps) {
+  // Model tokens used by one request. The call at the start of a route clears what an earlier failed request left.
+  const usage = () => (deps.takeUsage ? deps.takeUsage() : null);
   const routes = {
     /** POST /check  { referral, pageKeys: ["uploads/RF-2026-042/page1.jpg", ...] } */
     async check(event) {
@@ -52,6 +54,7 @@ function makeHandlers(deps) {
       if (!validReferral(body.referral)) return bad('invalid referral');
       const id = body.referral.id, keys = body.pageKeys;
       if (!Array.isArray(keys) || !keys.length || keys.length > MAX_PAGES || !keys.every((k) => validKey(id, k))) return bad('invalid pageKeys');
+      usage();
       const pages = await Promise.all(keys.map((k) => deps.loadPage(k)));
       const prev = await deps.store.lastOpen(id);
       const { result, pages: provenance, trace } = await processPacket(body.referral, pages, deps);
@@ -61,15 +64,18 @@ function makeHandlers(deps) {
       if (deps.draftMessage && items.length) { try { message = await deps.draftMessage({ items, audience: 'branch' }); if (message) drafted = 'model'; } catch { /* template fallback below */ } }
       message = message || draftMessage({ ...rec, newIssues: [...rec.newIssues, ...result.needsReview] });
       await deps.store.record(id, { type: result.complete ? 'check_passed' : 'check_failed', defects: result.defects, needsReview: result.needsReview, at: new Date().toISOString() });
-      return json(200, { result, reconcile: rec, message, drafted, trace, model: deps.model || null, pages: provenance, status: deriveStatus(await deps.store.events(id)) });
+      // Textract reads every page for text lines, and the Forms pass runs on application form pages only.
+      const used = { pages: pages.length, formPages: trace.filter((t) => t.docType === 'application_form').length, ...usage() };
+      return json(200, { result, reconcile: rec, message, drafted, trace, usage: used, model: deps.model || null, pages: provenance, status: deriveStatus(await deps.store.events(id)) });
     },
     /** POST /ask  { referralId, question }. Tools are bound to that one referral. POST /ask { intake } fills case fields from a note. */
     async ask(event) {
       let body; try { body = JSON.parse(event.body || '{}'); } catch { return bad('invalid json'); }
       // ponytail: the intake shares this route, so the deploy needs no new API route. Give it its own route when it grows.
+      usage();
       if (body.intake !== undefined) {
         if (typeof body.intake !== 'string' || !body.intake.trim() || body.intake.length > INTAKE_MAX) return bad('invalid intake');
-        return json(200, { fields: cleanIntake(await deps.intake(body.intake.trim()), body.intake), model: deps.model || null });
+        return json(200, { fields: cleanIntake(await deps.intake(body.intake.trim()), body.intake), usage: usage(), model: deps.model || null });
       }
       const q = body.question, id = body.referralId;
       if (typeof q !== 'string' || !q.trim() || q.length > 500) return bad('invalid question');
@@ -80,7 +86,7 @@ function makeHandlers(deps) {
         get_lacking: async (i) => { own(i); const ev = await deps.store.events(id); if (!ev.length) return { referralId: id, known: false }; const o = await deps.store.lastOpen(id); return { referralId: id, defects: msgs(o.defects), needsReview: msgs(o.needsReview) }; },
         get_checklist: async (r) => ({ requirements: checklist(r).map((x) => x.title), note: 'Sample rules. Confirm against the bank guidebook.' }),
       };
-      return json(200, await deps.ask(q.trim(), handlers));
+      return json(200, { ...(await deps.ask(q.trim(), handlers)), usage: usage() });
     },
     /** POST /upload-url  { referralId, name } -> { url, fields, key }. The browser POSTs the file as multipart form data. */
     async uploadUrl(event) {

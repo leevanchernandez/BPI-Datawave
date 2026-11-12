@@ -53,8 +53,10 @@ for (const [label, files] of VISITS) {
   for (const d of result.defects) console.log(`  defect  ${d.message}`);
   for (const d of result.needsReview) console.log(`  review  ${d.message}`);
   console.log(`  message ${message}`);
+  console.log(`  usage   ${JSON.stringify(r.body.usage)}`);
 }
 
 const a = await post('/ask', { referralId: REF.id, question: 'Ano pa ang kulang sa RF-2026-042?' });
 if (a.status !== 200) fail(`/ask: ${a.status} ${JSON.stringify(a.body).slice(0, 300)}`);
 console.log(`\nask: ${a.body.answer}${a.body.handoff ? ' (handoff)' : ''}`);
+console.log(`  usage   ${JSON.stringify(a.body.usage)}`);

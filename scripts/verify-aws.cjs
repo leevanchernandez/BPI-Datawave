@@ -162,6 +162,12 @@ const GOOD = ['form', 'idf', 'idb', 'reg', 'cor', 'permit', 'bank', 'cal'];
   for (const key of [null, '', 'undefined']) assert.equal((await noKey.check(ev(okBodies.check, key))).statusCode, 401, 'no configured key fails closed');
   assert.equal((await makeHandlers({ ...hdeps, demoKey: '' }).ask(ev(okBodies.ask, ''))).statusCode, 401, 'an empty configured key fails closed');
 
+  // ---- llm.takeUsage: counts tokens per call and clears on read ----
+  llm.takeUsage();
+  const billed = { messages: { create: async () => ({ content: [{ type: 'text', text: 'ok po' }], usage: { input_tokens: 120, output_tokens: 30 } }) } };
+  await llm.draftMessage({ items: ['x'] }, billed); await llm.draftMessage({ items: ['x'] }, billed);
+  assert.deepEqual(llm.takeUsage(), { modelCalls: 2, inputTokens: 240, outputTokens: 60 });
+  assert.deepEqual(llm.takeUsage(), { modelCalls: 0, inputTokens: 0, outputTokens: 0 });
   // ---- llm.readPage validation ----
   const fake = (text, extra = {}) => ({ messages: { create: async () => ({ stop_reason: 'end_turn', content: [{ type: 'text', text }], ...extra }) } });
   let p = await llm.readPage({ bytes: Buffer.from('x') }, fake(JSON.stringify({ docType: 'root_access', legibility: 'clear', owner_name: 'A', expiry: '2026-13-45', admin: true })));

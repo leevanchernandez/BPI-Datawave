@@ -15,6 +15,16 @@ async function makeClient() {
   return new AnthropicBedrock({ awsRegion: process.env.BEDROCK_REGION || process.env.AWS_REGION });
 }
 
+// Token counts of the model calls since the last takeUsage().
+// ponytail: one counter per container. It holds while a Lambda container serves one request at a time.
+let used = { modelCalls: 0, inputTokens: 0, outputTokens: 0 };
+function count(msg) {
+  const u = msg.usage || {};
+  used.modelCalls++; used.inputTokens += u.input_tokens || 0; used.outputTokens += u.output_tokens || 0;
+  return msg;
+}
+function takeUsage() { const u = used; used = { modelCalls: 0, inputTokens: 0, outputTokens: 0 }; return u; }
+
 const text = (msg) => (msg.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('');
 
 const PAGE_SCHEMA = {
@@ -36,13 +46,13 @@ const PAGE_SCHEMA = {
 /** Case reader for pages the cheap classifier could not place, and for fields Textract forms do not cover. */
 async function readPage({ bytes, mediaType = 'image/jpeg' }, client) {
   const c = client || (await makeClient());
-  const msg = await c.messages.create({
+  const msg = count(await c.messages.create({
     model: MODEL,
     max_tokens: 600,
     output_config: { effort: 'low', format: { type: 'json_schema', schema: PAGE_SCHEMA } },
     system: 'You read one page from a Philippine business loan application packet. Report only what is printed on the page. Leave a field empty if you cannot read it. Never guess a name or date. If the page is blurry or cut off, set legibility to "unclear".',
     messages: [{ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: mediaType, data: Buffer.from(bytes).toString('base64') } }, { type: 'text', text: 'Classify this page and extract the fields.' }] }],
-  });
+  }));
   let o;
   try { o = JSON.parse(text(msg)); } catch { return { docType: null, unreadable: true }; }
   // validate: the model never gets to invent a doc type or leak extra keys
@@ -58,13 +68,13 @@ async function readPage({ bytes, mediaType = 'image/jpeg' }, client) {
 /** Second look at form fields the Forms pass returned empty. Returns the fields whose space has any mark in it. */
 async function markedFields({ bytes, mediaType = 'image/jpeg' }, fields, client) {
   const c = client || (await makeClient());
-  const msg = await c.messages.create({
+  const msg = count(await c.messages.create({
     model: MODEL,
     max_tokens: 300,
     output_config: { effort: 'low', format: { type: 'json_schema', schema: { type: 'object', additionalProperties: false, required: ['marked'], properties: { marked: { type: 'array', items: { type: 'string', enum: fields } } } } } },
     system: 'You look at one page of a loan application form. For each field you are asked about, look only at the space where its value is written. A field is marked if that space holds any writing, typing, stamp, signature or other ink, even if you cannot read it. A field is not marked if the space is empty. Do not read out any value.',
     messages: [{ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: mediaType, data: Buffer.from(bytes).toString('base64') } }, { type: 'text', text: `Which of these fields are marked? ${fields.map((f) => f.replace(/_/g, ' ')).join(', ')}. Answer with the field ids ${fields.join(', ')}.` }] }],
-  });
+  }));
   let o;
   try { o = JSON.parse(text(msg)); } catch { return []; }
   return (Array.isArray(o.marked) ? o.marked : []).filter((f) => fields.includes(f));
@@ -82,13 +92,13 @@ function safeDraft(out, items) {
 /** Rewrite the lacking list as a short Taglish message. It may not add, remove, or soften items. */
 async function draftMessage({ items, audience = 'branch' }, client) {
   const c = client || (await makeClient());
-  const msg = await c.messages.create({
+  const msg = count(await c.messages.create({
     model: MODEL,
     max_tokens: 500,
     output_config: { effort: 'low' },
     system: 'You write short, polite Taglish messages for a bank business-loan officer (BSO). Use exactly the items provided: do not add, remove, merge, or soften any item, and never say the application is approved or complete unless the item list is empty. No promises about timing. Under 90 words.',
     messages: [{ role: 'user', content: `Audience: ${audience === 'client' ? 'the business owner (explain briefly why each item is needed)' : 'the branch officer'}.\nItems still needed:\n${items.map((i) => `- ${i}`).join('\n') || '(none)'}` }],
-  });
+  }));
   return safeDraft(text(msg), items);
 }
 
@@ -103,14 +113,14 @@ async function ask(question, handlers, client, maxTurns = 4) {
   const c = client || (await makeClient());
   const messages = [{ role: 'user', content: question }];
   for (let turn = 0; turn < maxTurns; turn++) {
-    const msg = await c.messages.create({
+    const msg = count(await c.messages.create({
       model: MODEL,
       max_tokens: 800,
       output_config: { effort: 'low' },
       system: 'You answer branch staff questions about loan referrals for a BPI business loan officer. Answer ONLY from tool results. If a tool returns nothing or the question is about approval odds, credit decisions, or anything not covered, say you cannot answer and that the BSO should be asked. Reply in the language of the question (English or Taglish). Keep it short.',
       tools: TOOLS,
       messages,
-    });
+    }));
     if (msg.stop_reason === 'refusal') return { answer: 'I cannot help with that. Please ask the BSO.', handoff: true };
     messages.push({ role: 'assistant', content: msg.content });
     const calls = (msg.content || []).filter((b) => b.type === 'tool_use');
@@ -133,14 +143,14 @@ async function ask(question, handlers, client, maxTurns = 4) {
 /** Case fields from the branch officer's note. The caller checks them with cleanIntake. */
 async function intake(note, client) {
   const c = client || (await makeClient());
-  const msg = await c.messages.create({
+  const msg = count(await c.messages.create({
     model: MODEL,
     max_tokens: 400,
     output_config: { effort: 'low', format: { type: 'json_schema', schema: { ...INTAKE_SCHEMA, additionalProperties: false, required: [] } } },
     system: INTAKE_PROMPT,
     messages: [{ role: 'user', content: `Note:\n"""\n${note}\n"""` }],
-  });
+  }));
   try { return JSON.parse(text(msg)); } catch { return {}; }
 }
 
-module.exports = { readPage, markedFields, draftMessage, safeDraft, ask, intake, TOOLS, MODEL, DOC_TYPES };
+module.exports = { readPage, markedFields, draftMessage, safeDraft, ask, intake, takeUsage, TOOLS, MODEL, DOC_TYPES };

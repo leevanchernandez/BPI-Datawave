@@ -101,9 +101,23 @@ The live page reads on this backend when the address has `?stack=aws` (for examp
 
 No Philippine region for Textract or Bedrock. Singapore (ap-southeast-1) has Textract; Claude Haiku 5.5 reaches it only through global cross-region inference (processing may happen in other regions). Sydney has an AU geo profile for Haiku 5.5 at about a 10 percent premium. Choose on purpose and say so in the pitch. A real deployment would run in BPI's own account after compliance review (BSP outsourcing rules, Data Privacy Act). No compliance claim is made.
 
-## Cost per pass (list price, unverified outside Oregon)
+## Cost per check (usage measured on 2026-11-12, list prices)
 
-About 12 pesos per referral per pass, about 90 percent Textract Forms. Multiply by expected resubmission cycles. Not a constraint at 350 applications.
+`/check` and `/ask` return a `usage` object with the pages read, the form pages, the model calls and the input and output tokens. `scripts/smoke.mjs` prints it. One run on the hackathon account with the synthetic Elena packet gave these counts.
+
+| Call | Pages | Form pages | Model calls | Input tokens | Output tokens |
+| --- | --- | --- | --- | --- | --- |
+| `/check`, visit 1 | 9 | 1 | 7 | 14,522 | 426 |
+| `/check`, visit 2 | 10 | 1 | 6 | 14,622 | 322 |
+| `/ask`, one question | | | 2 | 1,611 | 92 |
+
+At list price one check costs about $0.065, which is about 4 pesos at 58 pesos per dollar (assumed rate). The Textract Forms pass is $0.05 of that, the Textract text pass is about $0.015, and Claude Haiku 5.5 is under $0.002. One question to the assistant costs about $0.0002. Lambda, API Gateway, S3 and DynamoDB add less than $0.001 per check (estimated from 512 MB for 20 seconds, not measured).
+
+The prices are $0.0015 per page for text and $0.05 per page for Forms (AWS Textract pricing page, US West Oregon, which does not show Singapore) and $0.10 per million input tokens and $0.50 per million output tokens for Haiku 5.5 (Anthropic list price, and the Bedrock price was not checked). The token counts are from one run, so treat them as a sample.
+
+The specimen application form is one page. A three-page form would cost about $0.17 per check, which is about 10 pesos (assumed page count). A case costs one check per visit, and the demo case takes two.
+
+The BSO said on Nov 12 that an average month has 35 complete applications and a Q4 month has 50 to 60 (BSO-stated, and the scope of that count is not stated). At two checks each, 35 applications cost about 280 pesos a month and 60 cost about 480 pesos. The 350 applications from the kickoff (BPI-stated, period not stated) would cost about 2,800 pesos. Cloud cost is not the constraint. The limits that matter are the Textract rate limit and the 30 second API Gateway timeout (see the section on what is not verified).
 
 ## Data handling
 

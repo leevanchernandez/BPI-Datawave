@@ -25,6 +25,7 @@ function build() {
     draftMessage: (a) => llm.draftMessage(a),
     ask: (q, h) => llm.ask(q, h),
     intake: (note) => llm.intake(note),
+    takeUsage: () => llm.takeUsage(),
     async loadPage(key) {
       const o = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: key }));
       return { bytes: Buffer.from(await o.Body.transformToByteArray()), mediaType: o.ContentType || 'image/jpeg' };
