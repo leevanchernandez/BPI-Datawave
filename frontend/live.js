@@ -353,7 +353,9 @@ if (role === 'bso') {
   $('b-drafts').onclick = (e) => { if (e.target.dataset.discard) lesson({ lessonId: e.target.dataset.discard, action: 'retire' }); };
   $('b-headsup').onclick = (e) => { if (e.target.dataset.retire) lesson({ lessonId: e.target.dataset.retire, action: 'retire' }); };
   window.addEventListener('focus', () => { document.title = 'Counter Check'; });
-  $('b-open').onclick();
+  // without a case number, open the newest case that is with the BSO
+  if (params.get('id')) $('b-open').onclick();
+  else api('GET', '/api/cases').then(({ cases }) => { const c = cases.find((x) => x.status === 'With BSO') || cases[0]; if (c) $('b-id').value = c.id; }).catch(() => {}).finally(() => $('b-open').onclick());
 }
 
 $('b-ask').onclick = async () => {
