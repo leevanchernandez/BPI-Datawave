@@ -7,9 +7,10 @@ const { safeDraft, DOC_TYPES, INTAKE_PROMPT, INTAKE_SCHEMA } = require('./guards
 
 const BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 
+const lastGood = new Map(); // kept across requests in the same Worker instance
 function makeGemini({ apiKey, model = 'gemini-3.5-flash-lite', fetchFn = fetch, sleep = (ms) => new Promise((r) => setTimeout(r, ms)) }) {
   const models = String(model).split(',').map((m) => m.trim()).filter(Boolean);
-  let current = 0; // index of the model that answered last, so a used-up daily quota is skipped on later calls
+  const key = models.join(','); let current = lastGood.get(key) || 0; // index of the model that answered last, so a used-up daily quota is skipped on later calls
   async function call(body) {
     let last;
     for (let m = current; m < models.length; m++) {
@@ -17,7 +18,7 @@ function makeGemini({ apiKey, model = 'gemini-3.5-flash-lite', fetchFn = fetch, 
         let res;
         try { res = await fetchFn(`${BASE}/${models[m]}:generateContent`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey }, body: JSON.stringify(body), signal: AbortSignal.timeout(20000) }); }
         catch (e) { if (e.name === 'TimeoutError') { last = 'timeout'; break; } last = 'network'; await sleep(800 * (attempt + 1)); continue; } // a hung model goes to the next one
-        if (res.ok) { current = m; return res.json(); }
+        if (res.ok) { current = m; lastGood.set(key, m); return res.json(); }
         const t = (await res.text().catch(() => '')).replace(/\s+/g, ' ');
         last = `${res.status} ${t.slice(0, 160)}`;
         if (res.status === 404 || (res.status === 429 && /quota/i.test(t))) break; // try the next model

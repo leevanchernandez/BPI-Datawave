@@ -103,6 +103,8 @@ Nico added two cases at 3:37 AM, and they found two more faults. "I am Nico" fil
 
 Three more faults were fixed on Nov 13 at about 5:15 AM. A bare amount such as "sole prop, 300k" was left out, so the prompt now says a lone peso amount is the loan amount and income or sales never is. Haiku sometimes returned an empty answer for a whole note, so an empty answer is now asked once more. A code check in `cleanIntake` leaves the amount empty when the note has two different peso amounts and no correction word ("not", "hindi", "instead", "mali"), so TC-13 ("500,000, but later said 800,000") goes to the branch whatever the model says. After these fixes three AWS runs gave 128 to 130 of 135 fields correct with 0 wrong, and all 20 of Nico's cases still match.
 
+A code review on Nov 13 at about 5:40 AM found that an income figure ("kita 30k a month, loan 750k") counted as a second amount and that any "hindi" in a note switched the check off. Income and sales figures are now left out of the count, and only a correction that names the wrong amount ("not 750k", "hindi 500k"), "correction" or "mali" keeps the amount. The structure check no longer matches "property" or "corporate", "wala pang asawa" no longer keeps a guessed "married", and "this is Elena" keeps Elena as the owner. Two more AWS runs gave 129 and 130 of 135 correct with 0 wrong.
+
 ## NOT verified
 
 - Textract accuracy on real phone photos, handwriting (English only) and Filipino names. Only the synthetic specimens were read, clean and with simulated photo damage.

@@ -100,7 +100,7 @@ if (role === 'bm') {
   $('mode-ask').onclick = () => setMode('ask');
   async function fill(text, wait) {
     const { fields, model } = await api('POST', '/api/intake', { text, stack });
-    if (fields.name || fields.business) for (const id of ['f-business', 'f-name', 'f-spouse', 'f-amount']) $(id).value = ''; // a new client clears the last one's values, a correction keeps them
+    if (fields.name || fields.business) { for (const id of ['f-business', 'f-name', 'f-spouse', 'f-amount']) $(id).value = ''; for (const id of ['f-secured', 'f-bpi']) $(id).checked = false; } // a new client clears the last one's values, a correction keeps them
     for (const [k, [id]] of Object.entries(INTAKE)) {
       const el = $(id); el.classList.toggle('ai', k in fields);
       if (k in fields) { if (el.type === 'checkbox') el.checked = fields[k]; else el.value = fields[k]; }
@@ -159,15 +159,17 @@ if (role === 'bm') {
       const page = await doc.getPage(i), vp = page.getViewport({ scale: 2 });
       const c = document.createElement('canvas'); c.width = vp.width; c.height = vp.height;
       await page.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
-      out.push(new File([await new Promise((r) => c.toBlob(r, 'image/jpeg', 0.85))], `${file.name}-page-${i}.jpg`, { type: 'image/jpeg' }));
+      const blob = await new Promise((r) => c.toBlob(r, 'image/jpeg', 0.85));
+      if (blob) out.push(new File([blob], `${file.name}-page-${i}.jpg`, { type: 'image/jpeg' }));
     }
+    if (doc.numPages > 20) alertInline(`Only the first 20 pages of ${file.name} were added.`);
     return out;
   }
   async function addFiles(chosen) {
     markStale();
     const files = [];
     for (const f of chosen) {
-      if (f.type !== 'application/pdf') { files.push(f); continue; }
+      if (f.type !== 'application/pdf' && !/\.pdf$/i.test(f.name)) { files.push(f); continue; }
       try { files.push(...(await pdfPages(f))); } catch { alertInline(`Could not open ${f.name}. Take a photo of the page instead.`); }
     }
     for (const file of files) {
@@ -272,7 +274,8 @@ async function loadCases() {
     for (const c of cases) counts[c.status] = (counts[c.status] || 0) + 1;
     $('cases-count').innerHTML = Object.entries(counts).map(([s, n]) => `<span class="status ${statusClass(s)}">${n} ${esc(s)}</span>`).join(' ');
     const sent = cases.filter((c) => c.firstHandoff), ok = sent.filter((c) => c.firstHandoff === 'complete').length;
-    $('cases-metric').textContent = sent.length ? `${ok} of ${sent.length} ${sent.length === 1 ? 'case' : 'cases'} sent to the BSO ${sent.length === 1 ? 'was' : 'were'} complete the first time (never returned).` : '';
+    const waiting = sent.filter((c) => c.firstHandoff === 'complete' && c.status === 'With BSO').length;
+    $('cases-metric').textContent = sent.length ? `${ok} of ${sent.length} ${sent.length === 1 ? 'case' : 'cases'} sent to the BSO ${sent.length === 1 ? 'has' : 'have'} not been returned so far${waiting ? ` (${waiting} still with the BSO)` : ''}.` : '';
     $('cases').innerHTML = cases.map((c) => `<tr data-id="${esc(c.id)}" tabindex="0"${c.id === caseId() ? ' aria-current="true"' : ''}><td class="mono">${esc(c.id)}</td><td>${esc(c.business)}</td><td><span class="status ${statusClass(c.status)}">${esc(c.status)}</span></td><td>${c.open ?? ''}</td><td>${c.updated ? new Date(c.updated).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Manila' }) : ''}</td><td>PHP ${Number(c.amount).toLocaleString('en-PH')}</td><td>${esc(c.type)}, ${esc(c.industry)}</td></tr>`).join('')
       || '<tr><td colspan="7" class="soft">No cases yet.</td></tr>';
   } catch (e) { $('cases').innerHTML = `<tr><td colspan="7" class="soft">${esc(e.message)}</td></tr>`; }

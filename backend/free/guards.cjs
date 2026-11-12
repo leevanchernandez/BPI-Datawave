@@ -39,19 +39,24 @@ const INTAKE_SCHEMA = {
 const TITLES = /^((mang|aling|engr|atty|dr|mr|mrs|ms|sir|ma'?am|pres|kuya|ate)\.?\s+)+/i;
 /** Keeps the intake fields that pass the rules. A name is kept only when every word of it is in the note. */
 const MULT = { k: 1e3, thousand: 1e3, m: 1e6, million: 1e6, milyon: 1e6 };
-// distinct peso amounts written in a note (₱500,000, 750k, 1.2M, 2 milyon)
+// distinct peso amounts in a note, leaving out income and sales figures
+const INCOME = /(kita|kumikita|income|sales|benta|revenue|sweldo|salary)\W*(?:\w+\W+){0,2}$/i;
 function pesos(note) {
-  const found = new Set();
-  for (const [, cur, num, unit] of String(note).matchAll(/(₱|\bphp\s?|\bp(?=\d))?(\d[\d,]*(?:\.\d+)?)\s*(k|thousand|m|million|milyon)?\b/gi)) {
+  const found = new Set(), s = String(note);
+  for (const m of s.matchAll(/(₱|\bphp\s?|\bp(?=\d))?(\d[\d,]*(?:\.\d+)?)\s*(k|thousand|m|million|milyon)?\b/gi)) {
+    const [, cur, num, unit] = m;
     if (!cur && !unit) continue;
+    if (INCOME.test(s.slice(Math.max(0, m.index - 30), m.index)) || /^\W*(a|per|kada|every)\s+(month|year|buwan|taon|day|araw)|^\W*(monthly|yearly|annually)/i.test(s.slice(m.index + m[0].length, m.index + m[0].length + 20))) continue;
     found.add(Number(num.replace(/,/g, '')) * (MULT[(unit || '').toLowerCase()] || 1));
   }
   return found;
 }
+// a correction names the wrong amount ("850k, not 750k", "hindi 500k") or says the earlier one was wrong
+const CORRECTION = /\b(?:not|hindi|instead of)\s+(?:₱|php\s?|p)?\d|\bcorrection\b|\bmali\b/i;
 function cleanIntake(o, note) {
   const out = {}, words = new Set(String(note).toLowerCase().split(/[^a-z0-9ñ'&]+/));
   if (!o || typeof o !== 'object') return out;
-  const selfNames = new Set([...String(note).matchAll(/\b(?:i am|i'm|im|ako si|ako po si|this is)\s+([a-zñ'-]+)/gi)].map((m) => m[1].toLowerCase()));
+  const selfNames = new Set([...String(note).matchAll(/\b(?:i am|i'm|im|ako si|ako po si)\s+([a-zñ'-]+)/gi)].map((m) => m[1].toLowerCase()));
   for (const k of ['business', 'name', 'spouseName']) {
     let v = typeof o[k] === 'string' ? o[k].trim() : '';
     if (k !== 'business') v = v.replace(TITLES, '');
@@ -59,10 +64,10 @@ function cleanIntake(o, note) {
     if (k === 'spouseName' && !/married|kasal|asawa|spouse|wife|husband|misis|mister/i.test(note)) continue;
     if (v && v.length <= 120 && v.toLowerCase().split(/[^a-z0-9ñ'&]+/).filter(Boolean).every((w) => words.has(w))) out[k] = v;
   }
-  if (INTAKE_TYPES.includes(o.type) && /sole|prop|partner|corp|inc\b|opc/i.test(note)) out.type = o.type;
+  if (INTAKE_TYPES.includes(o.type) && /\bsole\b|\bprop\b|proprietor|partner|\bcorp\b|corporation|\binc\b|\bopc\b|one person/i.test(note)) out.type = o.type;
   if (INTAKE_INDUSTRIES.includes(o.industry) && typeof o.industryWord === 'string' && o.industryWord.trim().length > 2 && String(note).toLowerCase().includes(o.industryWord.trim().toLowerCase())) { out.industry = o.industry; out.industryWord = o.industryWord.trim(); }
-  if (INTAKE_CIVIL.includes(o.civilStatus) && /single|married|kasal|asawa|spouse|wife|husband|widow|biyud|balo|separat|hiwalay|annul/i.test(note)) out.civilStatus = o.civilStatus;
-  if (typeof o.amount === 'number' && Number.isFinite(o.amount) && o.amount > 0 && o.amount < 1e11 && (pesos(note).size < 2 || /\bnot\b|hindi|instead|correction|mali\b/i.test(note))) out.amount = Math.round(o.amount); // two amounts and no correction go to the branch
+  if (INTAKE_CIVIL.includes(o.civilStatus) && /single|married|kasal|asawa|spouse|wife|husband|widow|biyud|balo|separat|hiwalay|annul/i.test(note) && !(o.civilStatus === 'married' && /wala\s*(?:ng|pang?)\s+asawa|walang asawa|no (?:wife|husband|spouse)|not married|hindi (?:pa )?kasal/i.test(note))) out.civilStatus = o.civilStatus;
+  if (typeof o.amount === 'number' && Number.isFinite(o.amount) && o.amount > 0 && o.amount < 1e11 && (pesos(note).size < 2 || CORRECTION.test(note))) out.amount = Math.round(o.amount); // two amounts and no correction go to the branch
   // ponytail: a keyword test decides whether the note talks about the structure, civil status, collateral or account at all. Models answer false for a box the note never mentions.
   if (typeof o.secured === 'boolean' && /collateral|secured|titulo|title|property|lupa|mortgage|sangla/i.test(note)) out.secured = o.secured;
   if (typeof o.bpiAccount === 'boolean' && /account|bpi/i.test(note)) out.bpiAccount = o.bpiAccount;
