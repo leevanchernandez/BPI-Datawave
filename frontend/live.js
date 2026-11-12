@@ -146,8 +146,30 @@ if (role === 'bm') {
   }
   let counter = 0;
   const markStale = (text = 'These results are from the last check. The photos changed since then, so press Check documents again.') => { if ($('result').classList.contains('hidden')) return; $('stale').textContent = text; $('stale').classList.remove('hidden'); };
-  async function addFiles(files) {
+  const PDFJS = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/';
+  let pdfLib;
+  async function pdfPages(file) { // each PDF page becomes a JPEG, the same as a photo
+    if (!pdfLib) {
+      await new Promise((ok, no) => { const el = document.createElement('script'); el.src = PDFJS + 'pdf.min.js'; el.onload = ok; el.onerror = no; document.head.append(el); });
+      pdfLib = window.pdfjsLib; pdfLib.GlobalWorkerOptions.workerSrc = PDFJS + 'pdf.worker.min.js';
+    }
+    const doc = await pdfLib.getDocument({ data: await file.arrayBuffer() }).promise;
+    const out = [];
+    for (let i = 1; i <= Math.min(doc.numPages, 20); i++) {
+      const page = await doc.getPage(i), vp = page.getViewport({ scale: 2 });
+      const c = document.createElement('canvas'); c.width = vp.width; c.height = vp.height;
+      await page.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
+      out.push(new File([await new Promise((r) => c.toBlob(r, 'image/jpeg', 0.85))], `${file.name}-page-${i}.jpg`, { type: 'image/jpeg' }));
+    }
+    return out;
+  }
+  async function addFiles(chosen) {
     markStale();
+    const files = [];
+    for (const f of chosen) {
+      if (f.type !== 'application/pdf') { files.push(f); continue; }
+      try { files.push(...(await pdfPages(f))); } catch { alertInline(`Could not open ${f.name}. Take a photo of the page instead.`); }
+    }
     for (const file of files) {
       const p = { n: ++counter, file, url: URL.createObjectURL(file), lines: null, status: 'Reading', label: '' };
       pages.push(p); renderPages();
