@@ -193,6 +193,11 @@ assert.equal((await lesson({ action: 'retire', by: 'BSO', lessonId: draft.id }))
   checkStatus = 200; checkBody = { result: { defects: 'none' } };
   assert.equal((await call2('/api/check', { id: R2.id, pageKeys: [u.body.key] })).status, 502, 'a malformed result never passes');
   assert.equal((await call('GET', `/api/case?id=${R2.id}`)).body.status, 'Ready for BSO review', 'failed calls leave the case as it was');
+  const urls = [];
+  const api4 = makeApi({ store, llm: fakeLlm, demoKey: 'k', aws: { url: 'https://aws.example', key: 'aws-key', checkUrl: 'https://fn.example/', fetch: async (url, init) => { urls.push(url); return awsFetch(url, init); } } });
+  checkBody = { result: { defects: [], needsReview: [] }, trace: [] };
+  await call2('/api/check', { id: R2.id, pageKeys: [u.body.key] }, api4); await call2('/api/upload-url', { id: R2.id, name: 'page-1.jpg' }, api4);
+  assert.deepEqual(urls, ['https://fn.example/', 'https://aws.example/upload-url'], 'only the check goes to the function URL');
 }
 
 { // 11. note intake: the model fills fields, and the rules keep only what the note supports

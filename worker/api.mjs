@@ -75,7 +75,7 @@ export function statusOf(events) {
   return s;
 }
 
-/** aws: { url, key, fetch? } for the AWS backend, or null. */
+/** aws: { url, key, checkUrl?, fetch? } for the AWS backend, or null. checkUrl is the check function's own URL, which has no 30 second gateway limit. */
 const MODEL_ROUTES = new Set(['/api/intake', '/api/check', '/api/ask']);
 // Per address per minute for all routes and for model routes, and per UTC day for the model calls of all addresses together.
 export const QUOTA = { perMinute: 120, modelPerMinute: 10, modelPerDay: 300 };
@@ -95,7 +95,7 @@ export function takeQuota(s, ip, model, now = Date.now()) {
 
 /** limits: async (model) => 'ok' | 'rate' | 'daily', or null for no limits. */
 export function makeApi({ store, llm, now = () => new Date(), demoKey, aws = null, limits = null }) {
-  const awsPost = (path, payload) => (aws.fetch || fetch)(aws.url + path, { method: 'POST', headers: { 'content-type': 'application/json', 'x-demo-key': aws.key }, body: JSON.stringify(payload) });
+  const awsPost = (path, payload) => (aws.fetch || fetch)(path === '/check' && aws.checkUrl ? aws.checkUrl : aws.url + path, { method: 'POST', headers: { 'content-type': 'application/json', 'x-demo-key': aws.key }, body: JSON.stringify(payload) });
   const noAws = () => json(503, { error: 'the AWS backend is not set up on this deployment' });
   const json = (code, body) => new Response(JSON.stringify(body), { status: code, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } });
   const bad = (m) => json(400, { error: m });
@@ -179,7 +179,7 @@ export function makeApi({ store, llm, now = () => new Date(), demoKey, aws = nul
       if (onAws) {
         const send = () => awsPost('/check', { referral: c.referral, pageKeys: b.pageKeys });
         let r = await send();
-        if (r.status === 503) r = await send(); // ponytail: the HTTP API stops at 30 seconds and one retry covers a slow call. Move the check to a queue if it happens often.
+        if (r.status === 503) r = await send(); // the HTTP API stops at 30 seconds. Without checkUrl, one retry covers a slow call
         const a = await r.json().catch(() => null);
         if (r.status !== 200 || !a || !a.result || !Array.isArray(a.result.defects) || !Array.isArray(a.result.needsReview)) return json(502, { error: `the AWS check did not finish (${r.status}). Try again.` });
         result = { ...a.result, complete: a.result.defects.length + a.result.needsReview.length === 0 };

@@ -115,5 +115,13 @@ else
   aws apigatewayv2 update-api --api-id "$API" --cors-configuration "$CORS" >/dev/null
 fi
 
+# The check also gets its own URL, because the HTTP API stops every call at 30 seconds. The handler checks the demo key.
+aws lambda get-function-url-config --function-name "$N-check" >/dev/null 2>&1 || {
+  aws lambda create-function-url-config --function-name "$N-check" --auth-type NONE >/dev/null
+  aws lambda add-permission --function-name "$N-check" --statement-id url --action lambda:InvokeFunctionUrl --principal '*' --function-url-auth-type NONE >/dev/null
+  aws lambda add-permission --function-name "$N-check" --statement-id url-invoke --action lambda:InvokeFunction --principal '*' --invoked-via-function-url >/dev/null
+}
+
 echo "ApiUrl=https://$API.execute-api.$AWS_REGION.amazonaws.com"
+echo "CheckUrl=$(aws lambda get-function-url-config --function-name "$N-check" --query FunctionUrl --output text)"
 echo "UploadBucketName=$BUCKET"

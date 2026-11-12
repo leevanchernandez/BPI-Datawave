@@ -30,7 +30,7 @@ export default {
     // ponytail: one global object. Split it by address if the demo ever gets real traffic.
     const limits = (model) => env.QUOTA.get(env.QUOTA.idFromName('global')).take(ip, model);
     // The AWS backend still needs the demo key, and only this Worker sends it.
-    const aws = env.AWS_API_URL ? { url: env.AWS_API_URL, key: env.DEMO_KEY } : null;
+    const aws = env.AWS_API_URL ? { url: env.AWS_API_URL, key: env.DEMO_KEY, checkUrl: env.AWS_CHECK_URL || null } : null;
     return makeApi({ store, llm, demoKey: env.DEMO_KEY, aws, limits })(req);
   },
 };
