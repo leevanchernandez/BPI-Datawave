@@ -29,7 +29,7 @@ The files are in `frontend/specimens/`. Visit 1 uses `01-application-form-first-
 | 4 | The result shows the two problems and the Taglish message to the client. | The checker found a missing DTI page and a blank field on the form, while the client is still there. The message to the client is drafted in Taglish. |
 | 5 | Switch the Assistant to "Ask about this case" and send "Ano pa ang kulang?". | The branch can ask what is still missing instead of calling the BSO. |
 | 6 | Add the visit 2 photos and check again. The status turns to "Ready for BSO review". Press "Send to BSO". | The client comes back with the missing page. The check passes and the case goes to the BSO. |
-| 7 | BSO window. Show the case, the timeline and the open items. Ask "Approved na ba ito?" in the BSO ask box. | The BSO gets a complete packet with its history. The assistant refuses approval questions, because Credit decides the loan. |
+| 7 | BSO window. Point at the "All cases" list at the top, then click the case. Show the timeline and the open items. Ask "Approved na ba ito?" in the BSO ask box. | The BSO sees every referral and its status in one list, and gets a complete packet with its history. The assistant refuses approval questions, because Credit decides the loan. |
 | 8 | Optional. Return the case with a reason, then show the drafted heads-up and publish it. | When the BSO returns a case, the reason becomes a reminder that other branches see on similar cases. A BSO publishes it, and it never changes the checklist. |
 
 All documents are synthetic. Say that once on screen or in the voice-over.

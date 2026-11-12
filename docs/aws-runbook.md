@@ -50,7 +50,7 @@ aws organizations describe-effective-policy --policy-type AISERVICES_OPT_OUT_POL
 | Bedrock says the model id is invalid or on-demand use is not supported | The model is only offered through an inference profile in this region | Use the profile id from the console as BEDROCK_MODEL_ID |
 | `/check` succeeds but ID, registration and permit pages all land in review | The model call failed and the page went to a person (fail closed) | Look for `modelError` in the `pages` field of the response and in the Lambda logs |
 | Region mismatch: stack or model not found | AWS_REGION, the profile's default region and the console region differ | Export AWS_REGION; the scripts set it for every aws and sam command. Check the console region selector |
-| `/check` returns 503 after about 30 seconds | HTTP API integrations stop at 30 seconds; the Lambda may still be running | The Worker retries once. If it repeats, send fewer pages per call, or raise MemorySize in the template |
+| `/check` returns 503 after about 30 seconds | HTTP API integrations stop at 30 seconds; the Lambda may still be running | Set `AWS_CHECK_URL` in wrangler.jsonc to the CheckUrl that `deploy-cli.sh` prints, then `npx wrangler deploy`. Without it the Worker retries once |
 | Browser shows a CORS error | REVIEW_ORIGIN does not match the page origin exactly (scheme, host, port, no trailing slash) | Redeploy with the right REVIEW_ORIGIN; the API and the bucket both use it |
 | `401 demo key required` | Missing or wrong `x-demo-key` header | Send the key used at deploy time |
 | S3 upload returns 403 | The presigned POST expired (5 minutes), the file is over 5 MB, or the file is not jpeg, png or pdf | Ask `/upload-url` again and upload right away |
