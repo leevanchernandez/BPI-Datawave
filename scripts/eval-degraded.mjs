@@ -3,6 +3,7 @@
 // levels (tilt, perspective, blur, shadow, noise, JPEG), then sends packets that each carry one known defect.
 // This is a stand-in for the printed and phone-photographed test in docs/demo-script.md. It does not replace it.
 // Run it with API_URL=https://<id>.execute-api.ap-southeast-1.amazonaws.com DEMO_KEY=<key> node scripts/eval-degraded.mjs
+// PHOTOS=<folder> runs the same packets on real phone photos of the printed specimens instead (docs/demo-script.md).
 // It needs ImageMagick 7 (magick). It makes 36 /check calls on real Textract and Bedrock and takes about 9 minutes.
 // CASE=<text> runs only the cases whose label contains that text.
 // Never prints the key or the presigned fields.
@@ -40,7 +41,10 @@ const CASES = [
   ['business name differs from referral', FULL, 'REFERRAL_MISMATCH_BUSINESS:business_permit', { business: 'Cruz Hardware' }],
 ].filter((c) => c[0].includes(process.env.CASE || ''));
 if (!CASES.length) fail('CASE matches no case label');
-for (const f of new Set(CASES.flatMap((c) => c[1]))) if (!existsSync(join(SRC, `${f}.png`))) fail(`missing specimen ${f}.png`);
+// PHOTOS=<folder> uses real phone photos of the printed specimens, one per page, named like the specimen (02-owner-id-front.jpg).
+const PHOTOS = process.env.PHOTOS;
+const srcOf = (f) => PHOTOS ? ['jpg', 'jpeg', 'png', 'JPG', 'JPEG', 'PNG'].map((x) => join(PHOTOS, `${f}.${x}`)).find(existsSync) : join(SRC, `${f}.png`);
+for (const f of new Set(CASES.flatMap((c) => c[1]))) if (!srcOf(f) || !existsSync(srcOf(f))) fail(`missing ${PHOTOS ? `photo ${f}.jpg in ${PHOTOS}` : `specimen ${f}.png`}`);
 
 // ponytail: fixed ImageMagick recipes, not real photos. Swap in real phone photos by pointing SRC at them.
 // The red SPECIMEN watermark is dropped first (red channel only), because Textract reads it as text once the page is
@@ -49,7 +53,7 @@ for (const f of new Set(CASES.flatMap((c) => c[1]))) if (!existsSync(join(SRC, `
 const CLEAN = process.env.KEEP_WATERMARK ? [] : ['-channel', 'R', '-separate', '+channel'];
 const SKEW = '0,0 %[fx:w*0.05],%[fx:h*0.03] %[fx:w],0 %[fx:w*0.97],0 0,%[fx:h] 0,%[fx:h] %[fx:w],%[fx:h] %[fx:w*0.93],%[fx:h*0.96]';
 const SHADOW = ['(', '+clone', '-sparse-color', 'Barycentric', '0,0 white %[fx:w],%[fx:h] gray45', ')', '-compose', 'Multiply', '-composite'];
-const LEVELS = [
+const LEVELS = PHOTOS ? [['phone', 'RF-2026-804', ['-auto-orient', '-resize', '2000x2000>', '-quality', '85']]] : [
   ['light', 'RF-2026-801', ['-background', '#cfcfcf', '-rotate', '1.5', '-resize', '80%', '-blur', '0x0.4', '-quality', '70']],
   ['medium', 'RF-2026-802', ['-seed', '42', '-background', '#9a9a9a', '-virtual-pixel', 'background', '-distort', 'Perspective', SKEW, '-rotate', '-3', '-resize', '65%', '-blur', '0x0.9', '-brightness-contrast', '-8x-10', '-attenuate', '0.3', '+noise', 'Gaussian', '-quality', '50']],
   ['heavy', 'RF-2026-803', ['-seed', '42', '-background', '#777', '-virtual-pixel', 'background', '-distort', 'Perspective', SKEW, '-rotate', '6', ...SHADOW, '-resize', '50%', '-blur', '0x1.3', '-attenuate', '0.6', '+noise', 'Gaussian', '-quality', '30']],
@@ -80,7 +84,7 @@ for (const [level, id, recipe] of LEVELS) {
   const keys = {};
   for (const f of new Set(CASES.flatMap((c) => c[1]))) {
     const out = join(tmp, `${level}-${f}.jpg`);
-    execFileSync('magick', [join(SRC, `${f}.png`), ...CLEAN, ...recipe, out]);
+    execFileSync('magick', [srcOf(f), ...CLEAN, ...recipe, out]);
     keys[f] = await upload(id, out);
   }
   for (const [label, files, want, patch] of CASES) {
