@@ -236,9 +236,11 @@ if (role === 'bm') {
     const o = v.open;
     const open = o.defects.length + o.needsReview.length;
     const back = v.status === 'Returned by BSO' && v.events.filter((e) => e.type === 'returned').pop();
-    $('verdict').textContent = back ? 'Returned by BSO' : open ? `${open} ${open === 1 ? 'thing' : 'things'} to fix before the BSO` : 'Ready for BSO review';
+    const endorsed = v.status === 'Endorsed to Credit';
+    $('verdict').textContent = endorsed ? 'Endorsed to Credit' : back ? 'Returned by BSO' : open ? `${open} ${open === 1 ? 'thing' : 'things'} to fix before the BSO` : 'Ready for BSO review';
     $('status').textContent = v.status; $('status').className = `status ${statusClass(v.status)}`;
-    if (back) $('recline').textContent = `The BSO returned this case and wrote "${back.reason}". Fix it with the client, then check the documents again.`;
+    if (endorsed) $('recline').textContent = 'The BSO endorsed this case to Credit. Credit decides the loan.';
+    else if (back) $('recline').textContent = `The BSO returned this case and wrote "${back.reason}". Fix it with the client, then check the documents again.`;
     else if (v.reconcile) $('recline').textContent = `Compared with the last check: ${v.reconcile.resolved} fixed, ${v.reconcile.stillMissing} still open, ${v.reconcile.newIssues} new.`;
     $('defects').innerHTML = o.defects.length ? o.defects.map((d) => `<li>${ICON.bad}<span>${esc(d.message)}</span><span></span></li>`).join('') : `<li>${ICON.ok}<span>None found by the rules.</span><span></span></li>`;
     $('reviews').innerHTML = o.needsReview.length ? o.needsReview.map((d) => `<li>${ICON.warn}<span>${esc(d.message)}</span><button class="small secondary" data-clear="${esc(d.key)}">Clear</button>
