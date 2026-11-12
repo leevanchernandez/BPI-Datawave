@@ -273,7 +273,7 @@ if (role === 'bm') {
   }
   // load an existing case if there is one
   (async () => {
-    if (!params.get('id')) { const id = await freshId(); $('f-id').value = $('b-id').value = id; history.replaceState(null, '', `?id=${id}${stackQuery}`); navLinks(); }
+    if (!params.get('id')) { const id = await freshId(); $('f-id').value = $('b-id').value = id; history.replaceState(null, '', `?id=${id}${stackQuery}`); navLinks(); return; }
     try { const v = await api('GET', `/api/case?id=${encodeURIComponent(caseId())}`); fillForm(v.referral); renderChecklist(v); lastView = v; if (v.open.checked) { renderResult(v); markStale('These results are from the last saved check. Photos are not kept after a refresh, so add them again and press Check documents to update.'); } } catch { /* new case */ } })();
   function fillForm(r) { $('f-business').value = r.business; $('f-name').value = r.name; $('f-type').value = r.type; $('f-industry').value = r.industry; $('f-amount').value = r.amount; $('f-civil').value = r.civilStatus; $('f-spouse').value = r.spouseName || ''; $('f-secured').checked = !!r.secured; $('f-bpi').checked = r.bpiAccount !== false; }
 }
