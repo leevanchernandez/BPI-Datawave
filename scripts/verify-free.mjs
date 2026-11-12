@@ -228,6 +228,17 @@ assert.equal((await lesson({ action: 'retire', by: 'BSO', lessonId: draft.id }))
   assert.ok(elena && elena.business === REF.business);
 }
 
+{ // 13. a model outage sends the ID page to a person, and the case cannot pass
+  const down = makeApi({ store, llm: { ...fakeLlm, readPage: async () => { throw new Error('model down'); }, draftMessage: async () => { throw new Error('model down'); } }, demoKey: 'k' });
+  const R3 = { ...REF, id: 'RF-2026-779' };
+  await call('POST', '/api/case', { referral: R3 });
+  const x = await down(new Request('https://x/api/check', { method: 'POST', headers: { 'content-type': 'application/json', 'x-demo-key': 'k' }, body: JSON.stringify({ id: R3.id, pages: [ID('Elena Santos', 'front')] }) }));
+  const xb = await x.json();
+  assert.equal(x.status, 200, JSON.stringify(xb));
+  assert.ok(xb.result.needsReview.some((d) => d.key.startsWith('PAGE_UNREADABLE')), 'the unread page goes to a person');
+  assert.equal(xb.result.complete, false); assert.equal(xb.drafted, 'template', 'the message falls back to the template');
+}
+
 console.log('free-stack API checks passed');
 
 if (process.env.GEMINI_API_KEY) {

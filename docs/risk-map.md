@@ -1,0 +1,22 @@
+# Risks, safeguards and tests
+
+Every row marked "Tested" has a check that fails if the safeguard breaks. Run `npm test` and `node scripts/verify-free.mjs` from `app/` to reproduce them. "Measured" rows ran on the deployed AWS stack with synthetic specimens. "Proposed" rows are for a pilot and are not built.
+
+| Risk | Safeguard | Evidence | Status |
+|---|---|---|---|
+| The AI invents a requirement | Rules build the checklist from a table with a source on every row. The model never sees or changes it. | verify-free.mjs step 1, step 7 (a heads-up never changes the checklist) | Tested |
+| The AI says a loan is approved | Approval questions are refused by a rule before the model runs. A drafted message that sounds like approval is replaced by a template. | verify-free.mjs step 4 and step 10 | Tested |
+| A packet for a different client passes | The packet is compared with the saved referral, and names never match on spelling similarity. | verify-backend.cjs checks 1 and 4 | Tested |
+| The model invents a name or a date | A name or date from the model is kept only if it appears in the page's own OCR text. Otherwise it goes to a person. | verify-backend.cjs check 12 | Tested |
+| A blurry page or field is treated as fine | An unreadable page or field becomes a review item, and "Ready for BSO review" needs zero defects and zero review items. | verify-backend.cjs checks 2 and 13, verify-free.mjs step 2 | Tested |
+| Stamps or watermarks over a field read as blank | When the form reader finds no value, the model is asked whether the space has any mark. A marked field goes to a person. | docs/aws.md, 8 calls with the watermark kept (0 wrong defects against 182 before) | Measured on synthetic specimens |
+| Phone photos cause misses | Simulated photo damage at three levels with one planted defect per packet | docs/aws.md, 32 of 33 named, 1 sent to review, 0 of 33 defective packets passed | Measured on simulated damage, not real photos |
+| The branch sends the case before it is complete | The handoff is refused while any item is open. Clearing an item needs the value typed from the paper and a reason. | verify-free.mjs step 3 | Tested |
+| A BSO return becomes a wrong rule for everyone | A return only drafts a heads-up. Only a BSO can publish it, it cannot name the client, and it never changes the checklist or the status. | verify-free.mjs step 7 | Tested |
+| The AI fills the form wrong from the branch's note | Only fields that pass the rules are kept, and a name must appear in the note. The branch checks the form before saving. | verify-free.mjs step 11 | Tested |
+| The browser sends a fake referral to AWS | The Worker sends its own stored referral, and upload keys must sit under that referral's folder. | verify-free.mjs step 10 | Tested |
+| The model or AWS is down | A model error sends the page to a person. A failed AWS check leaves the case as it was. | verify-free.mjs steps 10 and 13 | Tested |
+| Someone runs up the model bill | Callers without the demo key get 10 model calls a minute and 300 a day across everyone. | verify-free.mjs, auth and validation block | Tested |
+| Client data leaves the country | The demo uses synthetic documents only. Haiku runs through global cross-region routing, so a pilot needs BPI's own account and a compliance review. | docs/aws.md | Proposed for pilot |
+| No real login | The open demo link becomes BPI login, with the case loaded from BPI's system. | docs/aws.md | Proposed for pilot |
+| Real forms and real photos differ from our specimens | The printed 60-document test, and a layout map for BPI's real application form | docs/demo-script.md | Proposed, not run |
