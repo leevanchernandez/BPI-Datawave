@@ -321,6 +321,7 @@ var CounterCheck = (() => {
       function deriveStatus(events) {
         let s = "Draft";
         for (const e of events) {
+          if (s === "Endorsed to Credit") break;
           const next = STATUS_BY_EVENT[e.type];
           if (!next) continue;
           if (RANK[s] >= 1 && e.type === "check_passed") continue;

@@ -35,6 +35,7 @@ const RANK = { Draft: 0, 'Missing requirements': 0, 'Returned by BSO': 0, 'With 
 function deriveStatus(events) {
   let s = 'Draft';
   for (const e of events) {
+    if (s === 'Endorsed to Credit') break; // nothing moves a case back from Credit
     const next = STATUS_BY_EVENT[e.type];
     if (!next) continue;
     if (RANK[s] >= 1 && e.type === 'check_passed') continue; // a later passing re-check never rolls back a handoff

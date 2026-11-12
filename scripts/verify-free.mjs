@@ -285,6 +285,10 @@ assert.equal((await lesson({ action: 'retire', by: 'BSO', lessonId: draft.id }))
   assert.equal(await first(), 'pending');
   assert.equal((await ev2({ type: 'endorsed', by: 'BSO' })).body.status, 'Endorsed to Credit');
   assert.equal(await first(), 'complete', 'endorsed with no return is complete the first time');
+  assert.equal((await call('POST', '/api/check', { id: twin.id, pages: pages2.slice(1) })).status, 400, 'no new check after endorsement');
+  assert.equal((await ev2({ type: 'handed_off', by: 'BM' })).status, 400, 'no second handoff');
+  assert.equal((await ev2({ type: 'bso_opened', by: 'BM' })).status, 400, 'bso_opened is not an event a caller can send');
+  assert.equal((await call('GET', `/api/case?id=${twin.id}`)).body.status, 'Endorsed to Credit');
 }
 
 { // 13. a model outage sends the ID page to a person, and the case cannot pass

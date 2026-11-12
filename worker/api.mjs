@@ -19,7 +19,7 @@ const ID = /^RF-\d{4}-\d{3}$/;
 const TYPES = ['Sole proprietorship', 'Partnership', 'Corporation'];
 const MAX_PAGES = 20, MAX_LINES = 300, MAX_LINE = 300;
 const MAX_LIST = 200; // ponytail: one read per case. Keep a summary in the KV metadata if the list grows past this.
-const EVENT_TYPES = new Set(['cleared', 'waived', 'handed_off', 'bso_opened', 'draft_approved', 'special_case', 'returned', 'endorsed']);
+const EVENT_TYPES = new Set(['cleared', 'waived', 'handed_off', 'draft_approved', 'special_case', 'returned', 'endorsed']);
 const str = (v, max) => typeof v === 'string' && v.trim().length > 0 && v.length <= max;
 
 // Heads-ups are reminders from confirmed BSO returns. Only a 'returned' event drafts one (a waiver or a clearance never
@@ -178,6 +178,7 @@ export function makeApi({ store, llm, now = () => new Date(), demoKey, aws = nul
       if (onAws ? !validKeys(b.id, b.pageKeys) : !validPages(b.pages)) return bad('invalid pages');
       if (onAws && !aws) return noAws();
       const c = await store.get(b.id); if (!c) return json(404, { error: 'save the case first' });
+      if (statusOf(c.events) === 'Endorsed to Credit') return bad('this case is already endorsed to Credit');
       let result, trace, message = null, drafted = 'template', model = llm ? llm.model : null;
       if (onAws) {
         const send = () => awsPost('/check', { referral: c.referral, pageKeys: b.pageKeys });
@@ -210,6 +211,7 @@ export function makeApi({ store, llm, now = () => new Date(), demoKey, aws = nul
       const b = await body(req); if (!b || !ID.test(b.id || '') || !EVENT_TYPES.has(b.type)) return bad('invalid event');
       if (!['BM', 'BSO'].includes(b.by)) return bad('invalid by');
       const c = await store.get(b.id); if (!c) return json(404, { error: 'unknown referral' });
+      if (statusOf(c.events) === 'Endorsed to Credit') return bad('this case is already endorsed to Credit');
       const o = openItems(c.events);
       const reason = typeof b.reason === 'string' ? b.reason.trim().slice(0, 300) : '';
       const ev = { type: b.type, by: b.by, at: at() };
