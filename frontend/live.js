@@ -263,8 +263,18 @@ if (role === 'bm') {
   }
   $('handoff').onclick = async () => { try { const nv = await api('POST', '/api/event', { id: caseId(), type: 'handed_off', by: 'BM' }); renderResult({ ...lastView, ...nv }); } catch (e) { alertInline(e.message); } };
 
+  // a link without a case number gets an unused one, so visitors do not share a case
+  async function freshId() {
+    for (let i = 0; i < 5; i++) {
+      const id = `RF-2026-${300 + Math.floor(Math.random() * 500)}`;
+      if ((await fetch(`/api/case?id=${id}`, { headers: { 'x-demo-key': demoKey } })).status === 404) return id;
+    }
+    return caseId();
+  }
   // load an existing case if there is one
-  (async () => { try { const v = await api('GET', `/api/case?id=${encodeURIComponent(caseId())}`); fillForm(v.referral); renderChecklist(v); lastView = v; if (v.open.checked) { renderResult(v); markStale('These results are from the last saved check. Photos are not kept after a refresh, so add them again and press Check documents to update.'); } } catch { /* new case */ } })();
+  (async () => {
+    if (!params.get('id')) { const id = await freshId(); $('f-id').value = $('b-id').value = id; history.replaceState(null, '', `?id=${id}${stackQuery}`); navLinks(); }
+    try { const v = await api('GET', `/api/case?id=${encodeURIComponent(caseId())}`); fillForm(v.referral); renderChecklist(v); lastView = v; if (v.open.checked) { renderResult(v); markStale('These results are from the last saved check. Photos are not kept after a refresh, so add them again and press Check documents to update.'); } } catch { /* new case */ } })();
   function fillForm(r) { $('f-business').value = r.business; $('f-name').value = r.name; $('f-type').value = r.type; $('f-industry').value = r.industry; $('f-amount').value = r.amount; $('f-civil').value = r.civilStatus; $('f-spouse').value = r.spouseName || ''; $('f-secured').checked = !!r.secured; $('f-bpi').checked = r.bpiAccount !== false; }
 }
 
