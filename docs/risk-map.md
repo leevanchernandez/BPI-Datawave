@@ -22,3 +22,4 @@ Every row marked "Tested" has a check that fails if the safeguard breaks. Run `n
 | No real login | The open demo link becomes BPI login, with the case loaded from BPI's system. | docs/aws.md | Proposed for pilot |
 | Real forms and real photos differ from our specimens | The printed 60-document test, and a layout map for BPI's real application form | docs/demo-script.md | Proposed, not run |
 | The first-time count is inflated or a case is endorsed by mistake | Only the BSO can endorse, only a case with the BSO and nothing open, and an endorsed case refuses new checks and events. A case returned even once never counts as complete the first time. | verify-free.mjs step 12b | Tested |
+| Judges on the plain link overwrite one shared case | A link without a case number gets its own random unused number, set before anything reads it. | Checked by hand on the live page on Nov 13 (two loads gave two new numbers) | Not tested by a script |
