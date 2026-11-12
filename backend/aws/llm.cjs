@@ -154,7 +154,7 @@ async function ask(question, handlers, client, maxTurns = 4, tools = TOOLS) {
 }
 
 /** Case fields from the branch officer's note. The caller checks them with cleanIntake. */
-async function intake(note, client) {
+async function intake(note, client, tries = 2) {
   const c = client || (await makeClient());
   const msg = count(await c.messages.create({
     model: MODEL,
@@ -163,7 +163,9 @@ async function intake(note, client) {
     system: INTAKE_PROMPT,
     messages: [{ role: 'user', content: `Note:\n"""\n${note}\n"""` }],
   }));
-  try { return JSON.parse(text(msg)); } catch { return {}; }
+  let out = {};
+  try { out = JSON.parse(text(msg)); } catch {}
+  return Object.keys(out).length || tries < 2 ? out : intake(note, c, 1); // the model sometimes returns nothing, so ask once more
 }
 
 module.exports = { readPage, markedFields, draftMessage, safeDraft, ask, intake, takeUsage, TOOLS, CASE_TOOLS, MODEL, DOC_TYPES };

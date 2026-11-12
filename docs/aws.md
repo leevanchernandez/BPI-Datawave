@@ -101,6 +101,8 @@ Nico's 18 test cases (the team sheet "Testcases") also ran on both stacks on Nov
 
 Nico added two cases at 3:37 AM, and they found two more faults. "I am Nico" filled the officer as the owner, and "my child will be collateral and her name is Reg" filled the child as the owner. A name after "I am" or "ako si" is now dropped, a spouse name needs the note to mention marriage, and an industry is kept only when the model returns the word from the note that shows it (for example "bakery"). On the last AWS run all 20 cases matched, and the 20 notes gave 130 of 135 fields correct with 0 wrong. The free stack could not be rerun, because Gemini's free daily quota ran out at about 4:30 AM after these tests. TC-20 expects collateral ticked, and the page leaves it unticked because a person cannot be loan collateral.
 
+Three more faults were fixed on Nov 13 at about 5:15 AM. A bare amount such as "sole prop, 300k" was left out, so the prompt now says a lone peso amount is the loan amount and income or sales never is. Haiku sometimes returned an empty answer for a whole note, so an empty answer is now asked once more. A code check in `cleanIntake` leaves the amount empty when the note has two different peso amounts and no correction word ("not", "hindi", "instead", "mali"), so TC-13 ("500,000, but later said 800,000") goes to the branch whatever the model says. After these fixes three AWS runs gave 128 to 130 of 135 fields correct with 0 wrong, and all 20 of Nico's cases still match.
+
 ## NOT verified
 
 - Textract accuracy on real phone photos, handwriting (English only) and Filipino names. Only the synthetic specimens were read, clean and with simulated photo damage.

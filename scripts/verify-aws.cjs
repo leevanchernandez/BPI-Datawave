@@ -177,6 +177,12 @@ const GOOD = ['form', 'idf', 'idb', 'reg', 'cor', 'permit', 'bank', 'cal'];
   assert.deepEqual(llm.takeUsage(), { modelCalls: 0, inputTokens: 0, outputTokens: 0 });
   // ---- llm.readPage validation ----
   const fake = (text, extra = {}) => ({ messages: { create: async () => ({ stop_reason: 'end_turn', content: [{ type: 'text', text }], ...extra }) } });
+  { // an empty intake answer is asked once more
+    const outs = ['{}', '{"amount":5}', '{}', '{}'], seen = [];
+    const seq = { messages: { create: async () => { seen.push(1); return { content: [{ type: 'text', text: outs.shift() }] }; } } };
+    assert.deepEqual(await llm.intake('5 pesos', seq), { amount: 5 });
+    assert.deepEqual(await llm.intake('nothing here', seq), {}); assert.equal(seen.length, 4, 'at most one retry');
+  }
   let p = await llm.readPage({ bytes: Buffer.from('x') }, fake(JSON.stringify({ docType: 'root_access', legibility: 'clear', owner_name: 'A', expiry: '2026-13-45', admin: true })));
   assert.equal(p.docType, null); assert.equal(p.expiry, undefined, 'impossible calendar date rejected'); assert.equal(p.admin, undefined);
   p = await llm.readPage({ bytes: Buffer.from('x') }, fake('not json')); assert(p.unreadable);
