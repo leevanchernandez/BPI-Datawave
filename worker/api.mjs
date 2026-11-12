@@ -18,6 +18,7 @@ const { refuseCredit, FORBIDDEN, cleanIntake, INTAKE_MAX } = guardsMod;
 const ID = /^RF-\d{4}-\d{3}$/;
 const TYPES = ['Sole proprietorship', 'Partnership', 'Corporation'];
 const MAX_PAGES = 20, MAX_LINES = 300, MAX_LINE = 300;
+const MAX_LIST = 200; // ponytail: one read per case. Keep a summary in the KV metadata if the list grows past this.
 const EVENT_TYPES = new Set(['cleared', 'waived', 'handed_off', 'bso_opened', 'draft_approved', 'special_case', 'returned']);
 const str = (v, max) => typeof v === 'string' && v.trim().length > 0 && v.length <= max;
 
@@ -126,6 +127,16 @@ export function makeApi({ store, llm, now = () => new Date(), demoKey, aws = nul
       c.referral = ref; c.events.push({ type: c.events.length ? 'updated' : 'created', by: 'BM', at: at() });
       await store.put(ref.id, c);
       return json(200, await full(c));
+    },
+    // Every case with its status, newest first, for the BSO's list.
+    'GET /api/cases': async () => {
+      const ids = (await store.list()).filter((id) => ID.test(id)).slice(0, MAX_LIST);
+      const cases = (await Promise.all(ids.map((id) => store.get(id)))).filter(Boolean).map((c) => {
+        const o = openItems(c.events), r = c.referral;
+        return { id: r.id, business: r.business, type: r.type, industry: r.industry, amount: r.amount, status: statusOf(c.events), open: o.defects.length + o.needsReview.length, updated: (c.events[c.events.length - 1] || {}).at || null };
+      });
+      cases.sort((a, b) => String(b.updated).localeCompare(String(a.updated)));
+      return json(200, { cases });
     },
     'GET /api/case': async (req) => {
       const id = new URL(req.url).searchParams.get('id');

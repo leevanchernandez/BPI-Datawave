@@ -23,6 +23,7 @@ export default {
     const store = {
       get: async (id) => env.CASES.get(`case:${id}`, 'json'),
       put: async (id, c) => env.CASES.put(`case:${id}`, JSON.stringify(c), { expirationTtl: TTL }),
+      list: async () => (await env.CASES.list({ prefix: 'case:' })).keys.map((k) => k.name.slice(5)),
     };
     const llm = env.GEMINI_API_KEY ? geminiMod.makeGemini({ apiKey: env.GEMINI_API_KEY, model: env.GEMINI_MODEL || 'gemini-3.5-flash-lite' }) : null;
     const ip = req.headers.get('cf-connecting-ip') || 'unknown';

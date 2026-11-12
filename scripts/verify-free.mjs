@@ -6,7 +6,7 @@ import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 
 const mem = new Map();
-const store = { get: async (id) => (mem.has(id) ? JSON.parse(mem.get(id)) : null), put: async (id, c) => { mem.set(id, JSON.stringify(c)); } };
+const store = { get: async (id) => (mem.has(id) ? JSON.parse(mem.get(id)) : null), put: async (id, c) => { mem.set(id, JSON.stringify(c)); }, list: async () => [...mem.keys()] };
 const seen = [];
 const fakeLlm = {
   model: 'fake',
@@ -213,6 +213,14 @@ assert.equal((await lesson({ action: 'retire', by: 'BSO', lessonId: draft.id }))
   assert.deepEqual(xb.fields, { name: 'Elena Santos' }, 'fields from AWS pass the same rules');
   assert.equal(xb.model, 'bedrock-model'); assert.equal(sent[0].url, 'https://aws.example/ask'); assert.equal(sent[0].key, 'aws-key'); assert.equal(sent[0].body.intake, note);
   assert.equal(mem.has('RF-2026-778'), false, 'the intake saves nothing');
+}
+
+{ // 12. the BSO's list shows every case with its status, and no heads-up record
+  const r = await call('GET', '/api/cases');
+  assert.equal(r.status, 200);
+  assert.ok(r.body.cases.length >= 1 && r.body.cases.every((c) => /^RF-\d{4}-\d{3}$/.test(c.id) && typeof c.status === 'string' && Number.isInteger(c.open)), JSON.stringify(r.body));
+  const elena = r.body.cases.find((c) => c.id === 'RF-2026-042');
+  assert.ok(elena && elena.business === REF.business);
 }
 
 console.log('free-stack API checks passed');

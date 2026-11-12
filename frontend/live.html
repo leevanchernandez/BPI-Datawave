@@ -108,6 +108,10 @@
   .bubble.bot { align-self: flex-start; background: var(--color-surface); border: 1px solid var(--color-line); }
   .bubble.wait { color: var(--color-ink-soft); }
   .composer { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-2); align-items: end; margin-top: var(--space-3); }
+  .tablewrap { overflow-x: auto; }
+  table.cases td { white-space: nowrap; vertical-align: middle; }
+  table.cases tbody tr { cursor: pointer; }
+  table.cases tbody tr:hover, table.cases tbody tr[aria-current="true"] { background: var(--color-brand-tint); }
   .hidden { display: none !important; }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
@@ -197,6 +201,13 @@
   </div>
 
   <!-- BSO -->
+  <section id="bso-top" class="full hidden">
+    <div class="row"><div><h2>All cases</h2><span class="soft" id="cases-count"></span></div><button id="cases-refresh" class="small secondary">Refresh</button></div>
+    <div class="tablewrap"><table class="trace cases">
+      <thead><tr><th>Referral</th><th>Business</th><th>Structure and industry</th><th>Amount</th><th>Status</th><th>Open items</th><th>Last update</th></tr></thead>
+      <tbody id="cases"></tbody>
+    </table></div>
+  </section>
   <div id="bso-left" class="hidden">
     <section>
       <h2>Case</h2>
