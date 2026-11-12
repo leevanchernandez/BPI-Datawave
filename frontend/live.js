@@ -35,7 +35,7 @@ function navLinks() {
   $('nav-bm').href = `?id=${id}${stackQuery}`; $('nav-bso').href = `?role=bso&id=${id}${stackQuery}`;
   $(role === 'bm' ? 'nav-bm' : 'nav-bso').setAttribute('aria-current', 'page');
 }
-for (const id of role === 'bm' ? ['bm-left', 'bm-right'] : ['bso-top', 'bso-left', 'bso-right']) $(id).classList.remove('hidden');
+for (const id of role === 'bm' ? ['bm-left', 'bm-right'] : ['bso-left', 'bso-right']) $(id).classList.remove('hidden');
 if (params.get('id')) { $('f-id').value = params.get('id'); $('b-id').value = params.get('id'); }
 navLinks();
 
@@ -63,7 +63,7 @@ if (role === 'bm') {
   async function saveCase() {
     try {
       const v = await api('POST', '/api/case', { referral: referral() });
-      lastView = v; navLinks();
+      lastView = v; navLinks(); loadCases();
       renderChecklist(v);
       $('run-check').disabled = pages.length === 0;
     } catch (e) { alertInline(e.message); }
@@ -201,6 +201,7 @@ if (role === 'bm') {
   };
 
   function renderResult(v) {
+    loadCases();
     lastView = v;
     renderChecklist(v);
     $('result').classList.remove('hidden');
@@ -236,6 +237,27 @@ if (role === 'bm') {
   (async () => { try { const v = await api('GET', `/api/case?id=${encodeURIComponent(caseId())}`); fillForm(v.referral); renderChecklist(v); lastView = v; if (v.open.checked) renderResult(v); } catch { /* new case */ } })();
   function fillForm(r) { $('f-business').value = r.business; $('f-name').value = r.name; $('f-type').value = r.type; $('f-industry').value = r.industry; $('f-amount').value = r.amount; $('f-civil').value = r.civilStatus; $('f-spouse').value = r.spouseName || ''; $('f-secured').checked = !!r.secured; $('f-bpi').checked = r.bpiAccount !== false; }
 }
+
+// ---- case list: on top of the BSO view, below the branch form ----
+async function loadCases() {
+  try {
+    const { cases } = await api('GET', '/api/cases');
+    const counts = {};
+    for (const c of cases) counts[c.status] = (counts[c.status] || 0) + 1;
+    $('cases-count').textContent = Object.entries(counts).map(([s, n]) => `${n} ${s}`).join(', ');
+    $('cases').innerHTML = cases.map((c) => `<tr data-id="${esc(c.id)}" tabindex="0"${c.id === caseId() ? ' aria-current="true"' : ''}><td class="mono">${esc(c.id)}</td><td>${esc(c.business)}</td><td><span class="status ${statusClass(c.status)}">${esc(c.status)}</span></td><td>${c.open || ''}</td><td>${c.updated ? new Date(c.updated).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Manila' }) : ''}</td><td>PHP ${Number(c.amount).toLocaleString('en-PH')}</td><td>${esc(c.type)}, ${esc(c.industry)}</td></tr>`).join('')
+      || '<tr><td colspan="7" class="soft">No cases yet.</td></tr>';
+  } catch (e) { $('cases').innerHTML = `<tr><td colspan="7" class="soft">${esc(e.message)}</td></tr>`; }
+}
+const pick = (e) => {
+  const tr = e.target.closest('tr[data-id]'); if (!tr) return;
+  if (role === 'bm') { location.search = `?id=${encodeURIComponent(tr.dataset.id)}${stackQuery}`; return; }
+  $('b-id').value = tr.dataset.id; history.replaceState(null, '', `?role=bso&id=${encodeURIComponent(tr.dataset.id)}${stackQuery}`); $('b-open').onclick();
+};
+$('cases').onclick = pick;
+$('cases').onkeydown = (e) => { if (e.key === 'Enter') pick(e); };
+$('cases-refresh').onclick = loadCases;
+if (role === 'bm') { $('cases-title').textContent = 'Referrals'; $('bm-right').append($('cases-box')); loadCases(); }
 
 // ================= BSO view =================
 if (role === 'bso') {
@@ -274,20 +296,6 @@ if (role === 'bso') {
       lastAt = newest;
     } catch (e) { $('b-summary').innerHTML = `<p class="soft">${esc(e.message)}</p>`; }
   }
-  async function loadCases() {
-    try {
-      const { cases } = await api('GET', '/api/cases');
-      const counts = {};
-      for (const c of cases) counts[c.status] = (counts[c.status] || 0) + 1;
-      $('cases-count').textContent = Object.entries(counts).map(([s, n]) => `${n} ${s}`).join(', ');
-      $('cases').innerHTML = cases.map((c) => `<tr data-id="${esc(c.id)}" tabindex="0"${c.id === caseId() ? ' aria-current="true"' : ''}><td class="mono">${esc(c.id)}</td><td>${esc(c.business)}</td><td>${esc(c.type)}, ${esc(c.industry)}</td><td>PHP ${Number(c.amount).toLocaleString('en-PH')}</td><td><span class="status ${statusClass(c.status)}">${esc(c.status)}</span></td><td>${c.open || ''}</td><td>${c.updated ? new Date(c.updated).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Manila' }) : ''}</td></tr>`).join('')
-        || '<tr><td colspan="7" class="soft">No cases yet.</td></tr>';
-    } catch (e) { $('cases').innerHTML = `<tr><td colspan="7" class="soft">${esc(e.message)}</td></tr>`; }
-  }
-  const pick = (e) => { const tr = e.target.closest('tr[data-id]'); if (!tr) return; $('b-id').value = tr.dataset.id; history.replaceState(null, '', `?role=bso&id=${encodeURIComponent(tr.dataset.id)}${stackQuery}`); $('b-open').onclick(); };
-  $('cases').onclick = pick;
-  $('cases').onkeydown = (e) => { if (e.key === 'Enter') pick(e); };
-  $('cases-refresh').onclick = loadCases;
   $('b-q').value = `Ano pa ang kulang sa ${caseId()}?`;
   $('b-open').onclick = () => { loadCases(); navLinks(); $('b-q').value = `Ano pa ang kulang sa ${caseId()}?`; load(); if (!timer) timer = setInterval(load, 4000); };
   $('b-approve').onclick = async () => { try { await api('POST', '/api/event', { id: caseId(), type: 'draft_approved', by: 'BSO' }); load(); } catch (e) { alertInline(e.message); } };
