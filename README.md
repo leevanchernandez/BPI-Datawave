@@ -13,7 +13,7 @@ No key is needed. The page is rate limited and has a daily cap on model calls. U
 ## How it works
 
 - Rules decide. `backend/rules.json` builds the checklist from business structure, industry and amount, and every row has a source (today the BSO checklist from the team's BU captain). Code decides when a case is "Ready for BSO review".
-- The AI reads and drafts. It fills the case form from the branch's note, reads names and dates on IDs, registrations and permits, drafts the Taglish message, and answers status questions from the case record.
+- The AI reads and drafts. It fills the case form from the branch's note, reads names and dates on IDs, registrations and permits, drafts the Taglish message, and answers status questions from the case record and general requirement questions from the rules table.
 - People decide. The branch confirms the form, the BSO reviews every case and can return it with a reason, and Credit decides the loan. Approval questions are refused before any model sees them.
 - The BSO's case list counts how many cases sent to the BSO were complete the first time, which is BPI's main metric.
 
