@@ -79,22 +79,49 @@ if (role === 'bm') {
   // ---- note intake: the AI fills the form and the branch confirms it ----
   const INTAKE = { business: ['f-business', 'business name'], name: ['f-name', 'owner'], type: ['f-type', 'business structure'], industry: ['f-industry', 'industry'], amount: ['f-amount', 'loan amount'], civilStatus: ['f-civil', 'civil status'], spouseName: ['f-spouse', 'spouse name'], secured: ['f-secured', 'collateral'], bpiAccount: ['f-bpi', 'BPI account'] };
   for (const [id] of Object.values(INTAKE)) $(id).addEventListener('input', (e) => e.target.classList.remove('ai'));
-  $('intake-btn').onclick = async () => {
-    const text = $('intake').value.trim(); if (!text) return;
-    $('intake-btn').disabled = true; $('intake-note').textContent = 'Reading your note.';
-    try {
-      const { fields, model } = await api('POST', '/api/intake', { text, stack });
-      for (const id of ['f-business', 'f-name', 'f-spouse', 'f-amount']) $(id).value = ''; // values from an earlier client must not stay
-      for (const [k, [id]] of Object.entries(INTAKE)) {
-        const el = $(id); el.classList.toggle('ai', k in fields);
-        if (k in fields) { if (el.type === 'checkbox') el.checked = fields[k]; else el.value = fields[k]; }
-      }
-      $('f-civil').onchange();
-      const missing = Object.entries(INTAKE).filter(([k]) => !(k in fields)).map(([, [, label]]) => label);
-      $('intake-note').textContent = `Filled by ${model} from your note. Check the highlighted fields, then save the case.${missing.length ? ` Your note did not mention ${missing.join(', ')}.` : ''}`;
-    } catch (e) { $('intake-note').textContent = ''; alertInline(e.message); }
-    $('intake-btn').disabled = false;
+  // ---- assistant: fill the form from a note, or ask about the saved case ----
+  let mode = 'fill';
+  const SAMPLE = $('chat-in').value;
+  const HINT = {
+    fill: 'Tell it what the client said. It fills the form below, and you check it before you save.',
+    ask: 'Ask about the saved case, for example what is still missing or why the BSO sent it back.',
   };
+  const say = (who, text) => { const b = document.createElement('div'); b.className = `bubble ${who}`; b.textContent = text; $('chat-log').append(b); $('chat-log').scrollTop = $('chat-log').scrollHeight; return b; };
+  const setMode = (m) => {
+    mode = m;
+    $('mode-fill').setAttribute('aria-pressed', m === 'fill'); $('mode-ask').setAttribute('aria-pressed', m === 'ask');
+    $('chat-hint').textContent = HINT[m];
+    const v = $('chat-in').value;
+    if (m === 'ask' && (!v.trim() || v === SAMPLE)) $('chat-in').value = 'Ano pa ang kulang?';
+    if (m === 'fill' && v === 'Ano pa ang kulang?') $('chat-in').value = '';
+    $('chat-in').focus();
+  };
+  $('mode-fill').onclick = () => setMode('fill');
+  $('mode-ask').onclick = () => setMode('ask');
+  async function fill(text, wait) {
+    const { fields, model } = await api('POST', '/api/intake', { text, stack });
+    for (const id of ['f-business', 'f-name', 'f-spouse', 'f-amount']) $(id).value = ''; // values from an earlier client must not stay
+    for (const [k, [id]] of Object.entries(INTAKE)) {
+      const el = $(id); el.classList.toggle('ai', k in fields);
+      if (k in fields) { if (el.type === 'checkbox') el.checked = fields[k]; else el.value = fields[k]; }
+    }
+    $('f-civil').onchange();
+    const missing = Object.entries(INTAKE).filter(([k]) => !(k in fields)).map(([, [, label]]) => label);
+    wait.textContent = `I filled ${Object.keys(fields).length} fields from your note (${/claude/i.test(model) ? 'Claude Haiku' : /gemini/i.test(model) ? 'Gemini' : model}). Check the highlighted ones, then save the case.${missing.length ? ` Your note did not mention ${missing.join(', ')}.` : ''}`;
+  }
+  async function ask(question, wait) {
+    const v = await api('POST', '/api/ask', { id: caseId(), question, stack });
+    wait.textContent = v.answer + (v.handoff ? '\n\nI handed this to a person.' : '');
+  }
+  async function send() {
+    const text = $('chat-in').value.trim(); if (!text) return;
+    say('me', text); $('chat-in').value = ''; $('chat-send').disabled = true;
+    const wait = say('bot wait', mode === 'fill' ? 'Reading your note.' : 'Checking the case.');
+    try { await (mode === 'fill' ? fill(text, wait) : ask(text, wait)); } catch (e) { wait.textContent = e.message === 'unknown referral' ? 'Save the case first, then ask about it.' : e.message; }
+    wait.classList.remove('wait'); $('chat-send').disabled = false;
+  }
+  $('chat-send').onclick = send;
+  $('chat-in').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
   if (stack === 'aws') $('photo-note').textContent = 'Photos are uploaded to the AWS backend (S3 in Singapore, deleted after 1 day). Use synthetic documents only.';
   const switchLink = () => `?id=${encodeURIComponent(caseId() || 'RF-2026-042')}${stack === 'aws' ? '' : '&stack=aws'}`;
   $('stack-switch').innerHTML = stack === 'aws'
@@ -262,8 +289,6 @@ if (role === 'bso') {
   $('b-open').onclick();
 }
 
-// The ask box is shared by both views.
-if (role === 'bm') $('bm-right').append($('ask-box'));
 $('b-ask').onclick = async () => {
   $('b-answer').textContent = 'Asking';
   try {

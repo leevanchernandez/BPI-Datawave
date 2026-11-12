@@ -99,6 +99,15 @@
   .timeline time { white-space: nowrap; color: var(--color-ink-soft); font-variant-numeric: tabular-nums; }
   .answer { margin-top: var(--space-2); }
   .ai { background: var(--color-info-tint); border-color: var(--color-info); }
+  .modes { display: flex; gap: var(--space-2); margin-top: var(--space-3); flex-wrap: wrap; }
+  .modes button[aria-pressed="true"] { background: var(--color-brand); color: #fff; }
+  .log { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-3); max-height: 320px; overflow-y: auto; }
+  .log:empty { display: none; }
+  .bubble { max-width: 88%; padding: var(--space-2) var(--space-3); border-radius: 12px; white-space: pre-wrap; font-size: var(--text-s); }
+  .bubble.me { align-self: flex-end; background: var(--color-brand-tint); color: var(--color-ink); }
+  .bubble.bot { align-self: flex-start; background: var(--color-surface); border: 1px solid var(--color-line); }
+  .bubble.wait { color: var(--color-ink-soft); }
+  .composer { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-2); align-items: end; margin-top: var(--space-3); }
   .hidden { display: none !important; }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
@@ -112,12 +121,18 @@
 <main id="main">
   <!-- Branch manager -->
   <div id="bm-left" class="hidden">
-    <section>
-      <h2>Tell it in your own words</h2>
-      <p class="soft">Type what the client told you, in English or Taglish. The AI fills the form below, and you check it before you save. The note here is a sample.</p>
-      <textarea id="intake" rows="4" maxlength="1000" aria-label="Note about the client">Si Elena Santos, may-ari ng Elena's Artisan Bakery, sole prop, food business. 750k ang loan. Married kay Ramon Santos, may BPI account.</textarea>
-      <div class="actions"><button id="intake-btn" class="secondary">Fill the form</button></div>
-      <p class="soft" id="intake-note" role="status"></p>
+    <section id="chat">
+      <div class="row"><h2>Assistant</h2><span class="soft">English or Taglish</span></div>
+      <div class="modes" role="group" aria-label="What the assistant does">
+        <button id="mode-fill" class="secondary small" aria-pressed="true">Fill the form</button>
+        <button id="mode-ask" class="secondary small" aria-pressed="false">Ask about this case</button>
+      </div>
+      <div class="log" id="chat-log" aria-live="polite"></div>
+      <div class="composer">
+        <textarea id="chat-in" rows="3" maxlength="1000" aria-label="Message to the assistant">Si Elena Santos, may-ari ng Elena's Artisan Bakery, sole prop, food business. 750k ang loan. Married kay Ramon Santos, may BPI account.</textarea>
+        <button id="chat-send">Send</button>
+      </div>
+      <p class="soft" id="chat-hint">Tell it what the client said. It fills the form below, and you check it before you save. The note here is a sample.</p>
     </section>
     <section>
       <h2>Case</h2>
