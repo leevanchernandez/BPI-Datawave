@@ -34,6 +34,17 @@ The files are in `frontend/specimens/`. Visit 1 uses `01-application-form-first-
 
 All documents are synthetic. Say that once on screen or in the voice-over.
 
+## Voice-over for the slides after the demo
+
+These go with slides 5 to 8 of the Canva design "Counter Check prototype slides". Each takes about 30 to 40 seconds.
+
+| Slide | Voice-over |
+| --- | --- |
+| AI reads. Rules decide. People decide. | We use AI for two jobs that rules cannot do. It reads the branch's Taglish note and the photos of the documents. It never decides what is required. A table from the BSO checklist decides that, and a person confirms every step. The branch checks the form, the BSO reviews every case, and Credit decides the loan. |
+| Safeguards we tested | When the AI cannot read a page or a field, the case goes to a person and never passes. A name or a date from the model is kept only when it appears in the page's own text. Approval questions are refused before the model sees them. In a simulated phone-photo test, none of the 33 defective packets passed. We have not measured real phone photos yet. |
+| Cost and speed | One check of a 10-page packet costs about 4 pesos on AWS at list prices, and it takes about 15 seconds. At the BSO's 35 to 60 referrals a month, that is at most about 480 pesos a month. Cloud cost is not the constraint. |
+| Path to a pilot | A pilot runs in one area, with one BSO and 8 to 17 branches, on BPI's own account and login. It measures one number, the share of cases that reach the BSO complete the first time. A new loan product is new rows in the rules table, so the same tool covers all 7 areas. |
+
 ## What must be built or measured before Nov 16
 
 1. Deploy `/check` against real Textract and run 60 printed and phone-photographed synthetic documents with labeled defects. Report recall, false-complete and review rate with ranges. This is the most important item. A simulated stand-in ran on 2026-11-12 with `scripts/eval-degraded.mjs` (36 packets with ImageMagick damage on real Textract and Bedrock, results in docs/aws.md). The printed and phone-photographed run is still open.
