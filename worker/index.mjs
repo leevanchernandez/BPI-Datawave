@@ -11,7 +11,7 @@ export class Quota extends DurableObject {
   async take(ip, model) {
     this.s ||= { ...(await this.ctx.storage.get('day')) };
     const out = takeQuota(this.s, ip, model);
-    if (model && out === 'ok') await this.ctx.storage.put('day', { day: this.s.day, n: this.s.n });
+    if (model && out === 'ok') await this.ctx.storage.put('day', { day: this.s.day, n: this.s.n, ips: this.s.ips });
     return out;
   }
 }

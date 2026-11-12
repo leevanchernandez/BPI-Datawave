@@ -64,6 +64,9 @@ const CAL = { lines: L(['CLIENT AUTHORIZATION LETTER', 'SPECIMEN', 'Signed: Elen
   assert.equal(s.n, QUOTA.modelPerMinute + 2);
   s.n = QUOTA.modelPerDay; assert.equal(takeQuota(s, 'c', true, t + 60000), 'daily');
   assert.equal(takeQuota(s, 'c', true, t + 86400000), 'ok', 'a new day clears the cap');
+  const one = {}; for (let i = 0; i < QUOTA.modelPerAddressDay; i++) assert.equal(takeQuota(one, 'd', true, t + i * 60000), 'ok');
+  assert.equal(takeQuota(one, 'd', true, t + 200 * 60000), 'daily', 'one address cannot use the whole day');
+  assert.equal(takeQuota(one, 'e', true, t + 200 * 60000), 'ok', 'other addresses still pass');
   const all = {}; for (let i = 0; i < QUOTA.perMinute; i++) takeQuota(all, 'a', false, t);
   assert.equal(takeQuota(all, 'a', false, t), 'rate');
 }

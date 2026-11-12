@@ -192,19 +192,22 @@ if (role === 'bm') {
       renderPages();
     }
     current = null;
-    $('run-check').disabled = !lastView || pages.some((x) => !x.lines);
+    $('run-check').disabled = !lastView || !pages.length || pages.some((x) => !x.lines);
   }
-  $('files').onchange = (e) => { addFiles([...e.target.files]); e.target.value = ''; };
+  let queue = Promise.resolve(); // one batch of photos at a time
+  const add = (files, clear) => (queue = queue.then(() => { if (clear) clearPages(); return addFiles(files); }));
+  $('files').onchange = (e) => { add([...e.target.files]); e.target.value = ''; };
   // the synthetic specimens, as the branch would photograph them on each visit
   const PAPERS = ['02-owner-id-front', '03-owner-id-back', '04-spouse-id-front', '05-dti-page-1', '08-bank-statement', '09-bir-cor', '10-mayors-permit', '11-client-authorization-letter'];
   const SAMPLES = { 1: ['01-application-form-first-visit', ...PAPERS], 2: ['01b-application-form-corrected', ...PAPERS, '05b-dti-page-2'] };
   for (const v of [1, 2]) $(`sample-${v}`).onclick = async () => {
     try {
       const files = await Promise.all(SAMPLES[v].map(async (f) => new File([await (await fetch(`specimens/${f}.png`)).blob()], `${f}.png`, { type: 'image/png' })));
-      $('clear-pages').onclick(); addFiles(files);
+      add(files, true);
     } catch { alertInline('The sample papers could not load.'); }
   };
-  $('clear-pages').onclick = () => { pages.forEach((p) => URL.revokeObjectURL(p.url)); pages.splice(0); counter = 0; renderPages(); $('run-check').disabled = true; markStale(); };
+  function clearPages() { pages.forEach((p) => URL.revokeObjectURL(p.url)); pages.splice(0); counter = 0; renderPages(); $('run-check').disabled = true; markStale(); }
+  $('clear-pages').onclick = () => add([], true);
   function renderPages() {
     $('pages').innerHTML = pages.map((p) => `<div class="page" data-page="${p.n}"><img src="${p.url}" alt="Page ${p.n}">
       <div class="row" style="margin-top:4px"><strong>Page ${p.n}</strong><span class="soft">${esc(p.status)}</span></div>
@@ -230,14 +233,16 @@ if (role === 'bm') {
     return p.key;
   }
   $('run-check').onclick = async () => {
-    $('run-check').disabled = true; $('run-check').textContent = 'Checking';
+    const busy = (on) => { for (const b of ['sample-1', 'sample-2', 'files', 'clear-pages']) $(b).disabled = on; };
+    $('run-check').disabled = true; $('run-check').textContent = 'Checking'; busy(true);
     try {
       const id = caseId();
       const body = stack === 'aws' ? { id, pageKeys: await Promise.all(pages.map((p) => uploadPage(id, p))) }
         : { id, pages: pages.map((p) => ({ lines: p.lines, ...(p.label ? { docType: p.label } : {}) })) };
       renderResult(await api('POST', '/api/check', body));
     } catch (e) { alertInline(e.message); }
-    $('run-check').disabled = false; $('run-check').textContent = 'Check documents';
+    busy(false); $('clear-pages').disabled = !pages.length;
+    $('run-check').disabled = !lastView || !pages.length || pages.some((x) => !x.lines); $('run-check').textContent = 'Check documents';
   };
 
   function renderResult(v) {

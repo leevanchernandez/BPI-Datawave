@@ -87,19 +87,20 @@ const NEXT = {
 
 /** aws: { url, key, checkUrl?, fetch? } for the AWS backend, or null. checkUrl is the check function's own URL, which has no 30 second gateway limit. */
 const MODEL_ROUTES = new Set(['/api/intake', '/api/check', '/api/ask']);
-// Per address per minute for all routes and for model routes, and per UTC day for the model calls of all addresses together.
-export const QUOTA = { perMinute: 300, modelPerMinute: 20, modelPerDay: 300 };
+// Per address per minute for all routes and for model routes, and per UTC day for model calls per address and for all addresses together.
+export const QUOTA = { perMinute: 300, modelPerMinute: 20, modelPerDay: 300, modelPerAddressDay: 150 };
 
-/** Counts one call in state { minute, hits, day, n } and returns 'ok', 'rate' or 'daily'. A refused call is not counted. */
+/** Counts one call in state { minute, hits, day, n, ips } and returns 'ok', 'rate' or 'daily'. A refused call is not counted. */
 export function takeQuota(s, ip, model, now = Date.now()) {
   const minute = Math.floor(now / 60000), day = new Date(now).toISOString().slice(0, 10);
   if (s.minute !== minute) { s.minute = minute; s.hits = {}; }
-  if (s.day !== day) { s.day = day; s.n = 0; }
+  if (s.day !== day) { s.day = day; s.n = 0; s.ips = {}; }
+  s.ips ||= {};
   const h = s.hits[ip] || (s.hits[ip] = { all: 0, model: 0 });
   if (h.all >= QUOTA.perMinute || (model && h.model >= QUOTA.modelPerMinute)) return 'rate';
-  if (model && s.n >= QUOTA.modelPerDay) return 'daily';
+  if (model && (s.n >= QUOTA.modelPerDay || (s.ips[ip] || 0) >= QUOTA.modelPerAddressDay)) return 'daily';
   h.all++;
-  if (model) { h.model++; s.n++; }
+  if (model) { h.model++; s.n++; s.ips[ip] = (s.ips[ip] || 0) + 1; }
   return 'ok';
 }
 
