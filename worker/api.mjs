@@ -11,7 +11,7 @@ import guardsMod from '../backend/free/guards.cjs';
 
 const { processPacket } = pipelineMod;
 const { reconcile, draftMessage: templateDraft, deriveStatus } = reconcileMod;
-const { checklist, table, civilOf } = rulesMod;
+const { checklist, table, civilOf, requirementsFor } = rulesMod;
 const { formFromLines } = formMod;
 const { refuseCredit, FORBIDDEN, cleanIntake, INTAKE_MAX } = guardsMod;
 
@@ -258,23 +258,27 @@ export function makeApi({ store, llm, now = () => new Date(), demoKey, aws = nul
       const b = await body(req); if (!b || !ID.test(b.id || '')) return bad('invalid id');
       const q = b.question; if (typeof q !== 'string' || !q.trim() || q.length > 500) return bad('invalid question');
       if (refuseCredit(q)) return json(200, { answer: 'Hindi ko masasagot iyan. Ang Credit ang nagdedesisyon sa approval. Ang kaya kong sabihin: ano pa ang kulang at ano ang status.', handoff: true, trace: [{ rule: 'refuse_credit_question' }], model: null });
-      if (!llm) return json(503, { error: 'no model configured' });
+      if (!llm && b.stack !== 'aws') return json(503, { error: 'no model configured' });
       const c = await store.get(b.id); if (!c) return json(404, { error: 'unknown referral' });
       const handlers = {
         get_heads_up: async () => ({ reminders: shown((await lessons()).list, c.referral).map((l) => l.text) }),
         get_status: async () => ({ status: statusOf(c.events) }),
         get_lacking: async () => { const o = openItems(c.events); return o.checked ? { missing: o.defects.map((d) => d.message), toCheck: o.needsReview.map((d) => d.message) } : { checked: false }; },
-        get_requirements: async (i = {}) => {
-          if (!['Sole proprietorship', 'Partnership', 'Corporation'].includes(i.type)) return { error: 'Ask which business structure: sole proprietorship, partnership or corporation.' };
-          const p = { type: i.type, industry: String(i.industry || ''), amount: Number(i.amount) || 0, civilStatus: i.married ? 'married' : 'single', secured: i.secured === true, bpiAccount: i.bpiAccount !== false };
-          return { requirements: checklist(p).map((r) => ({ requirement: r.title, source: r.sourceTitle })), assumed: `${p.civilStatus}, ${p.secured ? 'secured' : 'no collateral'}, ${p.bpiAccount ? 'BPI working account' : 'no BPI account'}${p.amount ? '' : ', amount not given so rows for larger loans are left out'}` };
-        },
+        get_requirements: async (i) => requirementsFor(i),
         get_checklist: async () => checklist(c.referral).map((r) => ({ requirement: r.title, why: r.reason || (r.when.type ? `for a ${c.referral.type.toLowerCase()}` : 'all cases'), source: r.sourceTitle })),
       };
-      const out = await llm.ask(q.trim(), handlers);
+      let out, model = llm && llm.model;
+      if (b.stack === 'aws') {
+        if (!aws) return noAws();
+        const facts = { status: await handlers.get_status(), lacking: await handlers.get_lacking(), checklist: await handlers.get_checklist(), headsUp: await handlers.get_heads_up() };
+        const r = await awsPost('/ask', { question: q.trim(), facts });
+        const a = await r.json().catch(() => null);
+        if (r.status !== 200 || !a) return json(502, { error: 'The assistant is not available. Please ask the BSO.' });
+        out = a; model = a.model || 'Amazon Bedrock';
+      } else out = await llm.ask(q.trim(), handlers);
       const raw = String(out.answer || '').replace(/\*\*?|__/g, '').trim(); // plain text on screen
       const answer = raw && raw.length <= 1500 && !FORBIDDEN.test(raw) ? raw : 'Hindi ko masagot nang tiyak. Pakitanong sa BSO.';
-      return json(200, { answer, handoff: out.handoff || answer !== out.answer, trace: out.trace, model: llm.model });
+      return json(200, { answer, handoff: out.handoff || answer !== out.answer, trace: out.trace, model });
     },
   };
 

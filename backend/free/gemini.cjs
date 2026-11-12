@@ -8,16 +8,22 @@ const { safeDraft, DOC_TYPES, INTAKE_PROMPT, INTAKE_SCHEMA } = require('./guards
 const BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 function makeGemini({ apiKey, model = 'gemini-3.5-flash-lite', fetchFn = fetch, sleep = (ms) => new Promise((r) => setTimeout(r, ms)) }) {
+  const models = String(model).split(',').map((m) => m.trim()).filter(Boolean);
+  let current = 0; // index of the model that answered last, so a used-up daily quota is skipped on later calls
   async function call(body) {
     let last;
-    for (let attempt = 0; attempt < 3; attempt++) {
-      let res;
-      try { res = await fetchFn(`${BASE}/${model}:generateContent`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey }, body: JSON.stringify(body) }); }
-      catch (e) { last = 'network'; await sleep(800 * (attempt + 1)); continue; }
-      if (res.ok) return res.json();
-      last = `${res.status} ${(await res.text().catch(() => '')).replace(/\s+/g, ' ').slice(0, 160)}`;
-      if (![429, 500, 503].includes(res.status)) break;
-      await sleep(800 * (attempt + 1));
+    for (let m = current; m < models.length; m++) {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        let res;
+        try { res = await fetchFn(`${BASE}/${models[m]}:generateContent`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey }, body: JSON.stringify(body) }); }
+        catch (e) { last = 'network'; await sleep(800 * (attempt + 1)); continue; }
+        if (res.ok) { current = m; return res.json(); }
+        const t = (await res.text().catch(() => '')).replace(/\s+/g, ' ');
+        last = `${res.status} ${t.slice(0, 160)}`;
+        if (res.status === 404 || (res.status === 429 && /quota/i.test(t))) break; // try the next model
+        if (![429, 500, 503].includes(res.status)) throw new Error(`model call failed (${last})`);
+        await sleep(800 * (attempt + 1));
+      }
     }
     throw new Error(`model call failed (${last})`);
   }
@@ -120,7 +126,7 @@ function makeGemini({ apiKey, model = 'gemini-3.5-flash-lite', fetchFn = fetch, 
     try { return JSON.parse(textOf(r)); } catch { return {}; }
   }
 
-  return { readPage, draftMessage, draftLesson, ask, intake, model };
+  return { readPage, draftMessage, draftLesson, ask, intake, get model() { return models[current]; } };
 }
 
 module.exports = { makeGemini };

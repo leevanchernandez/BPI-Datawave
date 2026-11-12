@@ -24,6 +24,7 @@ function build() {
     markedFields: (page, fields) => llm.markedFields(page, fields),
     draftMessage: (a) => llm.draftMessage(a),
     ask: (q, h) => llm.ask(q, h),
+    askCase: (q, h) => llm.ask(q, h, undefined, 4, llm.CASE_TOOLS),
     intake: (note) => llm.intake(note),
     takeUsage: () => llm.takeUsage(),
     async loadPage(key) {

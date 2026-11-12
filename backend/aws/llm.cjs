@@ -109,35 +109,48 @@ const TOOLS = [
 ];
 
 /** Inquiry agent. Read-only tools; it can only report what tools return. handlers: { name: async (input) => object }. */
-async function ask(question, handlers, client, maxTurns = 4) {
+const ASK_SYSTEM = 'You answer branch staff questions about loan referrals for a BPI business loan officer. Answer ONLY from tool results. If a tool returns nothing or the question is about approval odds, credit decisions, or anything not covered, say you cannot answer and that the BSO should be asked. Reply in the language of the question (English or Taglish). Keep it short.';
+const noInput = { type: 'object', additionalProperties: false, properties: {} };
+/** Tools for one referral whose facts the caller already loaded, plus requirements for any profile. */
+const CASE_TOOLS = [
+  { name: 'get_status', description: 'Status of this referral.', input_schema: noInput },
+  { name: 'get_lacking', description: 'What is still missing or flagged for a person to check on this referral.', input_schema: noInput },
+  { name: 'get_checklist', description: 'Initial requirements for this referral, each with its source.', input_schema: noInput },
+  { name: 'get_heads_up', description: 'Reminders a BSO published for cases like this one. They are reminders, not requirements.', input_schema: noInput },
+  { name: 'get_requirements', description: 'Initial requirements for any client profile, for general questions such as what a corporation needs. Not for this referral.', input_schema: { type: 'object', additionalProperties: false, required: ['type'], properties: { type: { type: 'string', enum: ['Sole proprietorship', 'Partnership', 'Corporation'] }, industry: { type: 'string' }, amount: { type: 'number' }, married: { type: 'boolean' }, secured: { type: 'boolean' }, bpiAccount: { type: 'boolean' } } } },
+];
+
+async function ask(question, handlers, client, maxTurns = 4, tools = TOOLS) {
   const c = client || (await makeClient());
-  const messages = [{ role: 'user', content: question }];
+  const messages = [{ role: 'user', content: question }], trace = [];
   for (let turn = 0; turn < maxTurns; turn++) {
     const msg = count(await c.messages.create({
       model: MODEL,
       max_tokens: 800,
       output_config: { effort: 'low' },
-      system: 'You answer branch staff questions about loan referrals for a BPI business loan officer. Answer ONLY from tool results. If a tool returns nothing or the question is about approval odds, credit decisions, or anything not covered, say you cannot answer and that the BSO should be asked. Reply in the language of the question (English or Taglish). Keep it short.',
-      tools: TOOLS,
+      system: ASK_SYSTEM,
+      tools,
       messages,
     }));
-    if (msg.stop_reason === 'refusal') return { answer: 'I cannot help with that. Please ask the BSO.', handoff: true };
+    if (msg.stop_reason === 'refusal') return { answer: 'I cannot help with that. Please ask the BSO.', handoff: true, trace };
     messages.push({ role: 'assistant', content: msg.content });
     const calls = (msg.content || []).filter((b) => b.type === 'tool_use');
-    if (!calls.length) return { answer: text(msg).trim(), handoff: false };
+    if (!calls.length) return { answer: text(msg).trim(), handoff: false, trace };
     const results = [];
     for (const call of calls) { // all results go back in ONE user message
       try {
         const h = handlers[call.name];
         if (!h) throw new Error('unknown tool');
-        results.push({ type: 'tool_result', tool_use_id: call.id, content: JSON.stringify(await h(call.input)) });
+        const result = await h(call.input);
+        trace.push({ tool: call.name, result });
+        results.push({ type: 'tool_result', tool_use_id: call.id, content: JSON.stringify(result) });
       } catch (e) {
         results.push({ type: 'tool_result', tool_use_id: call.id, is_error: true, content: 'Tool failed or has no data.' });
       }
     }
     messages.push({ role: 'user', content: results });
   }
-  return { answer: 'I could not finish that. Please ask the BSO.', handoff: true };
+  return { answer: 'I could not finish that. Please ask the BSO.', handoff: true, trace };
 }
 
 /** Case fields from the branch officer's note. The caller checks them with cleanIntake. */
@@ -153,4 +166,4 @@ async function intake(note, client) {
   try { return JSON.parse(text(msg)); } catch { return {}; }
 }
 
-module.exports = { readPage, markedFields, draftMessage, safeDraft, ask, intake, takeUsage, TOOLS, MODEL, DOC_TYPES };
+module.exports = { readPage, markedFields, draftMessage, safeDraft, ask, intake, takeUsage, TOOLS, CASE_TOOLS, MODEL, DOC_TYPES };

@@ -33,7 +33,7 @@ for (const [i, [text, want]] of CASES.entries()) {
   const r = await fetch(`${BASE}/api/intake`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-demo-key': process.env.DEMO_KEY || '' }, body: JSON.stringify({ text, stack: STACK }) });
   const b = await r.json().catch(() => ({}));
   if (r.status !== 200) { failed++; console.log(`note ${i + 1}: HTTP ${r.status} ${b.error || ''}`); continue; }
-  const got = b.fields || {};
+  const { industryWord, ...got } = b.fields || {};
   for (const k of new Set([...Object.keys(want), ...Object.keys(got)])) {
     const t = (tally[k] ||= { correct: 0, wrong: 0, missed: 0, extra: 0 });
     if (!(k in want)) { t.extra++; wrong.push(`note ${i + 1} ${k}: filled ${JSON.stringify(got[k])}, not scored`); continue; }

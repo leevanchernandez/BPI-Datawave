@@ -32,4 +32,11 @@ function checklist(r, rules = table) {
   });
 }
 
-module.exports = { checklist, table, civilOf };
+/** Requirements for any client profile, for general questions that are not about one referral. */
+function requirementsFor(i = {}) {
+  if (!['Sole proprietorship', 'Partnership', 'Corporation'].includes(i.type)) return { error: 'Ask which business structure: sole proprietorship, partnership or corporation.' };
+  const p = { type: i.type, industry: String(i.industry || ''), amount: Number(i.amount) || 0, civilStatus: i.married ? 'married' : 'single', secured: i.secured === true, bpiAccount: i.bpiAccount !== false };
+  return { requirements: checklist(p).map((r) => ({ requirement: r.title, source: r.sourceTitle })), assumed: `${p.civilStatus}, ${p.secured ? 'secured' : 'no collateral'}, ${p.bpiAccount ? 'BPI working account' : 'no BPI account'}${p.amount ? '' : ', amount not given so rows for larger loans are left out'}` };
+}
+
+module.exports = { checklist, table, civilOf, requirementsFor };

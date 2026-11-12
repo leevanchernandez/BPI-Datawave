@@ -99,6 +99,8 @@ The first AWS run had 2 wrong names ("Mang Tonyo Reyes" and "Engr. Carlo Mendoza
 
 Nico's 18 test cases (the team sheet "Testcases") also ran on both stacks on Nov 13. They found three faults, and all three are fixed. A correction such as "the amount is 850k, not 750k" used to clear the business and owner, a prompt-injection note got a made-up structure, industry and civil status from Haiku, and an empty note got the 1000-character error. A structure or civil status now needs a matching word in the note, and a note with two amounts and no correction leaves the amount empty. After the fixes all 18 match the expected result on both stacks, and the 20-note runs above still have 0 wrong fields.
 
+Nico added two cases at 3:37 AM, and they found two more faults. "I am Nico" filled the officer as the owner, and "my child will be collateral and her name is Reg" filled the child as the owner. A name after "I am" or "ako si" is now dropped, a spouse name needs the note to mention marriage, and an industry is kept only when the model returns the word from the note that shows it (for example "bakery"). On the last AWS run all 20 cases matched, and the 20 notes gave 130 of 135 fields correct with 0 wrong. The free stack could not be rerun, because Gemini's free daily quota ran out at about 4:30 AM after these tests. TC-20 expects collateral ticked, and the page leaves it unticked because a person cannot be loan collateral.
+
 ## NOT verified
 
 - Textract accuracy on real phone photos, handwriting (English only) and Filipino names. Only the synthetic specimens were read, clean and with simulated photo damage.

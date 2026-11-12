@@ -114,6 +114,13 @@ const GOOD = ['form', 'idf', 'idb', 'reg', 'cor', 'permit', 'bank', 'cal'];
   assert.equal((await H.ask(ev({ question: 'status?' }))).statusCode, 400, 'ask needs a referralId');
   assert.equal((await H.ask(ev({ referralId: 'RF-2026-050', question: 'x'.repeat(501) }))).statusCode, 400);
 
+  // ---- /ask with facts from the Worker answers from those facts and the rules table ----
+  { let h; const H4 = makeHandlers({ ...hdeps, askCase: async (q, x) => { h = x; return { answer: 'ok', trace: [] }; } });
+    const r = await H4.ask(ev({ question: 'ano status?', facts: { status: { status: 'With BSO' } } }));
+    assert.equal(r.statusCode, 200);
+    assert.equal((await h.get_status()).status, 'With BSO');
+    assert.ok((await h.get_requirements({ type: 'Corporation' })).requirements.length > 3);
+    assert.equal((await H4.ask(ev({ question: '', facts: {} }))).statusCode, 400); }
   // ---- /ask tools are bound to one referral (no IDOR through the model) ----
   let captured; const H2 = makeHandlers({ ...hdeps, ask: async (q, h) => { captured = h; return { answer: 'ok' }; } });
   await H2.ask(ev({ referralId: 'RF-2026-050', question: 'status?' }));

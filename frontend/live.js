@@ -1,12 +1,12 @@
 // Counter Check live prototype. Branch view (default) and BSO view (?role=bso).
-// Default reader: OCR runs in this browser with Tesseract.js, so photos never leave the device and only the lines of text do.
-// With ?stack=aws the photos go to the AWS backend instead (S3, Textract and Bedrock). Synthetic documents only.
+// With ?stack=free, OCR runs in this browser with Tesseract.js, so photos never leave the device and only the lines of text do.
+// By default the photos go to the AWS backend (S3, Textract and Bedrock). ?stack=free reads them in the browser and uses Gemini. Synthetic documents only.
 'use strict';
 
 const params = new URLSearchParams(location.search);
 const role = params.get('role') === 'bso' ? 'bso' : 'bm';
-const stack = params.get('stack') === 'aws' ? 'aws' : 'free';
-const stackQuery = stack === 'aws' ? '&stack=aws' : '';
+const stack = params.get('stack') === 'free' ? 'free' : 'aws';
+const stackQuery = stack === 'free' ? '&stack=free' : '';
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const ICON = {
@@ -123,8 +123,8 @@ if (role === 'bm') {
   }
   $('chat-send').onclick = send;
   $('chat-in').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
-  if (stack === 'aws') $('photo-note').textContent = 'Photos are uploaded to the AWS backend (S3 in Singapore, deleted after 1 day). Use synthetic documents only.';
-  const switchLink = () => `?id=${encodeURIComponent(caseId() || 'RF-2026-042')}${stack === 'aws' ? '' : '&stack=aws'}`;
+  if (stack === 'free') $('photo-note').textContent = 'Photos stay on this device. Only the text read from them is sent.';
+  const switchLink = () => `?id=${encodeURIComponent(caseId() || 'RF-2026-042')}${stack === 'aws' ? '&stack=free' : ''}`;
   $('stack-switch').innerHTML = stack === 'aws'
     ? `Reading with Amazon Textract and Claude on Amazon Bedrock. <a href="${switchLink()}">Switch to the browser reader</a>`
     : `Reading in this browser, with Gemini for IDs and permits. <a href="${switchLink()}">Switch to Textract and Bedrock on AWS</a>`;
@@ -317,7 +317,7 @@ if (role === 'bso') {
 $('b-ask').onclick = async () => {
   $('b-answer').textContent = 'Asking';
   try {
-    const v = await api('POST', '/api/ask', { id: caseId(), question: $('b-q').value });
+    const v = await api('POST', '/api/ask', { id: caseId(), question: $('b-q').value, stack });
     $('b-answer').innerHTML = `<div class="message">${esc(v.answer)}</div>${v.handoff ? '<p class="note">The assistant handed this to a person.</p>' : ''}`;
     $('b-trace-box').classList.remove('hidden');
     $('b-trace').textContent = (v.trace || []).map((t) => (t.rule ? `rule: ${t.rule} (the model was not asked)` : `tool: ${t.tool}\n${JSON.stringify(t.result, null, 1)}`)).join('\n\n') + (v.model ? `\n\nmodel: ${v.model}` : '');

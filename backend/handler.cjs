@@ -7,7 +7,7 @@
 const crypto = require('node:crypto');
 const { processPacket } = require('./pipeline.cjs');
 const { reconcile, draftMessage, deriveStatus } = require('./reconcile.cjs');
-const { checklist } = require('./rules.cjs');
+const { checklist, requirementsFor } = require('./rules.cjs');
 const { cleanIntake, INTAKE_MAX } = require('./free/guards.cjs');
 
 const MAX_PAGES = 20; // HTTP API integrations time out at 30 seconds, so keep one request small
@@ -76,6 +76,12 @@ function makeHandlers(deps) {
       if (body.intake !== undefined) {
         if (typeof body.intake !== 'string' || !body.intake.trim() || body.intake.length > INTAKE_MAX) return bad('invalid intake');
         return json(200, { fields: cleanIntake(await deps.intake(body.intake.trim()), body.intake), usage: usage(), model: deps.model || null });
+      }
+      if (body.facts && typeof body.facts === 'object') { // the Worker loaded the case, so the tools answer from these facts
+        const f = body.facts, q = body.question;
+        if (typeof q !== 'string' || !q.trim() || q.length > 500) return bad('invalid question');
+        const handlers = { get_status: async () => f.status ?? null, get_lacking: async () => f.lacking ?? null, get_checklist: async () => f.checklist ?? null, get_heads_up: async () => f.headsUp ?? null, get_requirements: async (i) => requirementsFor(i) };
+        return json(200, { ...(await deps.askCase(q.trim(), handlers)), usage: usage(), model: deps.model || null });
       }
       const q = body.question, id = body.referralId;
       if (typeof q !== 'string' || !q.trim() || q.length > 500) return bad('invalid question');
