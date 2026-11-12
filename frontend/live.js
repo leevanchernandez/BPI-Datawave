@@ -16,7 +16,7 @@ const ICON = {
   doc: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z M14 3v6h6"/></svg>',
 };
 const DOC_LABELS = { '': 'Auto', application_form: 'Application form', gov_id: 'Government ID', spouse_id: 'Spouse ID', registration: 'DTI or SEC registration', business_permit: "Mayor's permit", itr: 'Income tax return', financials: 'Financial statements', audited_fs: 'Audited FS', bank_statements: 'Bank statement', articles: 'Articles', bylaws: 'By-laws', gis: 'GIS', collateral: 'Collateral' };
-const statusClass = (s) => (s === 'Missing requirements' || s === 'Returned by BSO' ? 'missing' : s === 'Ready for BSO review' ? 'ready' : s === 'With BSO' ? 'with' : '');
+const statusClass = (s) => (s === 'Missing requirements' || s === 'Returned by BSO' ? 'missing' : s === 'Ready for BSO review' ? 'ready' : s === 'With BSO' ? 'with' : s === 'Endorsed to Credit' ? 'ready' : '');
 
 // ---- demo key: optional, a caller with the key is not rate limited ----
 const demoKey = params.get('key') || (() => { try { return localStorage.getItem('cc-key') || ''; } catch { return ''; } })();
@@ -273,9 +273,8 @@ async function loadCases() {
     const counts = {};
     for (const c of cases) counts[c.status] = (counts[c.status] || 0) + 1;
     $('cases-count').innerHTML = Object.entries(counts).map(([s, n]) => `<span class="status ${statusClass(s)}">${n} ${esc(s)}</span>`).join(' ');
-    const sent = cases.filter((c) => c.firstHandoff), ok = sent.filter((c) => c.firstHandoff === 'complete').length;
-    const waiting = sent.filter((c) => c.firstHandoff === 'complete' && c.status === 'With BSO').length;
-    $('cases-metric').textContent = sent.length ? `${ok} of ${sent.length} ${sent.length === 1 ? 'case' : 'cases'} sent to the BSO ${sent.length === 1 ? 'has' : 'have'} not been returned so far${waiting ? ` (${waiting} still with the BSO)` : ''}.` : '';
+    const n = (k) => cases.filter((c) => c.firstHandoff === k).length, ok = n('complete'), done = ok + n('returned'), waiting = n('pending');
+    $('cases-metric').textContent = done ? `${ok} of ${done} finished ${done === 1 ? 'case was' : 'cases were'} endorsed to Credit without a return${waiting ? `, and ${waiting} ${waiting === 1 ? 'is' : 'are'} still with the BSO` : ''}.` : waiting ? `${waiting} ${waiting === 1 ? 'case is' : 'cases are'} with the BSO.` : '';
     $('cases').innerHTML = cases.map((c) => `<tr data-id="${esc(c.id)}" tabindex="0"${c.id === caseId() ? ' aria-current="true"' : ''}><td class="mono">${esc(c.id)}</td><td>${esc(c.business)}</td><td><span class="status ${statusClass(c.status)}">${esc(c.status)}</span></td><td>${c.open ?? ''}</td><td>${c.updated ? new Date(c.updated).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Manila' }) : ''}</td><td>PHP ${Number(c.amount).toLocaleString('en-PH')}</td><td>${esc(c.type)}, ${esc(c.industry)}</td></tr>`).join('')
       || '<tr><td colspan="7" class="soft">No cases yet.</td></tr>';
   } catch (e) { $('cases').innerHTML = `<tr><td colspan="7" class="soft">${esc(e.message)}</td></tr>`; }
@@ -309,6 +308,7 @@ if (role === 'bso') {
         try { await api('POST', '/api/event', { id: caseId(), type: 'waived', by: 'BSO', key: b.dataset.waive, reason }); load(); } catch (e) { alertInline(e.message); }
       }; });
       $('b-return-btn').disabled = v.status !== 'With BSO';
+      $('b-endorse').disabled = v.status !== 'With BSO' || !o.checked || o.defects.length + o.needsReview.length > 0;
       const ids = v.lessonDrafts.map((l) => l.id).join();
       if (ids !== shownDrafts) { // redraw only when the drafts change, so the 4 second poll does not wipe an edit
         shownDrafts = ids;
@@ -330,6 +330,7 @@ if (role === 'bso') {
   $('b-q').value = `Ano pa ang kulang sa ${caseId()}?`;
   $('b-open').onclick = () => { loadCases(); navLinks(); $('b-q').value = `Ano pa ang kulang sa ${caseId()}?`; load(); if (!timer) timer = setInterval(load, 4000); };
   $('b-approve').onclick = async () => { try { await api('POST', '/api/event', { id: caseId(), type: 'draft_approved', by: 'BSO' }); load(); } catch (e) { alertInline(e.message); } };
+  $('b-endorse').onclick = async () => { try { await api('POST', '/api/event', { id: caseId(), type: 'endorsed', by: 'BSO' }); load(); loadCases(); } catch (e) { alertInline(e.message); } };
   $('b-return').onsubmit = async (e) => {
     e.preventDefault();
     try { await api('POST', '/api/event', { id: caseId(), type: 'returned', by: 'BSO', reason: $('b-return-reason').value }); $('b-return-reason').value = ''; load(); } catch (err) { alertInline(err.message); }

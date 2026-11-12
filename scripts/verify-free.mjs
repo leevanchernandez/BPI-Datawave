@@ -266,6 +266,19 @@ assert.equal((await lesson({ action: 'retire', by: 'BSO', lessonId: draft.id }))
   assert.equal(r.body.cases.find((c) => c.id === 'RF-2026-043').firstHandoff, null, 'never handed off');
 }
 
+{ // 12b. only the BSO endorses, only a case with the BSO, and a return before it keeps the case out of the first-time count
+  const ev = (body) => call('POST', '/api/event', { id: REF.id, ...body });
+  assert.equal((await ev({ type: 'endorsed', by: 'BSO' })).status, 400, 'not with the BSO yet');
+  assert.equal((await call('POST', '/api/check', { id: REF.id, pages: pages2 })).body.status, 'Ready for BSO review');
+  assert.equal((await ev({ type: 'handed_off', by: 'BM' })).body.status, 'With BSO');
+  assert.equal((await ev({ type: 'endorsed', by: 'BM' })).status, 400, 'only the BSO endorses');
+  const r = await ev({ type: 'endorsed', by: 'BSO' });
+  assert.equal(r.body.status, 'Endorsed to Credit');
+  assert.equal((await ev({ type: 'returned', by: 'BSO', reason: 'x' })).status, 400, 'an endorsed case is not with the BSO');
+  const list = (await call('GET', '/api/cases')).body.cases;
+  assert.equal(list.find((c) => c.id === REF.id).firstHandoff, 'returned', 'returned once, so not complete the first time');
+}
+
 { // 13. a model outage sends the ID page to a person, and the case cannot pass
   const down = makeApi({ store, llm: { ...fakeLlm, readPage: async () => { throw new Error('model down'); }, draftMessage: async () => { throw new Error('model down'); } }, demoKey: 'k' });
   const R3 = { ...REF, id: 'RF-2026-779' };

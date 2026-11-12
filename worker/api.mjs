@@ -19,7 +19,7 @@ const ID = /^RF-\d{4}-\d{3}$/;
 const TYPES = ['Sole proprietorship', 'Partnership', 'Corporation'];
 const MAX_PAGES = 20, MAX_LINES = 300, MAX_LINE = 300;
 const MAX_LIST = 200; // ponytail: one read per case. Keep a summary in the KV metadata if the list grows past this.
-const EVENT_TYPES = new Set(['cleared', 'waived', 'handed_off', 'bso_opened', 'draft_approved', 'special_case', 'returned']);
+const EVENT_TYPES = new Set(['cleared', 'waived', 'handed_off', 'bso_opened', 'draft_approved', 'special_case', 'returned', 'endorsed']);
 const str = (v, max) => typeof v === 'string' && v.trim().length > 0 && v.length <= max;
 
 // Heads-ups are reminders from confirmed BSO returns. Only a 'returned' event drafts one (a waiver or a clearance never
@@ -133,9 +133,9 @@ export function makeApi({ store, llm, now = () => new Date(), demoKey, aws = nul
       const ids = (await store.list()).filter((id) => ID.test(id)).slice(0, MAX_LIST);
       const cases = (await Promise.all(ids.map((id) => store.get(id)))).filter(Boolean).map((c) => {
         const o = openItems(c.events), r = c.referral;
-        // A handed-off case was complete at the first handoff if the BSO never returned it.
-        const h = c.events.findIndex((e) => e.type === 'handed_off');
-        const firstHandoff = h < 0 ? null : c.events.slice(h).some((e) => e.type === 'returned') ? 'returned' : 'complete';
+        // After the first handoff: 'returned' if the BSO ever sent it back, 'complete' if endorsed with no return, else 'pending'.
+        const h = c.events.findIndex((e) => e.type === 'handed_off'), after = h < 0 ? [] : c.events.slice(h);
+        const firstHandoff = h < 0 ? null : after.some((e) => e.type === 'returned') ? 'returned' : after.some((e) => e.type === 'endorsed') ? 'complete' : 'pending';
         return { id: r.id, business: r.business, type: r.type, industry: r.industry, amount: r.amount, status: statusOf(c.events), open: o.defects.length + o.needsReview.length, updated: (c.events[c.events.length - 1] || {}).at || null, firstHandoff };
       });
       cases.sort((a, b) => String(b.updated).localeCompare(String(a.updated)));
@@ -224,6 +224,9 @@ export function makeApi({ store, llm, now = () => new Date(), demoKey, aws = nul
       } else if (b.type === 'handed_off') {
         if (!o.checked || o.defects.length || o.needsReview.length) return bad('not ready for BSO review');
         if (statusOf(c.events) === 'Returned by BSO') return bad('check the documents again before sending this back to the BSO');
+      } else if (b.type === 'endorsed') {
+        if (b.by !== 'BSO') return bad('only the BSO can endorse a case to Credit');
+        if (statusOf(c.events) !== 'With BSO' || o.defects.length || o.needsReview.length) return bad('only a case with the BSO and nothing open can be endorsed');
       } else if (b.type === 'returned') {
         if (b.by !== 'BSO') return bad('only the BSO can return a case');
         if (statusOf(c.events) !== 'With BSO' || !reason) return bad('a return needs a case that is with the BSO and a reason');

@@ -98,7 +98,12 @@ var CounterCheck = (() => {
           return { ...row, docTypes, docType: docTypes[0], sourceTitle: src.title, sourceUrl: src.url };
         });
       }
-      module.exports = { checklist, table, civilOf };
+      function requirementsFor(i = {}) {
+        if (!["Sole proprietorship", "Partnership", "Corporation"].includes(i.type)) return { error: "Ask which business structure: sole proprietorship, partnership or corporation." };
+        const p = { type: i.type, industry: String(i.industry || ""), amount: Number(i.amount) || 0, civilStatus: i.married ? "married" : "single", secured: i.secured === true, bpiAccount: i.bpiAccount !== false };
+        return { requirements: checklist(p).map((r) => ({ requirement: r.title, source: r.sourceTitle })), assumed: `${p.civilStatus}, ${p.secured ? "secured" : "no collateral"}, ${p.bpiAccount ? "BPI working account" : "no BPI account"}${p.amount ? "" : ", amount not given so rows for larger loans are left out"}` };
+      }
+      module.exports = { checklist, table, civilOf, requirementsFor };
     }
   });
 
@@ -204,8 +209,10 @@ var CounterCheck = (() => {
           const married = formCivil === "married" || intakeCivil === "married";
           const must = [...rules.forms.application_form.mandatory];
           if (married) must.push(...rules.forms.application_form.ifMarried);
-          for (const k of must) if (blank(f[k])) add("BLANK_FIELD", k, `Application form: "${k.replace(/_/g, " ")}" is blank.`, "application_form");
-          if (blank(f.civil_status)) add("BLANK_FIELD", "civil_status", 'Application form: "civil status" is blank.', "application_form");
+          const unread = new Set(forms.flatMap((p) => p.unread || []));
+          const empty = (k) => unread.has(k) ? review("FIELD_UNREADABLE", `application_form:${k}`, `Application form: "${k.replace(/_/g, " ")}" has marks that could not be read. Please check the paper.`) : add("BLANK_FIELD", k, `Application form: "${k.replace(/_/g, " ")}" is blank.`, "application_form");
+          for (const k of must) if (blank(f[k])) empty(k);
+          if (blank(f.civil_status)) empty("civil_status");
           else if (!formCivil || formConf < HIGH_CONF) review("CIVIL_UNREADABLE", "civil_status", "Civil status on the form could not be read with confidence. Please check the paper.");
           else if (intakeCivil && formCivil !== intakeCivil) review("CIVIL_DIFFERS", "civil_status", `Civil status on the form (${formCivil}) differs from the case (${intakeCivil}). Please check it.`);
           if (!blank(f.tin) && !TIN.test(String(f.tin).trim())) review("TIN_FORMAT", "tin", "The TIN does not look like a TIN. Please check it.");
@@ -305,9 +312,12 @@ var CounterCheck = (() => {
         check_passed: "Draft",
         handed_off: "With BSO",
         bso_opened: "With BSO",
-        submitted_for_credit: "For approval"
+        returned: "Returned by BSO",
+        // back at the branch: the next passing check makes it ready for BSO review again
+        endorsed: "Endorsed to Credit"
+        // the BSO sends it on; Credit decides the loan
       };
-      var RANK = { Draft: 0, "Missing requirements": 0, "With BSO": 1, "For approval": 2 };
+      var RANK = { Draft: 0, "Missing requirements": 0, "Returned by BSO": 0, "With BSO": 1, "Endorsed to Credit": 2 };
       function deriveStatus(events) {
         let s = "Draft";
         for (const e of events) {
