@@ -34,6 +34,8 @@ The files are in `frontend/specimens/`. Visit 1 uses `01-application-form-first-
 
 All documents are synthetic. Say that once on screen or in the voice-over.
 
+A silent real-time take of steps 1 to 7 was recorded on Nov 13 with Playwright on case `RF-2026-052` (76 seconds at 1280 by 800, waits left in). The file is outside the repo, in Simonee's Downloads. A voice-over can go on top of it if a live take is not possible.
+
 ## Voice-over for the slides after the demo
 
 These go with slides 5 to 8 of the Canva design "Counter Check prototype slides". Each takes about 30 to 40 seconds.
