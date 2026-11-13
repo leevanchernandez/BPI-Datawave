@@ -17,7 +17,7 @@ We catch the missing page, the blank TIN and the wrong-name ID while the client 
 
 ## Recording the demo
 
-Use a case number nobody has touched. `RF-2026-050` was still unused on Nov 13 at 6 AM. `RF-2026-051` and `052` were used for the silent takes. Open https://counter-check.h-847.workers.dev/live?id=RF-2026-050 in one window and the same link with `&role=bso` in a second window. The page needs no key. Record the screen with your voice in one take, and leave the waits in, because the 15 to 20 seconds of reading is part of the claim.
+Use a case number nobody has touched. The plain link https://counter-check.h-847.workers.dev/live picks a fresh number and puts it in the address. Open it in one window, then open the same address with `&role=bso` added in a second window. `RF-2026-050`, `051`, `052` and `310` are already used by earlier takes. The page needs no key. Record the screen with your voice in one take, and leave the waits in, because the 15 to 20 seconds of reading is part of the claim.
 
 The files are in `frontend/specimens/`. Visit 1 uses `01-application-form-first-visit.png`, `02`, `03`, `04`, `05-dti-page-1.png`, `08`, `09`, `10` and `11`. Visit 2 adds `01b-application-form-corrected.png` and `05b-dti-page-2.png` and keeps the rest.
 
