@@ -176,7 +176,7 @@ export function makeApi({ store, llm, now = () => new Date(), demoKey, aws = nul
           if (r.status !== 200 || !a) return failed();
           raw = a.fields; model = a.model || 'Amazon Bedrock';
         } else { raw = await llm.intake(text); model = llm.model; }
-      } catch { return failed(); }
+      } catch (e) { console.log('intake failed', e.message); return failed(); }
       return json(200, { fields: cleanIntake(raw, text), model, stack: onAws ? 'aws' : 'free' });
     },
     'POST /api/upload-url': async (req) => {

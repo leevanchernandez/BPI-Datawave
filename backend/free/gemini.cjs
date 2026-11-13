@@ -52,7 +52,7 @@ function makeGemini({ apiKey, model = 'gemini-3.5-flash-lite', fetchFn = fetch, 
     const r = await call({
       systemInstruction: { parts: [{ text: 'You read the OCR text of one page from a Philippine business loan application packet. Report only what the text shows. Leave a field empty if it is not in the text. Never guess a name or date. If the text is garbled, set legibility to "unclear".' }] },
       contents: [{ role: 'user', parts: [{ text: `OCR text of the page:\n"""\n${String(text).slice(0, 6000)}\n"""\nClassify the page and extract the fields.` }] }],
-      generationConfig: { responseMimeType: 'application/json', responseJsonSchema: PAGE_SCHEMA, maxOutputTokens: 400 },
+      generationConfig: { responseMimeType: 'application/json', responseJsonSchema: PAGE_SCHEMA, maxOutputTokens: 2048 },
     });
     let o; try { o = JSON.parse(textOf(r)); } catch { return { docType: null, unreadable: true }; }
     const page = { docType: DOC_TYPES.includes(o.docType) ? o.docType : null, fields: {}, conf: {} };
@@ -67,7 +67,7 @@ function makeGemini({ apiKey, model = 'gemini-3.5-flash-lite', fetchFn = fetch, 
     const r = await call({
       systemInstruction: { parts: [{ text: 'You write short, polite Taglish messages for a bank business-loan officer (BSO). When the audience is the branch officer, the BSO is writing to the branch officer about one client: address the branch officer, refer to the business owner as the client (ang client, ng client, sa client), and never write as if to the client or as the client. Use exactly the items provided: do not add, remove, merge, or soften any item, and never say the application is approved or complete. No promises about timing. Under 90 words.' }] },
       contents: [{ role: 'user', parts: [{ text: `Audience: ${audience === 'client' ? 'the business owner' : 'the branch officer'}.\nItems still needed:\n${items.map((i) => `- ${i}`).join('\n')}` }] }],
-      generationConfig: { maxOutputTokens: 400 },
+      generationConfig: { maxOutputTokens: 2048 },
     });
     return safeDraft(textOf(r), items);
   }
@@ -77,7 +77,7 @@ function makeGemini({ apiKey, model = 'gemini-3.5-flash-lite', fetchFn = fetch, 
     const r = await call({
       systemInstruction: { parts: [{ text: 'A bank business-loan officer (BSO) returned a loan referral to the branch for the reason given. Rewrite the reason as ONE short reminder for branch staff handling similar cases later: what to check, on which document, before sending. Use only what the reason says. No client, person or business names, no amounts, and never say anything is approved or complete. Same language as the reason (English or Taglish). Under 30 words.' }] },
       contents: [{ role: 'user', parts: [{ text: `Business structure: ${type}. Industry: ${industry}.\nReturn reason: ${reason}` }] }],
-      generationConfig: { maxOutputTokens: 400 },
+      generationConfig: { maxOutputTokens: 2048 },
     });
     return safeDraft(textOf(r));
   }
@@ -97,7 +97,7 @@ function makeGemini({ apiKey, model = 'gemini-3.5-flash-lite', fetchFn = fetch, 
     for (let turn = 0; turn < maxTurns; turn++) {
       const r = await call({
         systemInstruction: { parts: [{ text: 'You help a BPI business solution officer (BSO) and branch staff with ONE loan referral. Answer ONLY from tool results. Name a document only if a tool result names it. If tools return nothing, or the question is about approval, eligibility, rates or credit decisions, say you cannot answer and that the BSO or Credit decides. Reply in the language of the question (English or Taglish), in plain text without markdown. Keep it short.' }] },
-        contents, tools: TOOLS, generationConfig: { maxOutputTokens: 600 },
+        contents, tools: TOOLS, generationConfig: { maxOutputTokens: 2048 },
       });
       const content = ((r.candidates || [])[0] || {}).content || { role: 'model', parts: [] };
       contents.push(content);
@@ -122,7 +122,7 @@ function makeGemini({ apiKey, model = 'gemini-3.5-flash-lite', fetchFn = fetch, 
     const r = await call({
       systemInstruction: { parts: [{ text: INTAKE_PROMPT }] },
       contents: [{ role: 'user', parts: [{ text: `Note:\n"""\n${note}\n"""` }] }],
-      generationConfig: { responseMimeType: 'application/json', responseJsonSchema: INTAKE_SCHEMA, maxOutputTokens: 400 },
+      generationConfig: { responseMimeType: 'application/json', responseJsonSchema: INTAKE_SCHEMA, maxOutputTokens: 2048 },
     });
     try { return JSON.parse(textOf(r)); } catch { return {}; }
   }
