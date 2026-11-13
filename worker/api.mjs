@@ -154,9 +154,11 @@ export function makeApi({ store, llm, now = () => new Date(), demoKey, aws = nul
       return json(200, { cases: cases.slice(0, MAX_LIST) });
     },
     'GET /api/case': async (req) => {
-      const id = new URL(req.url).searchParams.get('id');
+      const q = new URL(req.url).searchParams, id = q.get('id');
       if (!ID.test(id || '')) return bad('invalid id');
-      const c = await store.get(id); if (!c) return json(404, { error: 'unknown referral' });
+      const c = await store.get(id);
+      if (q.has('exists')) return json(200, { exists: !!c }); // a free number is not an error
+      if (!c) return json(404, { error: 'unknown referral' });
       return json(200, await full(c));
     },
     // Case fields from the branch officer's note. Nothing is saved here. The branch checks the form and saves the case.

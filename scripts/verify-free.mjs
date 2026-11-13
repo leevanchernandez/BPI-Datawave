@@ -71,6 +71,7 @@ const CAL = { lines: L(['CLIENT AUTHORIZATION LETTER', 'SPECIMEN', 'Signed: Elen
   assert.equal(takeQuota(all, 'a', false, t), 'rate');
 }
 assert.equal((await call('GET', '/api/case?id=RF-2026-042', null, 'wrong')).status, 404, 'a wrong key is treated as no key');
+{ const r = await call('GET', '/api/case?id=RF-2026-042&exists=1'); assert.equal(r.status, 200); assert.equal(r.body.exists, false, 'a free number is not a 404'); }
 assert.equal((await call('POST', '/api/case', { referral: { ...REF, civilStatus: 'complicated' } })).status, 400, 'civil status must be known');
 assert.equal((await call('POST', '/api/check', { id: REF.id, pages: [FORM('', 'Kasal')] })).status, 404, 'check needs a saved case');
 

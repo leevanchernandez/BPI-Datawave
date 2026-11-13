@@ -285,8 +285,8 @@ if (role === 'bm') {
   (async () => {
     if (freshCase) { // pick another number if this one is taken
       for (let i = 0; i < 5; i++) {
-        const r = await fetch(`/api/case?id=${caseId()}`, { headers: { 'x-demo-key': demoKey } }).catch(() => null);
-        if (!r || r.status !== 200) return;
+        const r = await fetch(`/api/case?id=${caseId()}&exists=1`, { headers: { 'x-demo-key': demoKey } }).then((x) => x.json()).catch(() => null);
+        if (!r || !r.exists) return;
         params.set('id', randomId()); history.replaceState(null, '', `?${params}`); $('f-id').value = $('b-id').value = params.get('id'); navLinks();
       }
       return;
