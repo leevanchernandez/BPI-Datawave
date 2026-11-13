@@ -49,6 +49,13 @@ function checklistHtml(rows) {
     : r.source === 'J1' ? `<span class="chip" title="${esc(r.sourceTitle)}">Source: BSO checklist</span>`
     : '<span class="chip assumed">Team assumption, BSO confirms</span>'}</span><span></span></li>`).join('');
 }
+// a button shows a spinner and its own label while its request runs, and comes back as it was
+function busy(btn, label) {
+  const html = btn.innerHTML, was = btn.disabled;
+  btn.disabled = true; btn.setAttribute('aria-busy', 'true'); btn.innerHTML = `<span class="spin" aria-hidden="true"></span>${esc(label)}`;
+  return () => { btn.innerHTML = html; btn.removeAttribute('aria-busy'); btn.disabled = was; };
+}
+const skelLines = (n) => Array.from({ length: n }, (_, i) => `<li><span></span><span><span class="skel ${['w80', 'w60', 'w40'][i % 3]}"></span></span><span></span></li>`).join('');
 const headsUpScope = (l) => (l.industry ? `${l.type}, ${l.industry}` : l.type || 'All cases');
 
 // ================= Branch view =================
@@ -65,12 +72,14 @@ if (role === 'bm') {
   $('f-civil').onchange = () => { $('f-spouse').disabled = $('f-civil').value !== 'married'; };
 
   async function saveCase() {
+    const done = busy($('save-case'), 'Saving');
     try {
       const v = await api('POST', '/api/case', { referral: referral() });
       lastView = v; navLinks(); loadCases();
       renderChecklist(v);
-      $('run-check').disabled = pages.length === 0;
-    } catch (e) { alertInline(e.message); }
+      done(); toast(`Case saved. The checklist has ${v.rules.rows.length} papers.`);
+      $('run-check').disabled = pages.length === 0 || pages.some((x) => !x.lines);
+    } catch (e) { done(); alertInline(e.message); }
   }
   function renderChecklist(v) {
     $('checklist').innerHTML = checklistHtml(v.rules.rows);
@@ -121,9 +130,9 @@ if (role === 'bm') {
   async function send() {
     const text = $('chat-in').value.trim(); if (!text) return;
     say('me', text); $('chat-in').value = ''; $('chat-send').disabled = true;
-    const wait = say('bot wait', mode === 'fill' ? 'Reading your note.' : 'Checking the case.');
+    const wait = say('bot wait dots', mode === 'fill' ? 'Reading your note' : 'Checking the case');
     try { await (mode === 'fill' ? fill(text, wait) : ask(text, wait)); } catch (e) { wait.textContent = e.message === 'unknown referral' ? 'Save the case first, then ask about it.' : e.message; }
-    wait.classList.remove('wait'); $('chat-send').disabled = false;
+    wait.classList.remove('wait', 'dots'); $('chat-send').disabled = false;
   }
   $('chat-send').onclick = send;
   $('chat-in').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
@@ -201,11 +210,22 @@ if (role === 'bm') {
   const PAPERS = ['02-owner-id-front', '03-owner-id-back', '04-spouse-id-front', '05-dti-page-1', '08-bank-statement', '09-bir-cor', '10-mayors-permit', '11-client-authorization-letter'];
   const SAMPLES = { 1: ['01-application-form-first-visit', ...PAPERS], 2: ['01b-application-form-corrected', ...PAPERS, '05b-dti-page-2'] };
   for (const v of [1, 2]) $(`sample-${v}`).onclick = async () => {
+    const done = busy($(`sample-${v}`), 'Loading papers');
     try {
       const files = await Promise.all(SAMPLES[v].map(async (f) => new File([await (await fetch(`specimens/${f}.png`)).blob()], `${f}.png`, { type: 'image/png' })));
-      add(files, true);
-    } catch { alertInline('The sample papers could not load.'); }
+      done(); add(files, true);
+    } catch { done(); alertInline('The sample papers could not load. Check the connection and try again.'); }
   };
+  // drop images or PDFs on the Documents section
+  const dropZone = $('pages-empty').closest('section');
+  dropZone.addEventListener('dragover', (e) => { if ($('files').disabled) return; e.preventDefault(); dropZone.classList.add('drop'); });
+  dropZone.addEventListener('dragleave', (e) => { if (!dropZone.contains(e.relatedTarget)) dropZone.classList.remove('drop'); });
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault(); dropZone.classList.remove('drop'); if ($('files').disabled) return;
+    const files = [...e.dataTransfer.files].filter((f) => /^image\//.test(f.type) || f.type === 'application/pdf' || /\.pdf$/i.test(f.name));
+    if (files.length) add(files); else alertInline('Drop photos or PDFs of the papers.');
+  });
+  let checking = false;
   function clearPages() { pages.forEach((p) => URL.revokeObjectURL(p.url)); pages.splice(0); counter = 0; renderPages(); $('run-check').disabled = true; markStale(); }
   $('clear-pages').onclick = () => add([], true);
   function renderPages() {
@@ -214,7 +234,8 @@ if (role === 'bm') {
       ${p.lines ? '' : '<div class="bar"><i></i></div>'}
       <select aria-label="Label for page ${p.n}" data-label="${p.n}" ${stack === 'aws' ? 'disabled title="Page labels are not used on the AWS reader yet"' : ''}>${Object.entries(DOC_LABELS).map(([k, v]) => `<option value="${k}" ${p.label === k ? 'selected' : ''}>${v}</option>`).join('')}</select></div>`).join('');
     document.querySelectorAll('[data-label]').forEach((s) => { s.onchange = () => { pages.find((x) => x.n === +s.dataset.label).label = s.value; }; });
-    $('clear-pages').disabled = pages.length === 0;
+    $('clear-pages').disabled = pages.length === 0 || checking;
+    $('pages-empty').classList.toggle('hidden', pages.length > 0);
   }
 
   // ---- check ----
@@ -232,17 +253,36 @@ if (role === 'bm') {
     p.key = u.key; p.status = 'Uploaded'; renderPages();
     return p.key;
   }
+  // progress while a check runs: the upload count is real, the reading step shows the time so far
+  function startProgress(n) {
+    const t0 = Date.now(), steps = [stack === 'aws' ? `Upload ${n} ${n === 1 ? 'page' : 'pages'}` : `Send the text of ${n} ${n === 1 ? 'page' : 'pages'}`, stack === 'aws' ? 'Read them with Textract, check them against the rules and draft the message' : 'Check them against the rules and draft the message'];
+    let step = 0, sent = 0;
+    const draw = () => {
+      const sec = Math.round((Date.now() - t0) / 1000);
+      $('progress-steps').innerHTML = steps.map((t, i) => `<li class="${i < step ? 'done' : i === step ? 'now' : ''}">${esc(t)}${i === 0 && step === 0 && stack === 'aws' ? ` (${sent} of ${n})` : ''}</li>`).join('');
+      $('progress-time').textContent = `${sec} s, usually 15 to 30`;
+      const up = stack === 'aws' ? 0.3 * (sent / n) : 0.1;
+      $('progress-bar').style.transform = `scaleX(${step === 0 ? up : Math.min(0.92, 0.3 + 0.62 * (1 - Math.exp(-(sec - 2) / 14)))})`;
+    };
+    $('progress').classList.remove('hidden'); $('result').setAttribute('aria-busy', 'true'); $('result').classList.add('dim');
+    draw(); const timer = setInterval(draw, 500);
+    return { sent: () => { sent++; draw(); }, read: () => { step = 1; draw(); }, end: () => { clearInterval(timer); $('progress-bar').style.transform = 'scaleX(1)'; setTimeout(() => $('progress').classList.add('hidden'), 250); $('result').removeAttribute('aria-busy'); $('result').classList.remove('dim'); } };
+  }
   $('run-check').onclick = async () => {
-    const busy = (on) => { for (const b of ['sample-1', 'sample-2', 'files', 'clear-pages']) $(b).disabled = on; };
-    $('run-check').disabled = true; $('run-check').textContent = 'Checking'; busy(true);
+    const lock = (on) => { for (const b of ['sample-1', 'sample-2', 'files', 'clear-pages']) $(b).disabled = on; };
+    const done = busy($('run-check'), 'Checking'); lock(true); checking = true;
+    const prog = startProgress(pages.length);
+    let ok = false;
     try {
       const id = caseId();
-      const body = stack === 'aws' ? { id, pageKeys: await Promise.all(pages.map((p) => uploadPage(id, p))) }
+      const body = stack === 'aws' ? { id, pageKeys: await Promise.all(pages.map((p) => uploadPage(id, p).then((k) => { prog.sent(); return k; }))) }
         : { id, pages: pages.map((p) => ({ lines: p.lines, ...(p.label ? { docType: p.label } : {}) })) };
-      renderResult(await api('POST', '/api/check', body));
-    } catch (e) { alertInline(e.message); }
-    busy(false); $('clear-pages').disabled = !pages.length;
-    $('run-check').disabled = !lastView || !pages.length || pages.some((x) => !x.lines); $('run-check').textContent = 'Check documents';
+      prog.read();
+      renderResult(await api('POST', '/api/check', body)); ok = true;
+    } catch (e) { alertInline(`The check did not finish. ${e.message} Your photos are still here, so press Check documents to try again.`); }
+    checking = false; prog.end(); done(); lock(false); $('clear-pages').disabled = !pages.length;
+    $('run-check').disabled = !lastView || !pages.length || pages.some((x) => !x.lines);
+    if (ok) $('result').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
   };
 
   function renderResult(v) {
@@ -279,7 +319,10 @@ if (role === 'bm') {
         : 'The model sees only ID, registration and permit pages, as text with ID numbers masked. Bank statements and forms are read by rules.';
     }
   }
-  $('handoff').onclick = async () => { try { const nv = await api('POST', '/api/event', { id: caseId(), type: 'handed_off', by: 'BM' }); renderResult({ ...lastView, ...nv }); } catch (e) { alertInline(e.message); } };
+  $('handoff').onclick = async () => {
+    const done = busy($('handoff'), 'Sending');
+    try { const nv = await api('POST', '/api/event', { id: caseId(), type: 'handed_off', by: 'BM' }); done(); renderResult({ ...lastView, ...nv }); toast('Sent to the BSO. You can follow it in Referrals below.'); } catch (e) { done(); alertInline(e.message); }
+  };
 
   // load an existing case if there is one
   (async () => {
@@ -291,12 +334,16 @@ if (role === 'bm') {
       }
       return;
     }
-    try { const v = await api('GET', `/api/case?id=${encodeURIComponent(caseId())}`); fillForm(v.referral); renderChecklist(v); lastView = v; if (v.open.checked) { renderResult(v); markStale('These results are from the last saved check. Photos are not kept after a refresh, so add them again and press Check documents to update.'); } } catch { /* new case */ } })();
+    const empty = $('checklist').innerHTML; $('checklist').innerHTML = skelLines(4);
+    try { const v = await api('GET', `/api/case?id=${encodeURIComponent(caseId())}`); fillForm(v.referral); renderChecklist(v); lastView = v; if (v.open.checked) { renderResult(v); markStale('These results are from the last saved check. Photos are not kept after a refresh, so add them again and press Check documents to update.'); } } catch { $('checklist').innerHTML = empty; } })();
   function fillForm(r) { $('f-business').value = r.business; $('f-name').value = r.name; $('f-type').value = r.type; $('f-industry').value = r.industry; $('f-amount').value = r.amount; $('f-civil').value = r.civilStatus; $('f-spouse').value = r.spouseName || ''; $('f-secured').checked = !!r.secured; $('f-bpi').checked = r.bpiAccount !== false; }
 }
 
 // ---- case list: on top of the BSO view, below the branch form ----
-async function loadCases() {
+let casesLoaded = false;
+async function loadCases(btn) {
+  if (!casesLoaded) $('cases').innerHTML = Array.from({ length: 4 }, () => `<tr>${'<td><span class="skel w80"></span></td>'.repeat(7)}</tr>`).join('');
+  const done = btn ? busy(btn, 'Refreshing') : null;
   try {
     const { cases } = await api('GET', '/api/cases');
     const counts = {};
@@ -305,23 +352,33 @@ async function loadCases() {
     const n = (k) => cases.filter((c) => c.firstHandoff === k).length, ok = n('complete'), done = ok + n('returned'), waiting = cases.filter((c) => c.firstHandoff === 'pending' && c.status === 'With BSO').length;
     $('cases-metric').textContent = done ? `${ok} of ${done} ${done === 1 ? 'case' : 'cases'} the BSO acted on ${done === 1 ? 'was' : 'were'} endorsed to Credit without a return${waiting ? `, and ${waiting} ${waiting === 1 ? 'is' : 'are'} still with the BSO` : ''}.` : waiting ? `${waiting} ${waiting === 1 ? 'case is' : 'cases are'} with the BSO.` : '';
     $('cases').innerHTML = cases.map((c) => `<tr data-id="${esc(c.id)}" tabindex="0"${c.id === caseId() ? ' aria-current="true"' : ''}><td class="mono">${esc(c.id)}</td><td>${esc(c.business)}</td><td><span class="status ${statusClass(c.status)}">${esc(c.status)}</span></td><td>${c.open ?? ''}</td><td>${c.updated ? new Date(c.updated).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Manila' }) : ''}</td><td>PHP ${Number(c.amount).toLocaleString('en-PH')}</td><td>${esc(c.type)}, ${esc(c.industry)}</td></tr>`).join('')
-      || '<tr><td colspan="7" class="soft">No cases yet.</td></tr>';
-  } catch (e) { $('cases').innerHTML = `<tr><td colspan="7" class="soft">${esc(e.message)}</td></tr>`; }
+      || `<tr><td colspan="7"><div class="empty"><strong>No ${role === 'bm' ? 'referrals' : 'cases'} yet</strong>${role === 'bm' ? 'Save a case and it shows up here.' : 'Cases show up here once a branch saves one.'}</div></td></tr>`;
+    casesLoaded = true;
+  } catch (e) {
+    if (casesLoaded) alertInline(`The list could not refresh. ${e.message}`);
+    else $('cases').innerHTML = `<tr><td colspan="7" class="soft">The list could not load. <button class="small secondary retry" data-retry>Try again</button></td></tr>`;
+  }
+  if (done) done();
 }
 const pick = (e) => {
+  if (e.target.closest('[data-retry]')) { loadCases(); return; }
   const tr = e.target.closest('tr[data-id]'); if (!tr) return;
   if (role === 'bm') { location.search = `?id=${encodeURIComponent(tr.dataset.id)}${stackQuery}`; return; }
   $('b-id').value = tr.dataset.id; history.replaceState(null, '', `?role=bso&id=${encodeURIComponent(tr.dataset.id)}${stackQuery}`); $('b-open').onclick();
 };
 $('cases').onclick = pick;
 $('cases').onkeydown = (e) => { if (e.key === 'Enter') pick(e); };
-$('cases-refresh').onclick = loadCases;
+$('cases-refresh').onclick = () => loadCases($('cases-refresh'));
 if (role === 'bm') { $('cases-title').textContent = 'Referrals'; $('bm-right').append($('cases-box')); loadCases(); }
 
 // ================= BSO view =================
 if (role === 'bso') {
-  let timer = null, lastAt = '', shownDrafts = null;
+  let timer = null, lastAt = '', shownDrafts = null, shownId = null;
   async function load() {
+    if (caseId() !== shownId) { // a new case shows skeletons until it arrives
+      $('b-summary').innerHTML = '<span class="skel h"></span><span class="skel w80"></span>';
+      $('b-events').innerHTML = $('b-open-items').innerHTML = skelLines(3);
+    }
     try {
       const v = await api('GET', `/api/case?id=${encodeURIComponent(caseId())}`);
       const r = v.referral;
@@ -353,22 +410,38 @@ if (role === 'bso') {
       $('b-approve').disabled = !v.lastMessage || v.events.some((e) => e.type === 'draft_approved' && e.at > (v.events.filter((x) => x.type.startsWith('check')).pop() || {}).at);
       const newest = (v.events[v.events.length - 1] || {}).at || '';
       if (lastAt && newest !== lastAt) document.title = 'Updated: Counter Check';
-      lastAt = newest;
-    } catch (e) { $('b-summary').innerHTML = `<p class="soft">${esc(e.message)}</p>`; $('b-endorse').disabled = $('b-return-btn').disabled = true; }
+      lastAt = newest; shownId = caseId();
+    } catch (e) {
+      if (shownId === caseId()) return; // a failed poll keeps what is on screen
+      const id = esc(caseId());
+      $('b-summary').innerHTML = `<div class="empty"><strong>${e.message === 'unknown referral' ? `There is no case ${id} yet` : 'This case could not load'}</strong>${e.message === 'unknown referral' ? 'Pick a case from All cases above, or check the number.' : `${esc(e.message)}. It tries again in a few seconds.`}</div>`;
+      $('b-events').innerHTML = $('b-open-items').innerHTML = '';
+      $('b-endorse').disabled = $('b-return-btn').disabled = true;
+    }
   }
   $('b-q').value = `Ano pa ang kulang sa ${caseId()}?`;
   $('b-open').onclick = () => { loadCases(); navLinks(); $('b-q').value = `Ano pa ang kulang sa ${caseId()}?`; load(); if (!timer) { let tick = 0; timer = setInterval(() => { if (!document.hidden || ++tick % 5 === 0) load(); }, 4000); } }; // every 20 seconds in a hidden tab
-  $('b-approve').onclick = async () => { try { await api('POST', '/api/event', { id: caseId(), type: 'draft_approved', by: 'BSO' }); load(); } catch (e) { alertInline(e.message); } };
+  // a BSO action shows its own busy state, then the case reloads
+  const act = async (btn, label, body, note) => {
+    const done = busy(btn, label);
+    try { await api('POST', '/api/event', { id: caseId(), by: 'BSO', ...body }); done(); if (note) toast(note); await load(); loadCases(); } catch (e) { done(); alertInline(e.message); }
+  };
+  $('b-approve').onclick = () => act($('b-approve'), 'Approving', { type: 'draft_approved' }, 'Message approved.');
   $('b-id').addEventListener('input', () => { $('b-endorse').disabled = $('b-return-btn').disabled = true; });
-  $('b-endorse').onclick = async () => { try { await api('POST', '/api/event', { id: caseId(), type: 'endorsed', by: 'BSO' }); load(); loadCases(); } catch (e) { alertInline(e.message); } };
+  $('b-endorse').onclick = () => act($('b-endorse'), 'Endorsing', { type: 'endorsed' }, 'Endorsed to Credit. Credit decides the loan.');
   $('b-return').onsubmit = async (e) => {
     e.preventDefault();
-    try { await api('POST', '/api/event', { id: caseId(), type: 'returned', by: 'BSO', reason: $('b-return-reason').value }); $('b-return-reason').value = ''; load(); } catch (err) { alertInline(err.message); }
+    const reason = $('b-return-reason').value;
+    await act($('b-return-btn'), 'Returning', { type: 'returned', reason }, 'Returned to the branch. The AI is drafting a heads-up for you to review.');
+    if ($('b-return-reason').value === reason) $('b-return-reason').value = '';
   };
-  const lesson = async (body) => { try { await api('POST', '/api/lesson', { by: 'BSO', ...body }); load(); } catch (e) { alertInline(e.message); } };
-  $('b-drafts').onsubmit = (e) => { e.preventDefault(); const f = e.target; lesson({ lessonId: f.dataset.lesson, action: 'publish', text: f.querySelector('textarea').value, scope: f.querySelector('select').value }); };
-  $('b-drafts').onclick = (e) => { if (e.target.dataset.discard) lesson({ lessonId: e.target.dataset.discard, action: 'retire' }); };
-  $('b-headsup').onclick = (e) => { if (e.target.dataset.retire) lesson({ lessonId: e.target.dataset.retire, action: 'retire' }); };
+  const lesson = async (btn, label, body, note) => {
+    const done = busy(btn, label);
+    try { await api('POST', '/api/lesson', { by: 'BSO', ...body }); done(); toast(note); shownDrafts = null; load(); } catch (e) { done(); alertInline(e.message); }
+  };
+  $('b-drafts').onsubmit = (e) => { e.preventDefault(); const f = e.target; lesson(f.querySelector('button:not([data-discard])'), 'Publishing', { lessonId: f.dataset.lesson, action: 'publish', text: f.querySelector('textarea').value, scope: f.querySelector('select').value }, 'Heads-up published.'); };
+  $('b-drafts').onclick = (e) => { if (e.target.dataset.discard) lesson(e.target, 'Discarding', { lessonId: e.target.dataset.discard, action: 'retire' }, 'Draft discarded.'); };
+  $('b-headsup').onclick = (e) => { if (e.target.dataset.retire) lesson(e.target, 'Retiring', { lessonId: e.target.dataset.retire, action: 'retire' }, 'Heads-up retired.'); };
   window.addEventListener('focus', () => { document.title = 'Counter Check'; });
   // without a case number, open the newest case that is with the BSO
   if (params.get('id')) $('b-open').onclick();
@@ -376,17 +449,23 @@ if (role === 'bso') {
 }
 
 $('b-ask').onclick = async () => {
-  $('b-answer').textContent = 'Asking';
+  if (!$('b-q').value.trim()) { $('b-q').focus(); return; }
+  const done = busy($('b-ask'), 'Asking');
+  $('b-answer').innerHTML = '<div class="message" aria-busy="true"><span class="skel w80"></span><span class="skel w60"></span></div>';
   try {
     const v = await api('POST', '/api/ask', { id: caseId(), question: $('b-q').value, stack });
     $('b-answer').innerHTML = `<div class="message">${esc(v.answer)}</div>${v.handoff ? '<p class="note">The assistant handed this to a person.</p>' : ''}`;
     $('b-trace-box').classList.remove('hidden');
     $('b-trace').textContent = (v.trace || []).map((t) => (t.rule ? `rule: ${t.rule} (the model was not asked)` : `tool: ${t.tool}\n${JSON.stringify(t.result, null, 1)}`)).join('\n\n') + (v.model ? `\n\nmodel: ${v.model}` : '');
-  } catch (e) { $('b-answer').textContent = e.message; }
+  } catch (e) { $('b-answer').innerHTML = `<p class="note">${esc(e.message)}</p>`; }
+  done();
 };
+$('b-q').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('b-ask').click(); });
 
-function alertInline(msg) {
-  let el = document.getElementById('flash');
-  if (!el) { el = document.createElement('p'); el.id = 'flash'; el.className = 'note full'; el.setAttribute('role', 'status'); $('main').prepend(el); }
-  el.textContent = msg; clearTimeout(alertInline.t); alertInline.t = setTimeout(() => el.remove(), 6000);
+function toast(msg, kind = '') {
+  let el = $('toast');
+  if (!el) { el = document.createElement('div'); el.id = 'toast'; el.setAttribute('role', 'status'); document.body.append(el); }
+  el.className = `toast ${kind}`; el.textContent = msg; void el.offsetWidth; el.classList.add('show');
+  clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('show'), kind === 'error' ? 7000 : 4000);
 }
+function alertInline(msg) { toast(msg, 'error'); }

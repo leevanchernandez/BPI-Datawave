@@ -117,7 +117,36 @@
   table.cases tbody tr { cursor: pointer; }
   table.cases tbody tr:hover, table.cases tbody tr[aria-current="true"] { background: var(--color-brand-tint); }
   .hidden { display: none !important; }
-  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+  /* loading, empty and error states */
+  :root { --z-toast: 30; }
+  .skel { display: block; height: 0.8em; margin: 4px 0; border-radius: 4px; background: linear-gradient(90deg, var(--color-line) 30%, var(--color-paper) 50%, var(--color-line) 70%); background-size: 300% 100%; animation: shimmer 1.4s linear infinite; }
+  .skel.w40 { width: 40%; } .skel.w60 { width: 60%; } .skel.w80 { width: 80%; } .skel.h { height: 1.1em; width: 55%; margin-bottom: 8px; }
+  @keyframes shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
+  .spin { display: inline-block; width: 0.9em; height: 0.9em; margin-right: 6px; vertical-align: -0.1em; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: turn 0.7s linear infinite; }
+  @keyframes turn { to { transform: rotate(360deg); } }
+  button[aria-busy="true"] { opacity: 0.8; cursor: progress; }
+  .dots::after { content: ''; display: inline-block; width: 1.2em; text-align: left; animation: dots 1.2s steps(4) infinite; }
+  @keyframes dots { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } }
+  .toast { position: fixed; left: 50%; bottom: var(--space-5); transform: translate(-50%, 8px); opacity: 0; z-index: var(--z-toast); max-width: min(92vw, 520px); padding: var(--space-3) var(--space-4); border-radius: var(--radius); background: var(--color-ink); color: #fff; font-size: var(--text-s); box-shadow: 0 6px 24px rgb(0 0 0 / 0.18); transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease); pointer-events: none; }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  .toast.error { background: var(--color-brand-deep); }
+  .empty { margin-top: var(--space-3); padding: var(--space-5) var(--space-4); border: 1px dashed var(--color-line); border-radius: var(--radius); text-align: center; color: var(--color-ink-soft); font-size: var(--text-s); transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease); }
+  .empty strong { display: block; color: var(--color-ink); font-size: var(--text-m); margin-bottom: 2px; }
+  section.drop { outline: 2px dashed var(--color-brand); outline-offset: 6px; border-radius: var(--radius); }
+  .drop .empty, .empty.over { border-color: var(--color-brand); background: var(--color-brand-tint); }
+  .progress { margin-top: var(--space-4); padding: var(--space-3) var(--space-4); border: 1px solid var(--color-line); border-radius: var(--radius); background: var(--color-surface); }
+  .progress ol { list-style: none; margin: var(--space-2) 0 0; padding: 0; font-size: var(--text-s); }
+  .progress li { display: flex; gap: var(--space-2); align-items: center; padding: 3px 0; color: var(--color-ink-soft); }
+  .progress li::before { content: ''; flex: none; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--color-line); }
+  .progress li.now { color: var(--color-ink); font-weight: 600; }
+  .progress li.now::before { border-color: var(--color-brand); border-right-color: transparent; animation: turn 0.7s linear infinite; }
+  .progress li.done::before { background: var(--color-ok); border-color: var(--color-ok); }
+  .progress .bar { height: 6px; margin-top: var(--space-3); }
+  .progress .bar i { transition: transform 400ms var(--ease); }
+  [aria-busy="true"].dim { opacity: 0.5; transition: opacity var(--dur) var(--ease); }
+  .retry { margin-left: var(--space-2); }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } .skel, .spin, .progress li.now::before { animation: none; } .dots::after { animation: none; content: '...'; } }
 </style>
 </head>
 <body>
@@ -165,7 +194,7 @@
     </section>
     <section>
       <h2>Requirements</h2>
-      <ul class="items" id="checklist"><li><span></span><span class="soft">Save the case to see its checklist.</span><span></span></li></ul>
+      <ul class="items" id="checklist"><li><span></span><span class="soft">Save the case to see the papers this client needs.</span><span></span></li></ul>
       <p class="soft" id="rules-note" style="margin-top:8px"></p>
       <div id="headsup-box" class="hidden">
         <h3 style="margin-top:16px">Heads up from BSO</h3>
@@ -186,6 +215,8 @@
       </div>
       <p class="soft">No papers at hand? Load the synthetic sample papers for the sample client, Elena Santos, so fill the form from the sample note first. Visit 1 has two planted problems, and visit 2 is complete.</p>
       <div class="actions"><button id="sample-1" class="secondary small">Sample papers, visit 1</button><button id="sample-2" class="secondary small">Sample papers, visit 2</button></div>
+      <div class="empty" id="pages-empty"><strong>No pages yet</strong>Take photos of the papers, drop images or PDFs here, or load the sample papers.</div>
+      <div class="progress hidden" id="progress" role="status" aria-live="polite"><div class="row"><strong id="progress-title">Checking the documents</strong><span class="soft" id="progress-time"></span></div><ol id="progress-steps"></ol><div class="bar"><i id="progress-bar"></i></div></div>
       <div class="pages" id="pages"></div>
     </section>
     <section id="result" class="hidden">
