@@ -49,6 +49,20 @@ This voice-over is timed to that take. The times are read off the video in 5 sec
 | 70 to 80 s | BSO view. "Approved na ba ito?" is refused. | The BSO sees every case in one list. The assistant refuses approval questions, because Credit decides the loan. |
 | 80 to 90 s | The BSO presses "Endorse to Credit", and the list shows the count. | The BSO endorses the complete packet to Credit. The list counts how many cases were endorsed with no return, which is the share complete the first time. |
 
+A longer silent take (168 seconds, 1280 by 800, waits left in) was recorded on Nov 13 at about 10:40 AM on case `RF-2026-310` with the loading states from `7726ab2`. It adds the BSO return, the heads-up and the second handoff. The file is `counter-check-demo-full-2026-11-13.mp4` in Simonee's Downloads. This voice-over is timed to it.
+
+| Time | On screen | Voice-over |
+| --- | --- | --- |
+| 0 to 12 s | The sample note is sent, the form fills and the case is saved. | The branch types what the client said, in Taglish. The AI fills the form, and the branch checks every field before saving. |
+| 12 to 32 s | Visit 1 papers load and the progress panel counts the upload, then the reading. | The branch photographs the papers at the counter. Textract reads every page, and the rules compare them with the BSO checklist. All the documents here are synthetic. |
+| 32 to 42 s | Two problems and the drafted Taglish message appear. | It found a missing DTI page and a blank TIN while the client is still at the branch. The follow-up is already drafted, and a person sends it. |
+| 42 to 48 s | "ano pa kulang?" is asked and answered. | The branch asks what is still missing instead of booking a call with the BSO. |
+| 48 to 80 s | Visit 2 papers, the check passes, and the branch presses "Send to BSO". | The client comes back with the missing page. The check passes, and the case goes to the BSO. |
+| 80 to 95 s | BSO view. "Approved na ba ito?" is refused. | The BSO sees the case with its history. The assistant refuses approval questions, because Credit decides the loan. |
+| 95 to 112 s | The BSO returns the case with a reason, and a heads-up is drafted and published. | The BSO still finds a blurry mayor's permit and returns the case with a reason. That reason becomes a reminder that other branches see on similar cases, and only a BSO can publish it. |
+| 112 to 150 s | The branch sees "Returned by BSO", checks again and hands it off. | The branch sees the reason right away, fixes it with the client and sends it back. |
+| 150 to 168 s | The BSO presses "Endorse to Credit", and the case list shows the count. | The BSO endorses the complete packet to Credit. The list counts how many cases were endorsed with no return, which is the share complete the first time. |
+
 ## Voice-over for the slides after the demo
 
 These go with slides 5 to 8 of the Canva design "Counter Check prototype slides". Each takes about 30 to 40 seconds.
