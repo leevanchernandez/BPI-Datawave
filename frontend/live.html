@@ -114,6 +114,7 @@
   @media (max-width: 560px) { #bm-right table.cases th:nth-child(n+4), #bm-right table.cases td:nth-child(n+4) { display: none; } table.cases td:nth-child(2) { white-space: normal; } }
   .counts { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
   table.cases td { white-space: nowrap; vertical-align: middle; }
+  .pager { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-3); }
   table.cases tbody tr { cursor: pointer; }
   table.cases tbody tr:hover, table.cases tbody tr[aria-current="true"] { background: var(--color-brand-tint); }
   .hidden { display: none !important; }
@@ -247,6 +248,7 @@
       <thead><tr><th>Referral</th><th>Business</th><th>Status</th><th>Open items</th><th>Last update</th><th>Amount</th><th>Structure and industry</th></tr></thead>
       <tbody id="cases"></tbody>
     </table></div>
+    <div class="pager hidden" id="cases-pager"><button class="small secondary" id="cases-prev">Previous</button><span class="soft" id="cases-page"></span><button class="small secondary" id="cases-next">Next</button></div>
   </section>
   <div id="bso-left" class="hidden">
     <section>

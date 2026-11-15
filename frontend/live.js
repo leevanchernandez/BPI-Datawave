@@ -342,7 +342,8 @@ if (role === 'bm') {
 }
 
 // ---- case list: on top of the BSO view, below the branch form ----
-let casesLoaded = false;
+let casesLoaded = false, allCases = [], casePage = 0;
+const PAGE = 10;
 async function loadCases(btn) {
   if (!casesLoaded) $('cases').innerHTML = Array.from({ length: 4 }, () => `<tr>${'<td><span class="skel w80"></span></td>'.repeat(7)}</tr>`).join('');
   const done = btn ? busy(btn, 'Refreshing') : null;
@@ -353,8 +354,7 @@ async function loadCases(btn) {
     $('cases-count').innerHTML = Object.entries(counts).map(([s, n]) => `<span class="status ${statusClass(s)}">${n} ${esc(s)}</span>`).join(' ');
     const n = (k) => cases.filter((c) => c.firstHandoff === k).length, ok = n('complete'), acted = ok + n('returned'), waiting = cases.filter((c) => c.firstHandoff === 'pending' && c.status === 'With BSO').length;
     $('cases-metric').textContent = acted ? `${ok} of ${acted} ${acted === 1 ? 'case' : 'cases'} the BSO acted on ${acted === 1 ? 'was' : 'were'} endorsed to Credit without a return${waiting ? `, and ${waiting} ${waiting === 1 ? 'is' : 'are'} still with the BSO` : ''}.` : waiting ? `${waiting} ${waiting === 1 ? 'case is' : 'cases are'} with the BSO.` : '';
-    $('cases').innerHTML = cases.map((c) => `<tr data-id="${esc(c.id)}" tabindex="0"${c.id === caseId() ? ' aria-current="true"' : ''}><td class="mono">${esc(c.id)}</td><td>${esc(c.business)}<br><span class="soft">${esc(c.channel)}</span></td><td><span class="status ${statusClass(c.status)}">${esc(c.status)}</span></td><td>${c.open ?? ''}</td><td>${c.updated ? new Date(c.updated).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Manila' }) : ''}</td><td>PHP ${Number(c.amount).toLocaleString('en-PH')}</td><td>${esc(c.type)}, ${esc(c.industry)}</td></tr>`).join('')
-      || `<tr><td colspan="7"><div class="empty"><strong>No ${role === 'bm' ? 'referrals' : 'cases'} yet</strong>${role === 'bm' ? 'Save a case and it shows up here.' : 'Cases show up here once a branch saves one.'}</div></td></tr>`;
+    allCases = cases; casePage = Math.min(casePage, Math.max(0, Math.ceil(cases.length / PAGE) - 1)); renderCases();
     casesLoaded = true;
   } catch (e) {
     if (casesLoaded) alertInline(`The list could not refresh. ${e.message}`);
@@ -362,6 +362,16 @@ async function loadCases(btn) {
   }
   if (done) done();
 }
+function renderCases() {
+  $('cases').innerHTML = allCases.slice(casePage * PAGE, casePage * PAGE + PAGE).map((c) => `<tr data-id="${esc(c.id)}" tabindex="0"${c.id === caseId() ? ' aria-current="true"' : ''}><td class="mono">${esc(c.id)}</td><td>${esc(c.business)}<br><span class="soft">${esc(c.channel)}</span></td><td><span class="status ${statusClass(c.status)}">${esc(c.status)}</span></td><td>${c.open ?? ''}</td><td>${c.updated ? new Date(c.updated).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Manila' }) : ''}</td><td>PHP ${Number(c.amount).toLocaleString('en-PH')}</td><td>${esc(c.type)}, ${esc(c.industry)}</td></tr>`).join('')
+      || `<tr><td colspan="7"><div class="empty"><strong>No ${role === 'bm' ? 'referrals' : 'cases'} yet</strong>${role === 'bm' ? 'Save a case and it shows up here.' : 'Cases show up here once a branch saves one.'}</div></td></tr>`;
+  const pages = Math.ceil(allCases.length / PAGE);
+  $('cases-pager').classList.toggle('hidden', pages < 2);
+  $('cases-page').textContent = `Page ${casePage + 1} of ${pages}`;
+  $('cases-prev').disabled = casePage === 0; $('cases-next').disabled = casePage >= pages - 1;
+}
+$('cases-prev').onclick = () => { casePage--; renderCases(); };
+$('cases-next').onclick = () => { casePage++; renderCases(); };
 const pick = (e) => {
   if (e.target.closest('[data-retry]')) { loadCases(); return; }
   const tr = e.target.closest('tr[data-id]'); if (!tr) return;
