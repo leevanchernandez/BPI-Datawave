@@ -21,6 +21,16 @@ const statusClass = (s) => (s === 'Missing requirements' || s === 'Returned by B
 // ---- demo key: optional, a caller with the key is not rate limited ----
 const demoKey = params.get('key') || (() => { try { return localStorage.getItem('cc-key') || ''; } catch { return ''; } })();
 if (params.get('key')) { try { localStorage.setItem('cc-key', demoKey); } catch { /* private mode */ } }
+const traceLine = (t) => {
+  if (t.rule) return `Answered by a rule (${t.rule}). The model wasn't asked.`;
+  const r = t.result || {}, n = (a) => (Array.isArray(a) ? a.length : 0);
+  if (t.tool === 'get_status') return `Read the case status (${r.status || 'unknown'}).`;
+  if (t.tool === 'get_lacking') return r.checked === false ? `Read what's missing. No papers have been checked yet, so it listed the ${n(r.required)} required papers.` : `Read what's missing (${n(r.missing || r.defects)} missing, ${n(r.toCheck || r.needsReview)} for a person to check).`;
+  if (t.tool === 'get_checklist') return `Read the checklist from the rules (${n(t.result)} papers).`;
+  if (t.tool === 'get_requirements') return r.error ? 'Looked up requirements, but the business structure was missing.' : `Looked up the papers the rules list for one business structure (${n(r.requirements)} papers).`;
+  if (t.tool === 'get_heads_up') return `Read the BSO heads-ups (${n(r.reminders)}).`;
+  return `Used ${t.tool}.`;
+};
 async function api(method, path, body) {
   const r = await fetch(path, { method, headers: { 'content-type': 'application/json', 'x-demo-key': demoKey }, body: body ? JSON.stringify(body) : undefined });
   const data = await r.json().catch(() => ({}));
@@ -468,7 +478,7 @@ $('b-ask').onclick = async () => {
     const v = await api('POST', '/api/ask', { id: caseId(), question: $('b-q').value, stack });
     $('b-answer').innerHTML = `<div class="message">${esc(v.answer)}</div>${v.handoff ? '<p class="note">The assistant handed this to a person.</p>' : ''}`;
     $('b-trace-box').classList.remove('hidden');
-    $('b-trace').textContent = (v.trace || []).map((t) => (t.rule ? `rule: ${t.rule} (the model was not asked)` : `tool: ${t.tool}\n${JSON.stringify(t.result, null, 1)}`)).join('\n\n') + (v.model ? `\n\nmodel: ${v.model}` : '');
+    $('b-trace').textContent = (v.trace || []).map(traceLine).join('\n') + (v.model ? `\nModel ${v.model}.` : '');
   } catch (e) { $('b-answer').innerHTML = `<p class="note">${esc(e.message)}</p>`; }
   done();
 };

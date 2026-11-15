@@ -305,7 +305,7 @@ export function makeApi({ store, llm, now = () => new Date(), demoKey, aws = nul
       } : {
         get_heads_up: async () => ({ reminders: shown((await lessons()).list, c.referral).map((l) => l.text) }),
         get_status: async () => { const status = statusOf(c.events), o = openItems(c.events); return { status, next: status === 'Missing requirements' && !o.defects.length ? 'May items na titingnan ng tao sa branch (toCheck). Hindi ito kailangang kunin sa client.' : NEXT[status] || null }; },
-        get_lacking: async () => { const o = openItems(c.events); return o.checked ? { missing: o.defects.map((d) => d.message), toCheck: o.needsReview.map((d) => d.message) } : { checked: false }; },
+        get_lacking: async () => { const o = openItems(c.events); return o.checked ? { missing: o.defects.map((d) => d.message), toCheck: o.needsReview.map((d) => d.message) } : { checked: false, note: 'No papers have been checked yet. These are the papers the rules require for this case. Upload photos of them and press Check documents to see what is still missing.', required: checklist(c.referral).map((r) => r.title) }; },
         get_requirements: async (i) => requirementsFor(i),
         get_checklist: async () => checklist(c.referral).map((r) => ({ requirement: r.title, why: r.reason || (r.when.type ? `for a ${c.referral.type.toLowerCase()}` : 'all cases'), source: r.sourceTitle })),
       };
