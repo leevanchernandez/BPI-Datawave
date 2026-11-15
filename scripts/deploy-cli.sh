@@ -95,7 +95,7 @@ fn() {   # suffix, handler export, timeout seconds
   fi
 }
 echo "functions"
-fn check check 60
+fn check check 180
 fn ask ask 60
 fn upload-url uploadUrl 10
 
