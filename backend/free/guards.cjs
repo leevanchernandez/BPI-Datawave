@@ -61,12 +61,12 @@ function cleanIntake(o, note) {
     let v = typeof o[k] === 'string' ? o[k].trim() : '';
     if (k !== 'business') v = v.replace(TITLES, '');
     if (k !== 'business' && selfNames.has(v.toLowerCase().split(/\s+/)[0])) continue; // the officer writing the note
-    if (k === 'spouseName' && !/married|kasal|asawa|spouse|wife|husband|misis|mister/i.test(note)) continue;
+    if (k === 'spouseName' && !/married|ka?sal|asawa|spouse|wife|husband|misis|mister/i.test(note)) continue;
     if (v && v.length <= 120 && v.toLowerCase().split(/[^a-z0-9ñ'&]+/).filter(Boolean).every((w) => words.has(w))) out[k] = v;
   }
   if (INTAKE_TYPES.includes(o.type) && /\bsole\b|\bprop\b|proprietor|partner|\bcorp\b|corporation|\binc\b|\bopc\b|one person/i.test(note)) out.type = o.type;
   if (INTAKE_INDUSTRIES.includes(o.industry) && typeof o.industryWord === 'string' && o.industryWord.trim().length > 2 && String(note).toLowerCase().includes(o.industryWord.trim().toLowerCase())) { out.industry = o.industry; out.industryWord = o.industryWord.trim(); }
-  if (INTAKE_CIVIL.includes(o.civilStatus) && /single|married|kasal|asawa|spouse|wife|husband|widow|biyud|balo|separat|hiwalay|annul/i.test(note) && !(o.civilStatus === 'married' && /wala\s*(?:ng|pang?)\s+asawa|walang asawa|no (?:wife|husband|spouse)|not married|hindi (?:pa )?kasal/i.test(note))) out.civilStatus = o.civilStatus;
+  if (INTAKE_CIVIL.includes(o.civilStatus) && /single|married|ka?sal|asawa|spouse|wife|husband|widow|biyud|balo|separat|hiwalay|annul/i.test(note) && !(o.civilStatus === 'married' && /wala\s*(?:ng|pang?)\s+asawa|walang asawa|no (?:wife|husband|spouse)|not married|hindi (?:pa )?ka?sal/i.test(note))) out.civilStatus = o.civilStatus;
   if (typeof o.amount === 'number' && Number.isFinite(o.amount) && o.amount > 0 && o.amount < 1e11 && (pesos(note).size < 2 || CORRECTION.test(note))) out.amount = Math.round(o.amount); // two amounts and no correction go to the branch
   // ponytail: a keyword test decides whether the note talks about the structure, civil status, collateral or account at all. Models answer false for a box the note never mentions.
   if (typeof o.secured === 'boolean' && /collateral|secured|titulo|title|property|lupa|mortgage|sangla/i.test(note)) out.secured = o.secured;
