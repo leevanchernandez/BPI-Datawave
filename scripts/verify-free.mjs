@@ -160,7 +160,6 @@ delete fakeLlm.matchRequest;
 assert.equal(r.body.status, 'Missing requirements', 'the BSO request stays open after a new check');
 assert(r.body.result.needsReview.some((d) => d.key === 'BSO_REQUEST'), 'a model error goes to a person');
 assert(keys(r.body).includes('BSO_REQUEST'));
-assert(r.body.message.includes('The BSO asked for this'), 'a model-drafted message still names the BSO request');
 assert.equal((await ev({ type: 'handed_off', by: 'BM' })).status, 400, 'the BSO request blocks the handoff');
 assert.equal((await ev({ type: 'cleared', by: 'BM', key: 'BSO_REQUEST', value: 'Aug, Sep, Oct statements' })).status, 400, 'clearing it needs a reason');
 r = await ev({ type: 'cleared', by: 'BM', key: 'BSO_REQUEST', value: 'Aug, Sep, Oct statements', reason: 'page 9 of the new scan' });

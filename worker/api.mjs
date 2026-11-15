@@ -220,8 +220,8 @@ export function makeApi({ store, llm, now = () => new Date(), demoKey, aws = nul
         };
         ({ result, trace } = await processPacket(c.referral, b.pages, deps, { today: now(), request }));
       }
-      let asked = [...result.defects, ...result.needsReview].find((d) => d.key === 'BSO_REQUEST');
-      if (request && !asked && !(result.bsoRequest && result.bsoRequest.found)) { // a reader without the match step sends it to a person
+      let asked = null;
+      if (request && ![...result.defects, ...result.needsReview].some((d) => d.key === 'BSO_REQUEST') && !(result.bsoRequest && result.bsoRequest.found)) { // a reader without the match step sends it to a person
         asked = { key: 'BSO_REQUEST', message: `The BSO asked for this: "${request.replace(/[.\s]+$/, '')}." Find it in the new scan and type what the paper shows.` };
         result = { ...result, needsReview: [...result.needsReview, asked], complete: false };
       }
