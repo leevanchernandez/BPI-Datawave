@@ -22,6 +22,7 @@ function build() {
     analyzeForm: (bytes) => textract.analyzeForm(bytes),
     readPage: (page) => llm.readPage(page),
     markedFields: (page, fields) => llm.markedFields(page, fields),
+    matchRequest: (input) => llm.matchRequest(input),
     draftMessage: (a) => llm.draftMessage(a),
     ask: (q, h) => llm.ask(q, h),
     askCase: (q, h) => llm.ask(q, h, undefined, 4, llm.CASE_TOOLS),

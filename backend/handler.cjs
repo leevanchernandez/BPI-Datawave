@@ -57,7 +57,8 @@ function makeHandlers(deps) {
       usage();
       const pages = await Promise.all(keys.map((k) => deps.loadPage(k)));
       const prev = await deps.store.lastOpen(id);
-      const { result, pages: provenance, trace } = await processPacket(body.referral, pages, deps);
+      const request = str(body.request, 300) ? body.request.trim() : undefined;
+      const { result, pages: provenance, trace } = await processPacket(body.referral, pages, deps, { request });
       const rec = reconcile(prev.defects, result.defects, result.needsReview);
       const items = msgs([...rec.stillMissing, ...rec.newIssues, ...result.needsReview]);
       let message = null, drafted = 'template';

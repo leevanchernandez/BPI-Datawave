@@ -6,7 +6,7 @@
 // Haiku 5.5 rules (Anthropic docs): no temperature/top_p, no assistant prefill, no forced tool_choice, thinking is adaptive.
 
 const { validDate } = require('../checker.cjs');
-const { INTAKE_PROMPT, INTAKE_SCHEMA } = require('../free/guards.cjs');
+const { INTAKE_PROMPT, INTAKE_SCHEMA, MATCH_PROMPT, MATCH_SCHEMA, matchInput } = require('../free/guards.cjs');
 const MODEL = process.env.BEDROCK_MODEL_ID || 'global.anthropic.claude-haiku-5-5';
 const DOC_TYPES = ['application_form', 'gov_id', 'registration', 'business_permit', 'sanitary_permit', 'financials', 'audited_fs', 'bank_statements'];
 
@@ -168,4 +168,17 @@ async function intake(note, client, tries = 2) {
   return Object.keys(out).length || tries < 2 ? out : intake(note, c, 1); // the model sometimes returns nothing, so ask once more
 }
 
-module.exports = { readPage, markedFields, draftMessage, safeDraft, ask, intake, takeUsage, TOOLS, CASE_TOOLS, MODEL, DOC_TYPES };
+/** Does the new scan hold what the BSO's return note asks for? { verdict: found | missing | unsure, page, why } */
+async function matchRequest(input, client) {
+  const c = client || (await makeClient());
+  const msg = count(await c.messages.create({
+    model: MODEL,
+    max_tokens: 300,
+    output_config: { effort: 'low', format: { type: 'json_schema', schema: MATCH_SCHEMA } },
+    system: MATCH_PROMPT,
+    messages: [{ role: 'user', content: matchInput(input) }],
+  }));
+  return JSON.parse(text(msg));
+}
+
+module.exports = { matchRequest, readPage, markedFields, draftMessage, safeDraft, ask, intake, takeUsage, TOOLS, CASE_TOOLS, MODEL, DOC_TYPES };

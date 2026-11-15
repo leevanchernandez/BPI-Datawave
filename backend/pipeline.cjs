@@ -54,12 +54,30 @@ async function pool(items, n, fn) {
   return out;
 }
 
+/** The AI reads the new scan against the BSO's return note. Missing becomes a defect, and unsure or an error goes to a person. */
+async function matchBsoRequest({ request, today }, n, texts, deps, result, trace) {
+  const asked = `The BSO asked for this: "${request.replace(/[.\s]+$/, '')}."`;
+  const t = { bsoRequest: true, model: true };
+  trace.push(t);
+  let m = null;
+  if (deps.matchRequest) {
+    try { m = await deps.matchRequest({ request, today: (today ? new Date(today) : new Date()).toISOString().slice(0, 10), pages: texts.map((text, i) => ({ page: i + 1, text: text || '' })) }); } catch (e) { t.modelError = String(e.message || e).slice(0, 160); }
+  }
+  const page = m && Number.isInteger(m.page) && m.page >= 1 && m.page <= n ? m.page : null;
+  const why = m && typeof m.why === 'string' ? m.why.trim().slice(0, 200) : '';
+  t.verdict = m ? m.verdict : 'none';
+  if (m && m.verdict === 'found' && page) { t.page = page; t.why = why; result.bsoRequest = { found: true, page, why }; }
+  else if (m && m.verdict === 'missing') result.defects.push({ key: 'BSO_REQUEST', message: `${asked} The AI did not find it in the new scan.${why ? ` ${why}` : ''}` });
+  else result.needsReview.push({ key: 'BSO_REQUEST', message: `${asked} Find it in the new scan and type what the paper shows.` });
+}
+
 /** pages: [{ bytes?, mediaType?, lines?, docType? (branch label) }]. Returns { result, pages, trace }. */
 async function processPacket(referral, pages, deps, opts = {}) {
-  const review = [], trace = [];
+  const review = [], trace = [], texts = [];
   const read = await pool(pages, CONCURRENCY, async (src, i) => {
     const lines = await deps.detectLines(src.bytes, src);
     const text = lines.map((l) => l.text).join('\n');
+    texts[i] = maskIds(text);
     const label = LABELS.has(src.docType) ? src.docType : null;
     let page = { ...classify(lines), ...pageOf(lines), fields: {}, conf: {}, srcIndex: i };
     const t = { page: i + 1, lines: lines.length, classifiedAs: page.docType, label, model: false };
@@ -109,6 +127,7 @@ async function processPacket(referral, pages, deps, opts = {}) {
 
   const result = check(referral, { pages: out }, opts);
   result.needsReview.push(...review);
+  if (opts.request) await matchBsoRequest(opts, pages.length, texts, deps, result, trace);
   result.complete = result.defects.length === 0 && result.needsReview.length === 0;
   return { result, trace, pages: out.map(({ docType, pageNo, pageTotal, side, srcIndex }) => ({ docType, pageNo, pageTotal, side, srcIndex })) };
 }

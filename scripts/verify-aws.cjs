@@ -177,6 +177,19 @@ const GOOD = ['form', 'idf', 'idb', 'reg', 'cor', 'permit', 'bank', 'cal'];
   assert.deepEqual(llm.takeUsage(), { modelCalls: 0, inputTokens: 0, outputTokens: 0 });
   // ---- llm.readPage validation ----
   const fake = (text, extra = {}) => ({ messages: { create: async () => ({ stop_reason: 'end_turn', content: [{ type: 'text', text }], ...extra }) } });
+  { // the match step sends the note, the date and the page text, and asks for the schema
+    let sent; const spy = { messages: { create: async (req) => { sent = req; return { content: [{ type: 'text', text: '{"verdict":"found","page":2,"why":"Page 2 is the statement."}' }] }; } } };
+    const m = await llm.matchRequest({ request: 'Three months of bank statements', today: '2026-11-15', pages: [{ page: 1, text: 'FORM' }, { page: 2, text: 'BANK STATEMENT' }] }, spy);
+    assert.equal(m.verdict, 'found'); assert.equal(sent.output_config.format.schema.properties.verdict.enum.length, 3);
+    assert(/Three months/.test(sent.messages[0].content) && /--- Page 2 ---/.test(sent.messages[0].content) && /2026-11-15/.test(sent.messages[0].content));
+  }
+  { // the handler passes the BSO note to the pipeline
+    const seenReq = [];
+    const h = makeHandlers({ ...hdeps, matchRequest: async (i) => { seenReq.push(i.request); return { verdict: 'missing', page: null, why: 'none' }; } });
+    const r = await h.check(ev({ ...okBodies.check, request: "Latest ITR" }));
+    assert.equal(r.statusCode, 200, r.body); assert.deepEqual(seenReq, ['Latest ITR']);
+    assert(JSON.parse(r.body).result.defects.some((d) => d.key === 'BSO_REQUEST'));
+  }
   { // an empty intake answer is asked once more
     const outs = ['{}', '{"amount":5}', '{}', '{}'], seen = [];
     const seq = { messages: { create: async () => { seen.push(1); return { content: [{ type: 'text', text: outs.shift() }] }; } } };
