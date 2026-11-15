@@ -333,13 +333,13 @@ if (role === 'bm') {
   let queue = Promise.resolve(); // one batch of photos at a time
   const add = (files, clear) => (queue = queue.then(() => { if (clear) clearPages(); return addFiles(files); }));
   $('files').onchange = (e) => { add([...e.target.files]); e.target.value = ''; };
-  // the synthetic specimens, as the branch would photograph them on each visit
+  // the synthetic specimens, as the branch would photograph them on each visit. The browser reader gets the plain pages.
   const PAPERS = ['02-owner-id-front', '03-owner-id-back', '04-spouse-id-front', '05-dti-page-1', '08-bank-statement', '09-bir-cor', '10-mayors-permit', '11-client-authorization-letter'];
   const SAMPLES = { 1: ['01-application-form-first-visit', ...PAPERS], 2: ['01b-application-form-corrected', ...PAPERS, '05b-dti-page-2'] };
   for (const v of [1, 2]) $(`sample-${v}`).onclick = async () => {
     const done = busy($(`sample-${v}`), 'Loading papers');
     try {
-      const files = await Promise.all(SAMPLES[v].map(async (f) => new File([await (await fetch(`specimens/${f}.png`)).blob()], `${f}.png`, { type: 'image/png' })));
+      const files = await Promise.all(SAMPLES[v].map(async (f) => new File([await (await fetch(`specimens/${stack === 'free' ? 'plain/' : ''}${f}.png`)).blob()], `${f}.png`, { type: 'image/png' })));
       done(); add(files, true);
     } catch { done(); alertInline('The sample papers could not load. Check the connection and try again.'); }
   };

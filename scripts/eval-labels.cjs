@@ -71,7 +71,7 @@ for (let i = 1; i <= Number(process.env.VARIANTS || 0); i++) LEVELS[`random${i}`
   const score = (who, got, want) => { const t = tally[who]; if (same(got, want)) t.right++; else if (!norm(got || '')) t.empty++; else t.wrong++; };
   for (const [fname, f] of Object.entries(FORMS)) for (const [level, recipe] of Object.entries(LEVELS)) {
     const img = path.join(OUT, `${fname}-${level}.jpg`);
-    execFileSync('magick', [path.join(APP, 'frontend/specimens', `${f}.png`), '-channel', 'R', '-separate', '+channel', ...recipe, img]);
+    execFileSync('magick', [path.join(APP, 'frontend/specimens/plain', `${f}.png`), '-channel', 'R', '-separate', '+channel', ...recipe, img]);
     const bytes = fs.readFileSync(img);
     const det = await c.send(new DetectDocumentTextCommand({ Document: { Bytes: bytes } }));
     const viaText = mapForm(labelsFromWords(det.Blocks || [])).fields;
