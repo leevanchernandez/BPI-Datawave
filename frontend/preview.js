@@ -49,6 +49,8 @@ Object.assign(ICON, Object.fromEntries(Object.entries({
   x: '<path d="M6 6l12 12M18 6L6 18"/>',
   back: '<path d="M19 12H5M12 19l-7-7 7-7"/>',
   chart: '<path d="M4 20V11M10 20V5M16 20v-6M2 20h20"/>',
+  printer: '<path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>',
+  download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>',
   bell: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>',
   help: '<circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/>',
   warnline: '<path d="M12 8v5M12 17h.01M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>',
@@ -491,7 +493,17 @@ async function loadCases(btn) {
 const STATUSES = ['Draft', 'Missing requirements', 'Ready for BSO review', 'With BSO', 'Returned by BSO', 'Endorsed to Credit'];
 const when = (t) => (t ? new Date(t).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Manila' }) : '');
 const bars = (rows) => { const max = Math.max(1, ...rows.map(([, n]) => n)); return rows.map(([label, n]) => `<div class="statbar"><span title="${esc(label)}">${esc(label)}</span><i style="width:${(100 * n) / max}%"></i><b>${n}</b></div>`).join(''); };
+let reportCases = [];
+$('export-csv').onclick = () => {
+  // a leading quote keeps a spreadsheet from running a cell as a formula
+  const q = (v) => `"${String(v ?? '').replace(/^[=+\-@]/, "'$&").replace(/"/g, '""')}"`;
+  const rows = [['Referral', 'Business', 'Client', 'Channel', 'Structure', 'Loan amount', 'Status', 'Open items', 'Last update'], ...reportCases.map((c) => [c.id, c.business, c.name, c.channel, c.type, c.amount, c.status, c.open, c.updated])];
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([rows.map((r) => r.map(q).join(',')).join('\n')], { type: 'text/csv' })); a.download = 'counter-check-referrals.csv'; a.click(); URL.revokeObjectURL(a.href);
+};
+$('print-req').onclick = () => { document.body.classList.add('print-req'); window.print(); };
+window.onafterprint = () => document.body.classList.remove('print-req');
 function renderReports(cases) {
+  reportCases = cases;
   const by = {}; for (const c of cases) (by[(c.name || c.business).trim().toLowerCase()] ||= []).push(c);
   $('clients').innerHTML = Object.values(by).map((list) => {
     const c = list[0];

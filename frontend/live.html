@@ -442,6 +442,16 @@
   #by-issue .statbar { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) 2.5rem; align-items: start; }
   #by-issue .statbar span { display: block; overflow: visible; }
   #by-issue .statbar i { margin-top: 6px; }
+  .reqtools { display: flex; gap: var(--space-3); align-items: center; }
+  .print-only { display: none; }
+  @media print {
+    body.print-req * { visibility: hidden; }
+    body.print-req #req-sec, body.print-req #req-sec * { visibility: visible; }
+    body.print-req #req-sec { position: absolute; inset: 0 auto auto 0; width: 100%; border: 0; box-shadow: none; }
+    body.print-req #print-req, body.print-req #headsup-box, body.print-req #rules-note, body.print-req #req-sec .chip { display: none; }
+    body.print-req .app { height: 250mm; overflow: hidden; }
+    body.print-req .print-only { display: block; margin-top: 12px; }
+  }
   .pitchcard { margin: 0; display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4); border: 1px solid rgb(225 199 129 / 0.5); border-radius: 10px; background: rgb(0 0 0 / 0.12); font-size: var(--text-s); line-height: 1.5; color: #eed9d5; }
   .pitchcard svg { width: 20px; height: 20px; margin: 0; color: #e1c781; }
   .pitchcard strong { color: #fff; font-size: var(--text-m); font-weight: 600; line-height: 1.35; }
@@ -517,10 +527,11 @@
   </div>
   <div id="bm-right" class="hidden">
     <section id="req-sec">
-      <div class="row"><h2 data-icon="clipboard"><span id="req-title">Papers this case needs</span></h2><span class="soft" id="req-count"></span></div>
+      <div class="row"><h2 data-icon="clipboard"><span id="req-title">Papers this case needs</span></h2><span class="reqtools"><span class="soft" id="req-count"></span><button class="small secondary" id="print-req" type="button" data-icon="printer">Print</button></span></div>
       <p class="soft" id="req-for">Save the case above to see the papers this client needs.</p>
       <ul class="items" id="checklist"></ul>
       <p class="soft" id="rules-note" style="margin-top:8px"></p>
+      <p class="print-only">This is the initial list for the referral. BPI may ask for more papers after review.</p>
       <div id="headsup-box" class="hidden">
         <h3 style="margin-top:16px">Heads up from BSO</h3>
         <ul class="items" id="headsup"></ul>
@@ -580,7 +591,7 @@
     </table></div>
   </section>
   <section id="report-box" class="off">
-    <h2 data-icon="chart">Referrals by status</h2>
+    <div class="row"><h2 data-icon="chart">Referrals by status</h2><button class="small secondary" id="export-csv" type="button" data-icon="download">Export CSV</button></div>
     <div class="bars" id="by-status"></div>
     <h2 data-icon="alert" style="margin-top:var(--space-5)">Most common problems in open cases</h2>
     <p class="soft">These come from the latest check on each case that still has open items.</p>
