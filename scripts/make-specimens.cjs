@@ -260,7 +260,7 @@ function cal() {
 // The form keeps one "Label: value" per line, because both readers pair a label with the value on the same line.
 function form(tin, civil) {
   const band = (t) => `<div style="background:#7a1515;color:#fff;font:700 17px 'Liberation Sans';letter-spacing:.05em;padding:7px 12px;margin-top:20px">${t}</div>`;
-  const row = (l, v) => `<div style="display:flex;align-items:flex-end;margin-top:15px"><div style="font-size:19px;white-space:nowrap">${l}:</div><div class="typed" style="flex:1;margin-left:12px;border-bottom:1px dotted #9a9a9a;min-height:28px;padding:0 6px 1px">${v}</div></div>`;
+  const row = (l, v) => `<div style="display:flex;align-items:flex-end;margin-top:15px"><div style="font-size:19px;white-space:nowrap">${l}:</div><div class="typed" style="flex:1;margin-left:12px;border-bottom:1px solid #b5b5b5;min-height:30px;padding:0 6px 5px;font-size:22px">${v}</div></div>`;
   return doc(zoomed(1.2, `
   <div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #7a1515;padding-bottom:10px">
     <div><div style="font:800 34px 'Liberation Sans';letter-spacing:.03em">LOAN APPLICATION FORM</div><div style="font-size:16px;color:#444;margin-top:2px">Business loan for micro, small and medium enterprises</div></div>
