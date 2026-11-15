@@ -211,10 +211,11 @@
   .intro { display: flex; justify-content: space-between; align-items: flex-end; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5); }
   .intro h1 { font-size: 1.75rem; }
   .intro .btn { text-decoration: none; }
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: var(--space-4); margin-bottom: var(--space-5); }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); gap: var(--space-4); margin-bottom: var(--space-5); }
   .card { padding: var(--space-4); background: var(--color-surface); border: 1px solid var(--color-line); border-radius: 10px; text-align: left; font: inherit; color: inherit; cursor: pointer; }
   .card:hover { border-color: var(--color-brand); background: var(--color-surface); }
   .card[aria-pressed="true"] { border-color: var(--color-brand); box-shadow: inset 0 3px 0 var(--color-brand); }
+  .card { white-space: normal; }
   .card b { display: block; font-size: 2rem; line-height: 1.2; color: var(--color-brand-deep); font-variant-numeric: tabular-nums; }
   .card span { display: block; font-weight: 600; }
   .card small { color: var(--color-ink-soft); font-size: var(--text-s); }
@@ -256,6 +257,7 @@
     .navrail { position: static; height: auto; flex-direction: row; flex-wrap: wrap; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); }
     .navrail .branchbox, .navrail .me { display: none; }
     .navrail .side { flex-direction: row; flex-wrap: wrap; order: 3; width: 100%; }
+    .navrail .side a { width: auto; padding: 6px 10px; font-size: var(--text-s); }
     .navfoot { margin: 0 0 0 auto; }
     main { padding: var(--space-4); }
     .topbar { padding: var(--space-3) var(--space-4); }
@@ -269,6 +271,7 @@
   .casepanel .pair, .casepanel #bm-right { grid-template-columns: minmax(0, 1fr); }
   .casepanel .pair > section + section { border-left: 0; border-top: 1px solid var(--color-line); }
   .steps li + li::before { width: 16px; }
+  @media (max-width: 560px) { table.cases th:nth-child(2), table.cases td:nth-child(2) { display: none; } .card b { font-size: 1.5rem; } }
   @media (max-width: 560px) { table.cases th:nth-child(n+4), table.cases td:nth-child(n+4) { display: none; } }
 </style>
 </head>
