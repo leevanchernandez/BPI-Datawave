@@ -319,7 +319,7 @@ export function makeApi({ store, llm, now = () => new Date(), demoKey, aws = nul
       } else { try { out = await llm.ask(q.trim(), handlers); } catch { return json(502, { error: 'The assistant is not available. Please ask the BSO.' }); } }
       const raw = String(out.answer || '').replace(/\*\*?|__/g, '').trim(); // plain text on screen
       const answer = raw && raw.length <= 1500 && !FORBIDDEN.test(raw) ? raw : 'Hindi ko masagot nang tiyak. Pakitanong sa BSO.';
-      return json(200, { answer, handoff: out.handoff || answer !== out.answer, trace: out.trace, model });
+      return json(200, { answer, handoff: out.handoff || answer !== raw, trace: out.trace, model });
     },
   };
 

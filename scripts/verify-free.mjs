@@ -106,6 +106,9 @@ assert.equal((await call('POST', '/api/event', { id: REF.id, type: 'waived', by:
 // 4. BSO asks; approval questions are refused by rule
 r = await call('POST', '/api/ask', { id: REF.id, question: 'ano pa kulang?' });
 assert(r.body.answer.includes('page 2 of 2'), r.body.answer);
+{ const ask = fakeLlm.ask; fakeLlm.ask = async () => ({ answer: '**Kulang pa:** page 2 ng DTI. ', handoff: false, trace: [] });
+  const b = (await call('POST', '/api/ask', { id: REF.id, question: 'ano pa kulang?' })).body; fakeLlm.ask = ask;
+  assert.equal(b.answer, 'Kulang pa: page 2 ng DTI.'); assert.equal(b.handoff, false, 'stripping markdown is not a handoff'); }
 r = await call('POST', '/api/ask', { id: REF.id, question: 'ma-a-approve ba to?' });
 assert(r.body.trace[0].rule === 'refuse_credit_question' && /Credit/.test(r.body.answer));
 
