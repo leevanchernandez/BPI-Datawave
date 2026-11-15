@@ -99,6 +99,12 @@ Record the screen in real time at 1280 by 800 on the plain link https://counter-
 | Back in the branch tab, press "Sample papers, visit 2" and Check documents again. | The AI now reads the new scan against the BSO's note. The statement in this packet covers Aug to Oct, so it's flagged and the case can't go back to the BSO yet. The branch knows exactly what to ask the client for. |
 | In the BSO tab, show the case list. | The BSO sees every referral and its status in one place, and the list counts how many cases were endorsed to Credit with no return, which is the share complete the first time. |
 
+Regina asked on Nov 15 for the note step to be typed three ways for some humor, in English, in Taglish and in "nokia typing". Clear the form between tries with a fresh case link. All three filled every field on AWS on Nov 15 (9 of 9 each, 1.7 to 3.9 s).
+
+- English. Elena Santos owns Elena's Artisan Bakery, a sole proprietorship in food and beverage. She wants a 750k loan. She's married to Ramon Santos and has a BPI account. No collateral.
+- Taglish. Si Elena Santos, may-ari ng Elena's Artisan Bakery, sole prop siya, food business. Gusto niya mag-loan ng 750k. Kasal kay Ramon Santos, may BPI account na, walang collateral.
+- Nokia. musta po!! c elena santos po ung owner ng Elena's Artisan Bakery, sole prop po xa, fud bsnes. gs2 nya po mg loan ng 750k. kSal n po xa ky Ramon Santos, my bpi acct n po, wLa pong collateral. tnx po :)
+
 The return step needs a BSO note that the sample photos fail. "Bank statements must cover Sep to Nov 2026." works because the visit 2 statement covers Aug to Oct 2026 (checked on AWS on Nov 15). A check takes 15 to 30 seconds, so keep talking or cut the wait in editing.
 
 ## Claims to avoid
