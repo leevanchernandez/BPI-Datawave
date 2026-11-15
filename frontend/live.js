@@ -627,7 +627,7 @@ function alertInline(msg) { toast(msg, 'error'); }
 
 // sidebar: one section per job
 const VIEWS = role === 'bm'
-  ? [['referrals', 'Loan referrals', ['cases-box']], ['overview', 'Overview', ['cards', 'overview-box']], ['clients', 'Clients', ['clients-box']], ['products', 'Loan products', ['products']], ['reports', 'Reports', ['cases-metric', 'report-box']]]
+  ? [['referrals', 'Loan referrals', ['cards', 'cases-box']], ['clients', 'Clients', ['clients-box']], ['products', 'Loan products', ['products']], ['reports', 'Reports', ['cases-metric', 'report-box']]]
   : [['queue', 'Referral queue', ['cases-box', 'cards']], ['case', 'Selected case', ['bso-left', 'bso-right']]];
 if (role === 'bm') $('by-status').after($('cases-metric'));
 function showView(key) {
@@ -640,7 +640,7 @@ const SUB = { overview: 'What needs the branch today, at a glance.', referrals: 
 const NAV_ICON = { reports: 'chart', clients: 'users', overview: 'grid', referrals: 'file', products: 'briefcase', queue: 'inbox', case: 'user' };
 $('side').innerHTML = VIEWS.map(([k, label]) => `<a href="#${k}" data-view="${k}"><span class="lbl">${ICON[NAV_ICON[k]]}${label}</span>${k === 'referrals' || k === 'queue' ? '<span class="count"></span>' : ''}</a>`).join('');
 $('side').onclick = (e) => { const a = e.target.closest('a'); if (!a) return; e.preventDefault(); if (role === 'bm' && !$('casepage').hidden) { location.href = `?${stack === 'free' ? 'stack=free' : ''}#${a.dataset.view}`; return; } history.replaceState(null, '', `${location.search}#${a.dataset.view}`); showView(a.dataset.view); };
-const hashView = location.hash.slice(1);
+const hashView = location.hash === '#overview' ? 'referrals' : location.hash.slice(1);
 showView(VIEWS.some(([k]) => k === hashView) ? hashView : role === 'bm' ? 'referrals' : !params.get('id') ? 'queue' : 'case');
 
 // says why a button is off
