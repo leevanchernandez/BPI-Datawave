@@ -285,6 +285,56 @@ function form(tin, civil) {
   <div class="wm" style="top:86%;font-size:110px">SPECIMEN</div>` + foot());
 }
 
+function itr() {
+  const cell = 'border:1.5px solid #222;padding:7px 10px;vertical-align:top';
+  const box = (n, l, v, span = 1) => `<td style="${cell}" colspan="${span}"><div style="font-size:13px;color:#333"><b>${n}</b> ${l}</div><div class="typed" style="font-weight:700;margin-top:3px">${v}</div></td>`;
+  const line = (n, l, v, bold) => `<tr><td style="${cell};width:54px;text-align:center">${n}</td><td style="${cell};font-size:17px${bold ? ';font-weight:700' : ''}">${l}</td><td style="${cell};width:250px;text-align:right" class="typed">${v}</td></tr>`;
+  return doc(zoomed(1.1, `
+  <div style="display:flex;justify-content:space-between;align-items:center;border:1.5px solid #222;padding:10px 14px">
+    <div style="font-size:14px;line-height:1.35">Republic of the Philippines<br>Department of Finance<br>Bureau of Internal Revenue</div>
+    <div class="c"><div style="font:800 30px 'Liberation Sans'">Annual Income Tax Return</div><div style="font-size:14px">Individuals (including mixed income earners), estates and trusts</div></div>
+    <div style="font-size:14px;text-align:right">BIR Form No.<div style="font:800 34px 'Liberation Sans'">1701</div>January 2018 (ENCS)</div>
+  </div>
+  <table style="margin-top:-1.5px"><tr>${box(1, 'For the year', '2025')}${box(2, 'Amended return?', 'NO')}${box(3, 'Short period return?', 'NO')}${box(4, 'RDO code', '055')}</tr>
+    <tr>${box(5, 'Taxpayer identification number (TIN)', TIN, 2)}${box(6, 'Taxpayer type', 'SINGLE PROPRIETOR', 2)}</tr>
+    <tr>${box(7, 'Taxpayer name (last name, first name, middle name)', 'SANTOS, ELENA REYES', 4)}</tr>
+    <tr>${box(8, 'Registered address', '12 RIZAL STREET, BATONG MALAKE, LOS BAÑOS, LAGUNA 4030', 4)}</tr>
+    <tr>${box(9, 'Trade name', BIZ, 2)}${box(10, 'Line of business', 'MANUFACTURE OF BAKERY PRODUCTS', 2)}</tr>
+    <tr>${box(11, 'Civil status', 'MARRIED')}${box(12, 'Tax rate', 'GRADUATED RATES')}${box(13, 'Method of deduction', 'ITEMIZED', 2)}</tr></table>
+  <div style="background:#222;color:#fff;font:700 16px 'Liberation Sans';padding:6px 10px;margin-top:18px">PART IV. COMPUTATION OF TAX (in Philippine peso)</div>
+  <table>${line(36, 'Sales, revenues, receipts or fees', '2,400,000.00')}${line(37, 'Less: sales returns, allowances and discounts', '0.00')}${line(38, 'Net sales', '2,400,000.00')}
+    ${line(39, 'Less: cost of sales', '1,512,000.00')}${line(40, 'Gross income from business', '888,000.00')}${line(41, 'Less: itemized deductions', '471,600.00')}
+    ${line(42, 'Net income', '416,400.00', true)}${line(43, 'Tax due', '24,960.00', true)}${line(44, 'Less: tax paid in the first three quarters', '17,300.00')}${line(45, 'Tax payable', '7,660.00', true)}</table>
+  <p style="font-size:15px;line-height:1.5;margin-top:18px">I declare under the penalties of perjury that this return has been made in good faith, verified by me, and to the best of my knowledge and belief is true and correct, pursuant to the provisions of the National Internal Revenue Code, as amended.</p>
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:20px">
+    <div style="width:440px"><div style="height:56px;padding-left:30px">${sig('Elena R. Santos')}</div><div style="border-top:1.5px solid #222;padding-top:5px;font-size:15px">Signature over printed name of taxpayer</div></div>
+    <div style="font-size:15px">Date filed<br><span class="typed" style="font-weight:700">APRIL 10, 2026</span></div>
+  </div>`) + `<div class="stamp" style="right:150px;bottom:150px;transform:rotate(-5deg)">RECEIVED<br>RDO 055<br>APR 10 2026</div>
+  <div class="wm" style="top:66%">SPECIMEN</div>` + foot('Page 1 of 1'));
+}
+
+function fs2() {
+  const r = (l, v, o = {}) => `<tr><td style="padding:7px ${o.in ? 40 : 6}px;font-size:19px${o.b ? ';font-weight:700' : ''}">${l}</td><td style="padding:7px 6px;text-align:right;font:${o.b ? '700 ' : ''}19px 'Liberation Mono';${o.line ? 'border-top:1.5px solid #222;' : ''}${o.dbl ? 'border-bottom:4px double #222;' : ''}">${v}</td></tr>`;
+  const head = (t) => `<tr><td colspan="2" style="padding:18px 6px 6px;font:700 19px 'Liberation Sans';letter-spacing:.04em">${t}</td></tr>`;
+  return doc(`
+  <div class="c serif" style="line-height:1.4;margin-top:20px"><div style="font:700 30px 'Liberation Serif'">${BIZ}</div><div style="font-size:19px">Owned by ${OWNER}</div>
+    <div style="font:700 25px 'Liberation Serif';margin-top:14px">STATEMENT OF FINANCIAL POSITION</div><div style="font-size:20px">As of December 31, 2025</div><div style="font-size:17px;font-style:italic">(Amounts in Philippine peso)</div></div>
+  <table style="margin-top:26px">
+    ${head('ASSETS')}${r('Cash on hand and in bank', '214,600.00', { in: 1 })}${r('Trade receivables', '86,400.00', { in: 1 })}${r('Inventories', '142,000.00', { in: 1 })}
+    ${r('Total current assets', '443,000.00', { b: 1, line: 1 })}${r('Baking equipment, net of depreciation', '512,000.00', { in: 1 })}${r('Delivery vehicle, net of depreciation', '195,000.00', { in: 1 })}
+    ${r('Total assets', '1,150,000.00', { b: 1, line: 1, dbl: 1 })}
+    ${head('LIABILITIES')}${r('Trade payables', '128,000.00', { in: 1 })}${r('Accrued expenses', '42,000.00', { in: 1 })}${r('Equipment loan payable', '150,000.00', { in: 1 })}
+    ${r('Total liabilities', '320,000.00', { b: 1, line: 1 })}
+    ${head('OWNER\'S EQUITY')}${r('Capital, beginning of the year', '596,400.00', { in: 1 })}${r('Net income for the year', '416,400.00', { in: 1 })}${r('Less: drawings', '(182,800.00)', { in: 1 })}
+    ${r('Total owner\'s equity', '830,000.00', { b: 1, line: 1 })}${r('Total liabilities and owner\'s equity', '1,150,000.00', { b: 1, line: 1, dbl: 1 })}
+  </table>
+  <div style="display:flex;justify-content:space-between;margin-top:60px;font-size:17px">
+    <div style="width:420px">Prepared by<div style="height:56px;padding-left:30px">${sig('J. Mercado')}</div><div style="border-top:1.5px solid #222;padding-top:5px"><b>JOSEFINA L. MERCADO</b><br>Bookkeeper</div></div>
+    <div style="width:420px">Certified correct<div style="height:56px;padding-left:30px">${sig('Elena R. Santos')}</div><div style="border-top:1.5px solid #222;padding-top:5px"><b>${OWNER}</b><br>Owner</div></div>
+  </div>
+  <div class="wm" style="top:62%">SPECIMEN</div>` + foot('Page 1 of 1'));
+}
+
 const PAGES = {
   '01-application-form-first-visit': () => form('', 'Kasal'),
   '01b-application-form-corrected': () => form(TIN, 'Married'),
@@ -297,6 +347,8 @@ const PAGES = {
   '09-bir-cor': bir,
   '10-mayors-permit': permit,
   '11-client-authorization-letter': cal,
+  '06-income-tax-return': itr,
+  '07-financial-statements': fs2,
 };
 
 (async () => {
