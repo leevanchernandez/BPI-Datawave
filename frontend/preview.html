@@ -354,7 +354,6 @@
   .wscard .wordmark { font-size: 1.75rem; }
   .wscard .branchbox { padding: var(--space-3); border: 1px solid rgb(255 255 255 / 0.28); border-radius: 8px; }
   .wscard .branchbox strong { font-size: var(--text-m); font-weight: 600; }
-  .wslabel { color: #e1c781; font-size: var(--text-s); font-weight: 500; }
   .navfoot .me { width: 100%; white-space: normal; font: inherit; text-align: left; color: inherit; background: none; border: 0; border-top: 1px solid rgb(255 255 255 / 0.25); border-radius: 0; padding: var(--space-4) var(--space-2) 0; cursor: pointer; }
   .navfoot .me:hover { background: rgb(255 255 255 / 0.05); }
   .acct { position: fixed; inset: auto auto 84px 16px; margin: 0; width: 280px; padding: var(--space-2); border: 1px solid var(--color-line); border-radius: 12px; background: var(--color-surface); color: var(--color-ink); box-shadow: 0 12px 32px rgb(40 10 12 / 0.22); }
@@ -365,7 +364,7 @@
   .acct-row svg { width: 18px; height: 18px; margin: 0; color: var(--color-brand); }
   a.acct-row:hover { background: var(--color-brand-tint); }
   .acct-row.on { background: #fbf6ef; }
-  @media (max-width: 900px) { .wscard { padding: 0; background: none; border: 0; } .wslabel { display: none; } .navfoot .me { border: 0; padding: 0; } .navfoot .me > span:last-child { display: none; } .acct { inset: 64px 16px auto auto; } }
+  @media (max-width: 900px) { .wscard { padding: 0; background: none; border: 0; } .navfoot .me { border: 0; padding: 0; } .navfoot .me > span:last-child { display: none; } .acct { inset: 64px 16px auto auto; } }
   /* colors and hovers from the team's mockup */
   :root { --color-paper: #f7f6f2; --color-line: #eae6e1; --color-gold: #b69754; }
   .navrail { background: linear-gradient(165deg, #982525 0%, #771b1e 44%, #571216 100%); color: #eed9d5; }
@@ -410,15 +409,31 @@
   .product p { color: var(--color-ink-soft); font-size: var(--text-s); margin: var(--space-1) 0 var(--space-2); }
   .product a { font-size: var(--text-s); font-weight: 500; }
   @media (max-width: 560px) { #chat > .row:first-child { margin: calc(-1 * var(--space-4)) calc(-1 * var(--space-4)) var(--space-4); padding: var(--space-3) var(--space-4); } }
+  /* rail from the team's mockup: gold accents, one column, more room */
+  @media (min-width: 901px) { .app { grid-template-columns: 272px minmax(0, 1fr); } }
+  .navrail { padding: var(--space-6) var(--space-5) var(--space-5); gap: var(--space-6); }
+  .wscard { padding: 0; background: none; border: 0; gap: var(--space-5); }
+  .wscard .wordmark { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.03em; gap: var(--space-4); }
+  .wscard .wordmark .name { display: block; padding-left: var(--space-4); border-left: 1px solid #e1c781; color: #e1c781; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; line-height: 1.5; }
+  .wscard .branchbox { padding: var(--space-4); gap: var(--space-4); border: 1px solid rgb(225 199 129 / 0.5); border-radius: 10px; background: rgb(255 255 255 / 0.04); }
+  .wscard .branchbox > svg { color: #e1c781; opacity: 1; }
+  .wscard .branchbox strong { font-size: 1.0625rem; }
+  .wscard .branchbox small { color: rgb(238 217 213 / 0.85); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; }
+  .navrail .side { width: 100%; gap: var(--space-2); }
+  .navrail .side a { box-sizing: border-box; width: 100%; padding: 12px var(--space-4); }
+  .navrail .side a svg { color: #e1c781; }
+  .navrail .side a[aria-current="page"]::before { left: calc(-1 * var(--space-5)); }
+  .navfoot .me { padding: var(--space-4) var(--space-4) 0; border-top-color: rgb(225 199 129 / 0.35); }
+  .navfoot .avatar { background: #e1c781; color: #571216; }
+  @media (max-width: 900px) { .navrail { padding: var(--space-3) var(--space-4); gap: var(--space-3); } .wscard .wordmark { font-size: 1.5rem; } .navrail .side a { width: auto; padding: 6px 10px; } }
 </style>
 </head>
 <body>
 <div class="app">
 <aside class="navrail">
   <div class="wscard">
-    <p class="wordmark">BPI <span class="name">Counter Check<small>Business lending</small></span></p>
+    <p class="wordmark">BPI <span class="name">Business<br>lending</span></p>
     <div class="branchbox" data-icon="bank"><span><strong id="ws-name">Sample branch</strong><small id="ws-code">Branch 001</small></span></div>
-    <small class="wslabel" id="ws-role">Branch workspace</small>
   </div>
   <nav class="side" id="side" aria-label="Sections"></nav>
   <div class="navfoot">
