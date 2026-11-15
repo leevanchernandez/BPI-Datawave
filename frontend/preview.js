@@ -111,7 +111,7 @@ if (role === 'bm') {
     const r = v.referral || referral();
     $('req-title').textContent = r.business ? `Papers for ${r.business}` : 'Papers this case needs';
     $('req-for').textContent = `${r.id}, ${String(r.type || '').toLowerCase()}${r.secured ? ', secured' : ''}`;
-    $('mode-ask').classList.remove('hidden'); $('quick').classList.remove('hidden');
+    $('mode-ask').classList.remove('hidden'); $('quick').classList.toggle('hidden', mode !== 'ask');
     $('rules-note').textContent = `Rules version ${v.rules.version}. Rows marked BSO checklist are what the BSO expects from the branch at referral. The other rows come from BPI's public page, which BPI calls indicative.`;
     $('headsup-box').classList.toggle('hidden', !v.headsUp.length);
     $('headsup').innerHTML = v.headsUp.map((l) => `<li>${ICON.warn}<span>${esc(l.text)}</span><span></span></li>`).join('');
@@ -134,6 +134,7 @@ if (role === 'bm') {
     mode = m;
     $('mode-fill').setAttribute('aria-pressed', m === 'fill'); $('mode-ask').setAttribute('aria-pressed', m === 'ask');
     $('chat-hint').textContent = HINT[m];
+    $('quick').classList.toggle('hidden', m !== 'ask' || !lastView);
     const v = $('chat-in').value;
     if (m === 'ask' && (!v.trim() || v === SAMPLE)) $('chat-in').value = 'Ano pa ang kulang?';
     if (m === 'fill' && v === 'Ano pa ang kulang?') $('chat-in').value = '';
@@ -367,7 +368,7 @@ if (role === 'bm') {
       return;
     }
     const empty = $('checklist').innerHTML; $('checklist').innerHTML = skelLines(4);
-    try { const v = await api('GET', `/api/case?id=${encodeURIComponent(caseId())}`); fillForm(v.referral); lastView = v; renderChecklist(v); if (v.open.checked) { renderResult(v); markStale('These results are from the last saved check. Photos are not kept after a refresh, so add them again and press Check documents to update.'); } } catch { $('checklist').innerHTML = empty; } })();
+    try { const v = await api('GET', `/api/case?id=${encodeURIComponent(caseId())}`); fillForm(v.referral); lastView = v; renderChecklist(v); if ($('chat-in').value === SAMPLE) $('chat-in').value = ''; if (v.open.checked) { renderResult(v); markStale('These results are from the last saved check. Photos are not kept after a refresh, so add them again and press Check documents to update.'); } } catch { $('checklist').innerHTML = empty; } })();
   function fillForm(r) { $('f-business').value = r.business; $('f-name').value = r.name; $('f-type').value = r.type; $('f-industry').value = r.industry; $('f-amount').value = r.amount; $('f-civil').value = r.civilStatus; $('f-spouse').value = r.spouseName || ''; $('f-secured').checked = !!r.secured; $('f-bpi').checked = r.bpiAccount !== false; $('f-channel').value = r.channel || 'Branch walk-in'; }
 }
 
