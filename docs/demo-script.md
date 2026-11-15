@@ -85,9 +85,25 @@ These go with slides 5 to 8 of the Canva design "Counter Check prototype slides"
 5. Done. Cases live in the Worker's KV store, so the branch window and the BSO window see the same status.
 6. Answers from BPI: why a branch officer would open the tool (KPI credit for complete referrals?), how branches submit today, and baselines (share incomplete at first submission, cycles per referral). The BSO stated 35 complete applications a month on average and 50 to 60 in Q4. On Nov 13 the BSO said 35 to 40 complete applications a month for the QC and CamaNava area (one area), with about 30 of them first coming in with requirements missing, and that applications endorsed to Credit each month are part of the BSO's KPI (BSO-stated).
 
+## Live demo for the recorded pitch (Simonee, about 3 minutes)
+
+Record the screen in real time at 1280 by 800 on the plain link https://counter-check.h-847.workers.dev/live, which opens a fresh case number. Keep a second tab ready on the same link with `&role=bso` added after the case number. The sample papers are synthetic, so say that once.
+
+| Do | Say |
+|---|---|
+| Press Send in the Assistant with the sample note, then Save. | The branch officer types what the client said, in Taglish if they like. The AI fills the form, and the officer checks it before saving. The checklist comes from the rules table, not from the AI. |
+| Press "Sample papers, visit 1", then Check documents. | The officer snaps the papers at the counter. Textract reads them, Claude reads the IDs and permits from masked text, and the rules decide what's missing. It found two problems while the client is still there. |
+| Ask "ano pa kulang?" in the Assistant. | The assistant answers from this case's record, and it won't say a loan is approved. |
+| Press "Sample papers, visit 2", then Check documents, then Send to BSO. | On the second visit nothing is missing, so Send to BSO unlocks. It stays locked while anything is open. |
+| In the BSO tab, return the case with "Bank statements must cover Sep to Nov 2026." | Say the BSO still needs more after review. The BSO returns it with a note. |
+| Back in the branch tab, press "Sample papers, visit 2" and Check documents again. | The AI now reads the new scan against the BSO's note. The statement in this packet covers Aug to Oct, so it's flagged and the case can't go back to the BSO yet. The branch knows exactly what to ask the client for. |
+| In the BSO tab, show the case list. | The BSO sees every referral and its status in one place, and the list counts how many cases were endorsed to Credit with no return, which is the share complete the first time. |
+
+The return step needs a BSO note that the sample photos fail. "Bank statements must cover Sep to Nov 2026." works because the visit 2 statement covers Aug to Oct 2026 (checked on AWS on Nov 15). A check takes 15 to 30 seconds, so keep talking or cut the wait in editing.
+
 ## Claims to avoid
 
-- "Models never decide." Say: the checklist and the complete flag are code, and anything unclear is routed to a person.
+- "Models never decide." Say: the checklist and the complete flag are code, and anything unclear is routed to a person. The one exception is the BSO's free-text note after a return, where the AI's "not found" holds the case at the branch. It can hold a case back, and the BSO still reviews every case before Credit.
 - "0 percent false-complete." That number came from a simulated generator. Quote only what the real test measures. The Nov 12 run passed 0 of 33 defective packets on simulated photo damage, so say "0 of 33 in a simulated test" and give its limit.
 - "BPI uses AWS." It is the team's statement, not a BPI source.
 - A management view of incomplete referrals by branch. It reads as surveillance of the BSO's partners. Cut it or anonymize it.
