@@ -1,6 +1,6 @@
 # Free stack: what is real and what is not
 
-**Live:** https://counter-check.h-847.workers.dev/live (branch) and `/live?role=bso` (BSO). Cloudflare Workers free plan, Workers KV, Gemini API, Tesseract.js. Cost so far: zero.
+**Live:** https://counter-check.stimmie.dev/live (branch) and `/live?role=bso` (BSO). Cloudflare Workers free plan, Workers KV, Gemini API, Tesseract.js. Cost so far: zero.
 
 ## Real
 - **OCR on real photos** (Tesseract.js, English model, in the browser). Images stay on the device; only text lines with confidence leave it.

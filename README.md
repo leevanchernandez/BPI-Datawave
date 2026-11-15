@@ -4,8 +4,9 @@ Counter Check helps a BPI branch get a business loan referral complete before it
 
 ## Try it
 
-- Branch view: https://counter-check.h-847.workers.dev/live
-- BSO view: https://counter-check.h-847.workers.dev/live?role=bso
+- Branch view: https://counter-check.stimmie.dev/live
+- BSO view: https://counter-check.stimmie.dev/live?role=bso
+- The old address https://counter-check.h-847.workers.dev still works and serves the same Worker.
 - By default photos go to S3 and are read by Amazon Textract and Claude Haiku 5.5 on Amazon Bedrock, and the form fill and the assistant use Claude too. With `?stack=free` the page reads photos in the browser and uses Gemini (the free stack). Old links with `?stack=aws` still work.
 
 No key is needed. The page is rate limited and has a daily cap on model calls. Use only the synthetic documents in `frontend/specimens/`.

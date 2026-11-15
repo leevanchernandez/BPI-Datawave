@@ -34,6 +34,8 @@ fi
 
 : "${DEMO_KEY:?set DEMO_KEY}" "${BEDROCK_MODEL_ID:?set BEDROCK_MODEL_ID}" "${REVIEW_ORIGIN:?set REVIEW_ORIGIN}"
 [[ "$DEMO_KEY" =~ ^[A-Za-z0-9_-]{24,}$ ]] || { echo "DEMO_KEY needs 24 or more characters from A-Z a-z 0-9 _ -" >&2; exit 1; }
+# REVIEW_ORIGIN can list several origins, comma separated.
+ORIGINS=$(printf '"%s",' ${REVIEW_ORIGIN//,/ }); ORIGINS="[${ORIGINS%,}]"
 tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
 
 # Same bundle settings as the template's esbuild metadata. One bundle serves all three handlers.
@@ -49,7 +51,7 @@ aws s3api head-bucket --bucket "$BUCKET" 2>/dev/null || aws s3api create-bucket 
 aws s3api put-public-access-block --bucket "$BUCKET" --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true
 aws s3api put-bucket-encryption --bucket "$BUCKET" --server-side-encryption-configuration '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"aws:kms"}}]}'
 aws s3api put-bucket-lifecycle-configuration --bucket "$BUCKET" --lifecycle-configuration '{"Rules":[{"ID":"expire-uploads","Status":"Enabled","Filter":{},"Expiration":{"Days":1}}]}' >/dev/null
-aws s3api put-bucket-cors --bucket "$BUCKET" --cors-configuration "{\"CORSRules\":[{\"AllowedMethods\":[\"POST\"],\"AllowedOrigins\":[\"$REVIEW_ORIGIN\"],\"AllowedHeaders\":[\"*\"],\"MaxAgeSeconds\":300}]}"
+aws s3api put-bucket-cors --bucket "$BUCKET" --cors-configuration "{\"CORSRules\":[{\"AllowedMethods\":[\"POST\"],\"AllowedOrigins\":$ORIGINS,\"AllowedHeaders\":[\"*\"],\"MaxAgeSeconds\":300}]}"
 aws s3api put-bucket-policy --bucket "$BUCKET" --policy "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"TlsOnly\",\"Effect\":\"Deny\",\"Principal\":\"*\",\"Action\":\"s3:*\",\"Resource\":[\"arn:aws:s3:::$BUCKET\",\"arn:aws:s3:::$BUCKET/*\"],\"Condition\":{\"Bool\":{\"aws:SecureTransport\":\"false\"}}}]}"
 
 echo "table $TABLE"
@@ -97,7 +99,7 @@ fn check check 60
 fn ask ask 60
 fn upload-url uploadUrl 10
 
-CORS="{\"AllowOrigins\":[\"$REVIEW_ORIGIN\"],\"AllowMethods\":[\"POST\",\"OPTIONS\"],\"AllowHeaders\":[\"content-type\",\"x-demo-key\"]}"
+CORS="{\"AllowOrigins\":$ORIGINS,\"AllowMethods\":[\"POST\",\"OPTIONS\"],\"AllowHeaders\":[\"content-type\",\"x-demo-key\"]}"
 API=$(api_id)
 if [[ "$API" == None ]]; then
   # ponytail: routes are created only with a new API. If this block fails halfway, delete the API and rerun.

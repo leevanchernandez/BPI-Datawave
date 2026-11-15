@@ -3,6 +3,8 @@
   "main": "worker/index.mjs",
   "compatibility_date": "2026-10-01",
   "account_id": "847a37119fd03f8765b62a6775a6c204",
+  "workers_dev": true,
+  "routes": [{ "pattern": "counter-check.stimmie.dev", "custom_domain": true }],
   "assets": { "directory": "./frontend", "binding": "ASSETS", "not_found_handling": "none" },
   "placement": { "region": "gcp:asia-southeast1" },
   // Quota counts callers without the demo key (worker/index.mjs). The limits are in worker/api.mjs.

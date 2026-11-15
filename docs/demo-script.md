@@ -17,7 +17,7 @@ We catch the missing page, the blank TIN and the wrong-name ID while the client 
 
 ## Recording the demo
 
-Use a case number nobody has touched. The plain link https://counter-check.h-847.workers.dev/live picks a fresh number and puts it in the address. Open it in one window, then open the same address with `&role=bso` added in a second window. `RF-2026-050`, `051`, `052` and `310` are already used by earlier takes. The page needs no key. Record the screen with your voice in one take, and leave the waits in, because the 15 to 20 seconds of reading is part of the claim.
+Use a case number nobody has touched. The plain link https://counter-check.stimmie.dev/live picks a fresh number and puts it in the address. Open it in one window, then open the same address with `&role=bso` added in a second window. `RF-2026-050`, `051`, `052` and `310` are already used by earlier takes. The page needs no key. Record the screen with your voice in one take, and leave the waits in, because the 15 to 20 seconds of reading is part of the claim.
 
 The files are in `frontend/specimens/`. Visit 1 uses `01-application-form-first-visit.png`, `02`, `03`, `04`, `05-dti-page-1.png`, `08`, `09`, `10` and `11`. Visit 2 adds `01b-application-form-corrected.png` and `05b-dti-page-2.png` and keeps the rest.
 
@@ -87,7 +87,7 @@ These go with slides 5 to 8 of the Canva design "Counter Check prototype slides"
 
 ## Live demo for the recorded pitch (Simonee, about 3 minutes)
 
-Record the screen in real time at 1280 by 800 on the plain link https://counter-check.h-847.workers.dev/live, which opens a fresh case number. The look changed on Nov 15 at about 8:50 PM (BPI colors on grey, Poppins, a Requirements dropdown, 10 cases per page), so takes from before then show the old look. Keep a second tab ready on the same link with `&role=bso` added after the case number. The sample papers are synthetic, so say that once.
+Run `PW=<playwright dir> CHROME=<chrome> OUT=take.webm node scripts/record-demo.cjs` to record this run sheet as a silent take, or record the screen in real time at 1280 by 800 on the plain link https://counter-check.stimmie.dev/live, which opens a fresh case number. The look changed on Nov 15 at about 8:50 PM (BPI colors on grey, Poppins, a Requirements dropdown, 10 cases per page), so takes from before then show the old look. Keep a second tab ready on the same link with `&role=bso` added after the case number. The sample papers are synthetic, so say that once.
 
 | Do | Say |
 |---|---|
