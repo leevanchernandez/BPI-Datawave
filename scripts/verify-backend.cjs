@@ -40,6 +40,25 @@ for (const [a, b] of [['Maria Santos', 'Jose Santos'], ['Pedro Santos', 'Santos'
 for (const [a, b] of [['Santos, Elena M.', 'Elena Santos'], ['ELENA  SANTOS', 'elena santos'], ['Mr. Elena Santos', 'Elena Santos'], ['Elena Q. Santos', 'Elena Santos']]) assert.equal(nameCompare(a, b), 'equal', `${a} vs ${b}`);
 assert.equal(nameCompare('Juan Cruz Jr.', 'Juan Cruz Sr.'), 'different');
 
+// ---- true-to-life papers: the documents print a middle name, and the national ID prints no validity date ----
+{
+  const { shortOf } = require('../backend/names.cjs');
+  assert(shortOf('Elena Santos', 'SANTOS ELENA REYES') && shortOf('Elena Santos', 'Elena Reyes Santos'));
+  assert(!shortOf('Elena', 'Elena Reyes Santos') && !shortOf('Juan Cruz', 'Juan Cruz Jr.') && !shortOf('Elena Reyes Santos', 'Elena Santos') && !shortOf('Maria Santos', 'Jose Reyes Santos'));
+  const full = () => { const pk = clean(); for (const x of pk.pages) if ((x.fields || {}).owner_name) x.fields.owner_name = 'Elena Reyes Santos'; return pk; };
+  assert.equal(run(REF, clean()).complete, true, 'the clean packet passes before the changes below');
+  assert.equal(run(REF, full()).complete, true, 'a middle name on the documents still matches the name the branch typed');
+  const jr = full(); for (const x of jr.pages) if ((x.fields || {}).owner_name) x.fields.owner_name = 'Elena Santos Jr.';
+  assert(run(REF, jr).needsReview.some((x) => x.key.startsWith('REFERRAL_REVIEW_OWNER')), 'a suffix the branch left out goes to a person');
+  const low = full(); for (const x of low.pages) if (x.docType === 'gov_id' && (x.fields || {}).owner_name) x.conf.owner_name = 0.5;
+  assert.equal(run(REF, low).complete, false, 'a low-confidence read never gets the middle-name match');
+  const noDate = () => { const pk = full(); for (const x of pk.pages) if (x.docType === 'gov_id') delete x.expiry; return pk; };
+  assert(run(REF, noDate()).needsReview.some((x) => x.key === 'EXPIRY_UNREADABLE:gov_id'), 'an ID with no date read goes to a person');
+  const phil = noDate(); for (const x of phil.pages) if (x.docType === 'gov_id') x.noExpiry = true;
+  assert.equal(run(REF, phil).complete, true, 'the national ID has no validity date');
+  assert.equal(classify([{ text: 'Araw ng pagkakaloob/Date of issue' }, { text: '18 AUGUST 2022' }, { text: 'Kasarian/Sex' }]).docType, 'gov_id');
+}
+
 // ---- clean packet and each single defect ----
 assert.deepEqual(run(REF, clean()).defects, []);
 assert.deepEqual(run(REF, clean()).needsReview, [], 'a clean, confident packet needs no review');

@@ -12,6 +12,8 @@ const LABELS = new Set(['application_form', 'gov_id', 'spouse_id', 'registration
 const MIN_LINES = 3;     // a page with fewer text lines than this is not trusted to be the document its title says
 const CONCURRENCY = 4;
 const FORM_TEXT = ['business_name', 'owner_name', 'address', 'tin', 'contact', 'civil_status', 'spouse_name'];
+// The national ID prints no validity date, and its back has no title, only the issue date.
+const PHIL_ID = /pambansang pagkakakilanlan|philippine identification|araw ng pagkakaloob/i, PHIL_ID_BACK = /araw ng pagkakaloob/i;
 const MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
 
 const words = (s) => String(s || '').toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
@@ -104,10 +106,12 @@ async function processPacket(referral, pages, deps, opts = {}) {
         if (v && nameGrounded(v, text)) { fields[k] = v; conf[k] = (m.conf || {})[k] ?? 0.6; }
         else if (v) review.push({ key: `MODEL_UNGROUNDED:${i + 1}:${k}`, message: `Page ${i + 1}: a ${k.replace(/_/g, ' ')} was reported that is not visible in the page text. Please check it.` });
       }
+      const philId = page.docType === 'gov_id' && PHIL_ID.test(text);
+      if (philId) m.expiry = undefined; // a birth date or issue date is never read as a validity date
       const expiry = m.expiry && dateGrounded(m.expiry, text) ? m.expiry : undefined;
       if (m.expiry && !expiry) review.push({ key: `MODEL_UNGROUNDED:${i + 1}:expiry`, message: `Page ${i + 1}: a validity date was reported that is not visible in the page text. Please check it.` });
       t.grounded = { ...Object.fromEntries(Object.keys(fields).map((k) => [k, true])), ...(m.expiry ? { expiry: Boolean(expiry) } : {}) };
-      page = { ...page, side: m.side, pageNo: page.pageNo ?? m.pageNo, pageTotal: page.pageTotal ?? m.pageTotal, fields, conf, expiry, srcIndex: i };
+      page = { ...page, side: philId && PHIL_ID_BACK.test(text) ? 'back' : m.side, noExpiry: philId, pageNo: page.pageNo ?? m.pageNo, pageTotal: page.pageTotal ?? m.pageTotal, fields, conf, expiry, srcIndex: i };
     }
     t.docType = page.docType;
     return page;

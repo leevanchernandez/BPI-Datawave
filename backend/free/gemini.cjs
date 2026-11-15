@@ -34,7 +34,7 @@ function makeGemini({ apiKey, model = 'gemini-3.5-flash-lite', fetchFn = fetch, 
     type: 'object',
     properties: {
       docType: { type: 'string', enum: [...DOC_TYPES, 'unknown'] },
-      owner_name: { type: 'string' },
+      owner_name: { type: 'string', description: 'the full name of the person as printed, with the middle name when the page prints one: given names, middle name, last name' },
       business_name: { type: 'string' },
       expiry: { type: 'string', description: 'YYYY-MM-DD if a validity or expiry date is printed, else empty' },
       side: { type: 'string', enum: ['front', 'back', 'na'] },

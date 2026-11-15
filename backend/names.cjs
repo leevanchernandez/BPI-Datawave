@@ -34,4 +34,11 @@ function nameCompare(a, b) {
   return 'different';
 }
 
-module.exports = { nameCompare, tokens };
+const SUFFIX = new Set(['jr', 'sr', 'ii', 'iii', 'iv']);
+/** true when a typed name of two or more words is the full name with words left out (a middle name), and no suffix is left out */
+function shortOf(typed, full) {
+  const t = tokens(typed).filter((w) => w.length > 1), f = tokens(full).filter((w) => w.length > 1);
+  return t.length >= 2 && subsetOf(t, f) && !f.some((w) => SUFFIX.has(w) && !t.includes(w));
+}
+
+module.exports = { nameCompare, tokens, shortOf };

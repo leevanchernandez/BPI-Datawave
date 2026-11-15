@@ -4,6 +4,8 @@
 // Run: API_URL=https://<id>.execute-api.ap-southeast-1.amazonaws.com DEMO_KEY=<key> node scripts/smoke.mjs
 // Never prints the key or the presigned fields. Calls real Textract and Bedrock, so each run costs a little.
 import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 const { API_URL, DEMO_KEY } = process.env;
 const fail = (msg) => { console.error(`smoke: ${msg}`); process.exit(1); };
@@ -15,7 +17,7 @@ const api = API_URL.replace(/\/$/, '');
 const REF = { id: 'RF-2026-042', business: "Elena's Artisan Bakery", name: 'Elena Santos', type: 'Sole proprietorship', industry: 'Food & beverage', amount: 750000, civilStatus: 'married', spouseName: 'Ramon Santos', secured: false, bpiAccount: true };
 const COMMON = ['02-owner-id-front.png', '03-owner-id-back.png', '04-spouse-id-front.png', '05-dti-page-1.png', '09-bir-cor.png', '10-mayors-permit.png', '08-bank-statement.png', '11-client-authorization-letter.png'];
 const VISITS = [['visit 1', ['01-application-form-first-visit.png', ...COMMON]], ['visit 2', ['01b-application-form-corrected.png', ...COMMON, '05b-dti-page-2.png']]];
-const DIR = new URL('../frontend/specimens/', import.meta.url);
+const DIR = process.env.SPECIMENS ? pathToFileURL(resolve(process.env.SPECIMENS) + '/') : new URL('../frontend/specimens/', import.meta.url); // SPECIMENS=<folder> tries another set
 
 async function post(path, body, key = DEMO_KEY) {
   const r = await fetch(api + path, { method: 'POST', headers: { 'content-type': 'application/json', 'x-demo-key': key }, body: JSON.stringify(body) });
@@ -54,6 +56,7 @@ for (const [label, files] of VISITS) {
   for (const d of result.needsReview) console.log(`  review  ${d.message}`);
   console.log(`  message ${message}`);
   console.log(`  usage   ${JSON.stringify(r.body.usage)}`);
+  if (process.env.TRACE) for (const t of r.body.trace || []) console.log(`  trace   ${JSON.stringify(t)}`);
 }
 
 const a = await post('/ask', { referralId: REF.id, question: 'Ano pa ang kulang sa RF-2026-042?' });

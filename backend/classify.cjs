@@ -26,7 +26,7 @@ const RULES = [
   ['sanitary_permit', /sanitary permit|health permit/i],
   ['business_permit', /mayor'?s permit|business permit/i],
   ['registration', /department of trade and industry|\bdti\b|securities and exchange commission|certificate of (business name )?registration/i],
-  ['gov_id', /republic of the philippines[\s\S]*\b(umid|driver'?s? licen[sc]e|philsys|passport|prc|postal id|voter)\b|\bumid\b|\bphilsys\b|pambansang pagkakakilanlan|philippine identification/i],
+  ['gov_id', /republic of the philippines[\s\S]*\b(umid|driver'?s? licen[sc]e|philsys|passport|prc|postal id|voter)\b|\bumid\b|\bphilsys\b|pambansang pagkakakilanlan|philippine identification|araw ng pagkakaloob/i], // the last one is the back of the national ID, which has no title
 ];
 
 // lines: [{text, conf}] -> { docType | null, hits }

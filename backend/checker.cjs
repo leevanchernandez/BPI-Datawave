@@ -4,7 +4,7 @@
 // depends on was actually present. It is "no issues detected by these rules", never "verified" or "approved".
 // NOT checked: document authenticity, content accuracy, whether statements cover 6 months, forged documents.
 const { checklist, table, civilOf } = require('./rules.cjs');
-const { nameCompare } = require('./names.cjs');
+const { nameCompare, shortOf } = require('./names.cjs');
 
 const HIGH_CONF = 0.9;  // a read below this never grants a name match
 const MAX_PAGES = 50;   // clamp for any page number or page total that came from OCR or a model
@@ -122,15 +122,17 @@ function check(referral, packet, { today = new Date(), rules = table } = {}) {
   pairs(bizs, 'BUSINESS_NAME_MISMATCH', 'BUSINESS_REVIEW', 'Business name');
 
   // 3b. the packet must be about the referral (the referral is the trusted side, confidence 1)
-  const against = (list, refValue, code, reviewCode, label) => {
+  // The branch types the owner's name and often leaves out the middle name that the documents print.
+  const against = (list, refValue, code, reviewCode, label, typedShort) => {
     if (blank(refValue)) return;
     for (const x of list) {
-      const res = compareNames(refValue, 1, x.v, x.c);
+      let res = compareNames(refValue, 1, x.v, x.c);
+      if (res === 'review' && typedShort && x.c >= HIGH_CONF && shortOf(refValue, x.v)) res = 'match';
       if (res === 'mismatch') add(code, x.p.docType, `${label} on the ${x.p.docType.replace(/_/g, ' ')} does not match the referral.`);
       else if (res === 'review') review(reviewCode, x.p.docType, `${label} on the ${x.p.docType.replace(/_/g, ' ')} could not be matched to the referral. Please check it.`);
     }
   };
-  against(owners, referral.name, 'REFERRAL_MISMATCH_OWNER', 'REFERRAL_REVIEW_OWNER', 'Owner name');
+  against(owners, referral.name, 'REFERRAL_MISMATCH_OWNER', 'REFERRAL_REVIEW_OWNER', 'Owner name', true);
   against(bizs, referral.business, 'REFERRAL_MISMATCH_BUSINESS', 'REFERRAL_REVIEW_BUSINESS', 'Business name');
 
   // 4. validity dates: must parse, must exist where the document has one, compared by Manila calendar day
@@ -138,7 +140,11 @@ function check(referral, packet, { today = new Date(), rules = table } = {}) {
     const found = byType(docType);
     if (!found.length) continue;
     const dated = found.map((p) => p.expiry).filter((e) => e != null && e !== '');
-    if (!dated.length) { review('EXPIRY_UNREADABLE', docType, `${docType.replace(/_/g, ' ')}: no validity date could be read. Please check it.`); continue; }
+    if (!dated.length) {
+      if (found.every((p) => p.noExpiry)) continue; // the national ID has no validity date
+      review('EXPIRY_UNREADABLE', docType, `${docType.replace(/_/g, ' ')}: no validity date could be read. Please check it.`);
+      continue;
+    }
     for (const e of dated) {
       if (!validDate(e)) review('EXPIRY_UNREADABLE', docType, `${docType.replace(/_/g, ' ')}: the validity date could not be read. Please check it.`);
       else if (e < todayStr) add('EXPIRED', docType, `${docType.replace(/_/g, ' ')} expired on ${e}.`, docType);
