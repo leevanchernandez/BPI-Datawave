@@ -87,17 +87,17 @@ These go with slides 5 to 8 of the Canva design "Counter Check prototype slides"
 
 ## Live demo for the recorded pitch (Simonee, about 3 minutes)
 
-Record the screen in real time at 1280 by 800 on the plain link https://counter-check.h-847.workers.dev/live, which opens a fresh case number. Keep a second tab ready on the same link with `&role=bso` added after the case number. The sample papers are synthetic, so say that once.
+Record the screen in real time at 1280 by 800 on the plain link https://counter-check.h-847.workers.dev/live, which opens a fresh case number. The look changed on Nov 15 at about 8:50 PM (BPI colors on grey, Poppins, a Requirements dropdown, 10 cases per page), so takes from before then show the old look. Keep a second tab ready on the same link with `&role=bso` added after the case number. The sample papers are synthetic, so say that once.
 
 | Do | Say |
 |---|---|
-| Press Send in the Assistant with the sample note, then Save. | The branch officer types what the client said, in Taglish if they like. The AI fills the form, and the officer checks it before saving. The checklist comes from the rules table, not from the AI. |
+| Press Send in the Assistant with the sample note, then Save. Open the Requirements dropdown to show the papers. | The branch officer types what the client said, in Taglish if they like. The AI fills the form, and the officer checks it before saving. The checklist comes from the rules table, not from the AI. |
 | Press "Sample papers, visit 1", then Check documents. | The officer snaps the papers at the counter. Textract reads them, Claude reads the IDs and permits from masked text, and the rules decide what's missing. It found two problems while the client is still there. |
 | Ask "ano pa kulang?" in the Assistant. | The assistant answers from this case's record, and it won't say a loan is approved. |
 | Press "Sample papers, visit 2", then Check documents, then Send to BSO. | On the second visit nothing is missing, so Send to BSO unlocks. It stays locked while anything is open. |
 | In the BSO tab, return the case with "Bank statements must cover Sep to Nov 2026." | Say the BSO still needs more after review. The BSO returns it with a note. |
 | Back in the branch tab, press "Sample papers, visit 2" and Check documents again. | The AI now reads the new scan against the BSO's note. The statement in this packet covers Aug to Oct, so it's flagged and the case can't go back to the BSO yet. The branch knows exactly what to ask the client for. |
-| In the BSO tab, show the case list. | The BSO sees every referral and its status in one place, and the list counts how many cases were endorsed to Credit with no return, which is the share complete the first time. |
+| In the BSO tab, show the case list. | The BSO sees every referral and its status in one place, whether it came in at the branch or online through Ka-Negosyo, and the list counts how many cases were endorsed to Credit with no return, which is the share complete the first time. Ka-Negosyo isn't connected in the prototype, so the channel is a label that the branch picks. |
 
 Regina asked on Nov 15 for the note step to be typed three ways for some humor, in English, in Taglish and in "nokia typing". Clear the form between tries with a fresh case link. All three filled every field on AWS on Nov 15 (9 of 9 each, 1.7 to 3.9 s).
 
