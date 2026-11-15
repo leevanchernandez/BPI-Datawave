@@ -48,7 +48,8 @@ export function validReferral(r) {
     && (r.secured == null || typeof r.secured === 'boolean')
     && (r.bpiAccount == null || typeof r.bpiAccount === 'boolean');
 }
-const cleanReferral = (r) => ({ id: r.id, business: r.business.trim(), name: r.name.trim(), type: r.type, industry: r.industry.trim(), amount: r.amount, civilStatus: civilOf(r.civilStatus), spouseName: (r.spouseName || '').trim(), secured: Boolean(r.secured), bpiAccount: r.bpiAccount === true });
+const CHANNELS = ['Branch walk-in', 'Ka-Negosyo online'];
+const cleanReferral = (r) => ({ id: r.id, business: r.business.trim(), name: r.name.trim(), type: r.type, industry: r.industry.trim(), amount: r.amount, civilStatus: civilOf(r.civilStatus), spouseName: (r.spouseName || '').trim(), secured: Boolean(r.secured), bpiAccount: r.bpiAccount === true, channel: CHANNELS.includes(r.channel) ? r.channel : CHANNELS[0] });
 
 function validPages(pages) {
   return Array.isArray(pages) && pages.length > 0 && pages.length <= MAX_PAGES && pages.every((p) =>
@@ -154,7 +155,7 @@ export function makeApi({ store, llm, now = () => new Date(), demoKey, aws = nul
         // After the first handoff: 'returned' if the BSO ever sent it back, 'complete' if endorsed with no return, else 'pending'.
         const h = c.events.findIndex((e) => e.type === 'handed_off'), after = h < 0 ? [] : c.events.slice(h);
         const firstHandoff = h < 0 ? null : after.some((e) => e.type === 'returned') ? 'returned' : after.some((e) => e.type === 'endorsed') ? 'complete' : 'pending';
-        return { id: r.id, business: r.business, type: r.type, industry: r.industry, amount: r.amount, status: statusOf(c.events), open: o.defects.length + o.needsReview.length, updated: (c.events[c.events.length - 1] || {}).at || null, firstHandoff };
+        return { id: r.id, business: r.business, channel: r.channel || CHANNELS[0], type: r.type, industry: r.industry, amount: r.amount, status: statusOf(c.events), open: o.defects.length + o.needsReview.length, updated: (c.events[c.events.length - 1] || {}).at || null, firstHandoff };
       });
       cases.sort((a, b) => String(b.updated || '').localeCompare(String(a.updated || '')));
       return json(200, { cases: cases.slice(0, MAX_LIST) });
