@@ -357,7 +357,7 @@ const PAGES = {
   for (const [name, make] of Object.entries(PAGES)) {
     if (only && !name.includes(only)) { make(); continue; } // still drawn, so the generator stays in step
     const card = name.includes('-id-');
-    const page = await browser.newPage({ viewport: card ? { width: 1012, height: 638 } : { width: 1240, height: 1754 } });
+    const page = await browser.newPage({ viewport: card ? { width: 1012, height: 638 } : { width: 1240, height: 1754 }, deviceScaleFactor: Number(process.env.SCALE) || 1 }); // SCALE=2 for print
     await page.setContent(make());
     await page.screenshot({ path: path.join(out, `${name}.png`) });
     await page.close();

@@ -85,6 +85,7 @@ async function processPacket(referral, pages, deps, opts = {}) {
     const t = { page: i + 1, lines: lines.length, classifiedAs: page.docType, label, model: false };
     trace.push(t);
     if (!page.docType && label) page.docType = label;
+    if (page.docType === 'gov_application') { review.push({ key: `PAGE_APPLICATION:${i + 1}`, message: `Page ${i + 1} is an application form, not the issued certificate or permit. Please ask for the issued paper.` }); return null; }
     if (!page.docType) { review.push({ key: `PAGE_UNPLACED:${i + 1}`, message: `Page ${i + 1} is not a recognized document. Please label it.` }); return null; }
     if (lines.length < MIN_LINES) { review.push({ key: `PAGE_THIN:${i + 1}`, message: `Page ${i + 1} has very little text for a ${page.docType.replace(/_/g, ' ')}. Please check it.` }); return null; }
     if (page.docType === 'application_form') {

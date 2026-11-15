@@ -112,6 +112,11 @@ for (const d of DEFECTS.filter((x) => x !== 'NAME_MISMATCH')) {
 { // 9. classifier and form key mapping
   assert.equal(classify([{ text: 'relative humidity 80%' }]).docType, null);
   assert.equal(classify([{ text: 'LOAN APPLICATION FORM' }]).docType, 'application_form');
+  assert.equal(classify([{ text: 'Department of Trade and Industry' }, { text: 'BUSINESS NAME REGISTRATION' }, { text: 'SOLE PROPRIETORSHIP APPLICATION FORM' }]).docType, 'gov_application');
+  assert.equal(classify([{ text: 'CITY OF IMUS' }, { text: 'UNIFIED APPLICATION FORM FOR BUSINESS PERMIT' }]).docType, 'gov_application');
+  assert.equal(classify(['Republic of the Philippines', 'Code', 'FM-BN-01', 'dti', 'Department of Trade and Industry', 'FORM', 'Rev.', '1', 'Date', '27-Feb-23', 'BUSINESS NAME REGISTRATION', 'PHILIPPINES', 'SOLE PROPRIETORSHIP APPLICATION FORM'].map((text) => ({ text }))).docType, 'gov_application', 'the title sits under the header box');
+  assert.equal(classify([{ text: 'CITY OF IMUS' }, { text: 'BUSINESS PERMIT' }, { text: 'Permit No. 2026-00123' }]).docType, 'business_permit');
+  assert.equal(classify([{ text: 'Department of Trade and Industry' }, { text: 'Certificate of Business Name Registration' }]).docType, 'registration');
   const m = mapForm({ 'Signature of Spouse:': { value: 'x', conf: 1 }, 'Full name of spouse': { value: 'Pedro', conf: 1 }, 'Address of employer': { value: 'z', conf: 1 } });
   assert.equal(m.fields.signature, undefined); assert.equal(m.fields.owner_name, undefined); assert.equal(m.fields.address, undefined); assert.equal(m.fields.spouse_signature, 'x'); }
 { // 10. defects must be storable: no undefined values (DynamoDB rejected them by default)

@@ -15,6 +15,7 @@ const RULES = [
   ['contract', /notice of award|\bcontract agreement\b|construction contract/i],
   ['bir_cor', /bir form (no\.? )?2303|certificate of registration[\s\S]*bureau of internal revenue|bureau of internal revenue[\s\S]*certificate of registration/i],
   ['application_form', /\bloan application( form)?\b|^application form\b/im],
+  ['gov_application', /(business permit|business name registration|sole proprietorship|department of trade and industry)[\s\S]*application (form|for)\b|application (form )?for (a )?(business permit|mayor'?s permit|registration|business name)/i], // an application to an agency, not the paper it issues
   ['audited_fs', /audited financial statements?|independent auditor/i],
   ['itr', /income tax return|\bbir form (no\.? )?170[0-2]/i],
   ['financials', /statement of financial position|income statement|balance sheet|financial statements?/i],
@@ -29,9 +30,13 @@ const RULES = [
   ['gov_id', /republic of the philippines[\s\S]*\b(umid|driver'?s? licen[sc]e|philsys|passport|prc|postal id|voter)\b|\bumid\b|\bphilsys\b|pambansang pagkakakilanlan|philippine identification|araw ng pagkakaloob/i], // the last one is the back of the national ID, which has no title
 ];
 
+const GOV_FORM_TITLE = /(business permit|business name registration|sole proprietorship|department of trade and industry)[\s\S]*application form\b|application form for (a )?(business permit|mayor'?s permit|registration|business name)/i;
+
 // lines: [{text, conf}] -> { docType | null, hits }
 function classify(lines) {
-  const text = lines.slice(0, 8).map((l) => l.text).join('\n'); // titles live at the top; body mentions must not classify the page
+  const top = (n) => lines.slice(0, n).map((l) => l.text).join('\n');
+  const text = top(8); // titles live at the top; body mentions must not classify the page
+  if (GOV_FORM_TITLE.test(top(16)) && !/\bloan application/i.test(text)) return { docType: 'gov_application' }; // the title can sit under a header box
   for (const [docType, re] of RULES) if (re.test(text)) return { docType };
   return { docType: null };
 }
