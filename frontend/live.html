@@ -426,6 +426,10 @@
   .navfoot .me { padding: var(--space-4) var(--space-4) 0; border-top-color: rgb(225 199 129 / 0.35); }
   .navfoot .avatar { background: #e1c781; color: #571216; }
   @media (max-width: 900px) { .navrail { padding: var(--space-3) var(--space-4); gap: var(--space-3); } .wscard .wordmark { font-size: 1.5rem; } .navrail .side a { width: auto; padding: 6px 10px; } }
+  .pitchcard { margin: 0; display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4); border: 1px solid rgb(225 199 129 / 0.5); border-radius: 10px; background: rgb(0 0 0 / 0.12); font-size: var(--text-s); line-height: 1.5; color: #eed9d5; }
+  .pitchcard svg { width: 20px; height: 20px; margin: 0; color: #e1c781; }
+  .pitchcard strong { color: #fff; font-size: var(--text-m); font-weight: 600; line-height: 1.35; }
+  @media (max-width: 900px), (max-height: 700px) { .pitchcard { display: none; } }
 </style>
 </head>
 <body>
@@ -437,6 +441,7 @@
   </div>
   <nav class="side" id="side" aria-label="Sections"></nav>
   <div class="navfoot">
+    <p class="pitchcard" data-icon="shield"><strong>A better start for every business</strong><span>Every referral is tracked in one workspace.</span></p>
     <button class="me" type="button" popovertarget="acct" aria-label="Account"><span class="avatar" id="me-initials">BM</span><span><strong id="me-name">Sample branch manager</strong><small>Synthetic user</small></span></button>
     <div id="acct" class="acct" popover>
       <p class="acct-h">Signed in as</p>

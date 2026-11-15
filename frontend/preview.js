@@ -45,6 +45,7 @@ Object.assign(ICON, Object.fromEntries(Object.entries({
   folder: '<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>',
   pipeline: '<path d="M3 6h18M3 12h12M3 18h6"/>',
   check: '<path d="M5 12l5 5 9-11"/>',
+  shield: '<path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
   x: '<path d="M6 6l12 12M18 6L6 18"/>',
   back: '<path d="M19 12H5M12 19l-7-7 7-7"/>',
   chart: '<path d="M4 20V11M10 20V5M16 20v-6M2 20h20"/>',
