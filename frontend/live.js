@@ -49,6 +49,8 @@ Object.assign(ICON, Object.fromEntries(Object.entries({
   x: '<path d="M6 6l12 12M18 6L6 18"/>',
   back: '<path d="M19 12H5M12 19l-7-7 7-7"/>',
   chart: '<path d="M4 20V11M10 20V5M16 20v-6M2 20h20"/>',
+  bell: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>',
+  help: '<circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/>',
   warnline: '<path d="M12 8v5M12 17h.01M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>',
 }).map(([k, d]) => [k, svg(d)])));
 // put an icon at the start of every element marked data-icon
@@ -113,6 +115,19 @@ const WHO = { bm: ['AR', 'Ana Reyes', 'Branch manager', 'Makati Main Branch', 'B
   $('me-name').textContent = $('acct-me-name').textContent = name; $('me-job').textContent = $('acct-me-role').textContent = job;
   $('ws-name').textContent = ws; $('ws-code').textContent = code;
   $('acct-o-initials').textContent = oIni; $('acct-o-name').textContent = oName; $('acct-o-role').textContent = oJob;
+}
+const HELP = {
+  bm: ['Tell the assistant about the client, and it fills the form.', 'Add photos or PDFs of the papers, then press Check documents.', 'Fix what the check lists. Send to BSO unlocks when nothing is missing.', "Ask the assistant about requirements or a case's status anytime."],
+  bso: ['Open a case from the referral queue.', 'Return it with a reason if a paper is wrong. The next check reads the new papers against your note.', 'Publish a heads-up so branches see a common mistake.', 'Endorse to Credit when nothing is open.'],
+};
+$('help-list').innerHTML = HELP[role].map((s) => `<li>${esc(s)}</li>`).join('');
+// bell list: cases waiting on this role
+function renderNotif(cases) {
+  const mine = cases.filter((c) => (role === 'bm' ? ['Missing requirements', 'Returned by BSO'] : ['With BSO']).includes(c.status)).slice(0, 6);
+  $('bell').classList.toggle('dot', mine.length > 0);
+  $('bell').setAttribute('aria-label', `Notifications, ${mine.length} waiting`);
+  $('notif-h').textContent = mine.length ? (role === 'bm' ? 'Waiting on the branch' : 'Waiting on you') : 'Nothing is waiting on you right now.';
+  $('notif-list').innerHTML = mine.map((c) => `<li><a href="?${role === 'bso' ? 'role=bso&' : ''}id=${encodeURIComponent(c.id)}${stackQuery}${role === 'bm' ? '#case' : ''}"><span class="grow">${esc(c.business)}<span class="soft">${esc(c.id)}, ${when(c.updated)}</span></span><span class="status ${statusClass(c.status)}">${esc(c.status)}</span></a></li>`).join('');
 }
 if (role === 'bso') { $('work').classList.add('solo'); $('page-title').textContent = 'Referral queue'; $('page-sub').textContent = 'Review what the branches sent, return what needs fixing, and endorse complete cases to Credit.'; $('new-ref').classList.add('hidden'); }
 $('today').textContent = new Date().toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'Asia/Manila' });
@@ -463,7 +478,7 @@ async function loadCases(btn) {
     $('cases-count').innerHTML = Object.entries(counts).map(([s, n]) => `<span class="status ${statusClass(s)}">${n} ${esc(s)}</span>`).join(' ');
     const n = (k) => cases.filter((c) => c.firstHandoff === k).length, ok = n('complete'), acted = ok + n('returned'), waiting = cases.filter((c) => c.firstHandoff === 'pending' && c.status === 'With BSO').length;
     $('cases-metric').textContent = acted ? `${ok} of ${acted} ${acted === 1 ? 'case' : 'cases'} the BSO acted on ${acted === 1 ? 'was' : 'were'} endorsed to Credit without a return${waiting ? `, and ${waiting} ${waiting === 1 ? 'is' : 'are'} still with the BSO` : ''}.` : waiting ? `${waiting} ${waiting === 1 ? 'case is' : 'cases are'} with the BSO.` : '';
-    renderCards(cases); if (role === 'bm') renderReports(cases);
+    renderCards(cases); renderNotif(cases); if (role === 'bm') renderReports(cases);
     allCases = cases; casePage = Math.min(casePage, Math.max(0, Math.ceil(cases.length / PAGE) - 1)); renderCases();
     casesLoaded = true;
   } catch (e) {
@@ -488,7 +503,7 @@ function renderReports(cases) {
   $('attention').innerHTML = need.map((c) => item(c, `${esc(c.id)}, ${c.open} open ${c.open === 1 ? 'item' : 'items'}${c.issues && c.issues[0] ? `, ${esc(c.issues[0])}` : ''}`)).join('') || '<li class="soft" style="padding:var(--space-3) 0">Nothing needs attention right now.</li>';
   $('activity').innerHTML = cases.slice(0, 6).map((c) => item(c, `${esc(c.id)}, ${when(c.updated)}`)).join('') || '<li class="soft" style="padding:var(--space-3) 0">No updates yet.</li>';
   $('by-status').innerHTML = bars(STATUSES.map((st) => [st, cases.filter((c) => c.status === st).length]).filter(([, n]) => n));
-  const issues = {}; for (const c of cases) for (const m of new Set(c.issues || [])) issues[m] = (issues[m] || 0) + 1;
+  const issues = {}; for (const c of cases) for (const m of new Set((c.issues || []).map((s) => s.replace(/( The AI did not find it in the new scan\.).*$/, '$1')))) issues[m] = (issues[m] || 0) + 1;
   const top = Object.entries(issues).sort((a, b) => b[1] - a[1]).slice(0, 6);
   $('by-issue').innerHTML = top.length ? bars(top) : '<p class="soft">No open problems right now.</p>';
 }
