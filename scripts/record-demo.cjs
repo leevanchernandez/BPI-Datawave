@@ -103,6 +103,7 @@ const RETURN_NOTE = 'Bank statements must cover Sep to Nov 2026.';
   const video = await p.video().path();
   await ctx.close();
   await b.close();
-  fs.renameSync(video, process.env.OUT || 'take.webm');
+  fs.copyFileSync(video, process.env.OUT || 'take.webm');
+  fs.rmSync(dir, { recursive: true });
   console.log('saved', process.env.OUT || 'take.webm');
 })();
