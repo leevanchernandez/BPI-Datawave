@@ -80,8 +80,7 @@ async function api(method, path, body) {
 const caseId = () => (role === 'bm' ? $('f-id').value.trim() : $('b-id').value.trim());
 function navLinks() {
   const id = encodeURIComponent(caseId() || 'RF-2026-042');
-  $('nav-bm').href = `?id=${id}${stackQuery}`; $('nav-bso').href = `?role=bso&id=${id}${stackQuery}`;
-  $(role === 'bm' ? 'nav-bm' : 'nav-bso').setAttribute('aria-current', 'page');
+  $('acct-other').href = role === 'bm' ? `?role=bso&id=${id}${stackQuery}` : `?id=${id}${stackQuery}`;
   $('ph-id').textContent = caseId();
 }
 for (const id of role === 'bm' ? ['bm-left', 'bm-right', 'case-panel', 'assist', 'products'] : ['bso-left', 'bso-right']) $(id).classList.remove('hidden');
@@ -105,7 +104,7 @@ if (role === 'bm') {
   new MutationObserver(mirror).observe($('handoff'), { attributes: true }); new MutationObserver(mirror).observe($('result'), { attributes: true }); mirror();
   $('sheet-send').onclick = () => $('handoff').click();
 }
-if (role === 'bso') { $('work').classList.add('solo'); $('ws-role').textContent = 'BSO workspace'; $('me-initials').textContent = 'BS'; $('me-name').textContent = 'Sample BSO'; $('page-title').textContent = 'Referral queue'; $('page-sub').textContent = 'Review what the branches sent, return what needs fixing, and endorse complete cases to Credit.'; $('new-ref').classList.add('hidden'); }
+if (role === 'bso') { $('work').classList.add('solo'); $('ws-role').textContent = 'BSO workspace'; $('ws-name').textContent = 'Sample area'; $('ws-code').textContent = 'Area 1'; $('me-initials').textContent = $('acct-me-initials').textContent = $('top-initials').textContent = 'BS'; $('me-name').textContent = $('acct-me-name').textContent = 'Sample BSO'; $('acct-me-role').textContent = 'BSO workspace'; $('acct-o-initials').textContent = 'BM'; $('acct-o-name').textContent = 'Sample branch manager'; $('acct-o-role').textContent = 'Sample branch'; $('page-title').textContent = 'Referral queue'; $('page-sub').textContent = 'Review what the branches sent, return what needs fixing, and endorse complete cases to Credit.'; $('new-ref').classList.add('hidden'); }
 $('today').textContent = new Date().toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'Asia/Manila' });
 const initials = (t) => String(t || '').replace(/[^A-Za-z ]/g, ' ').trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || 'NR';
 // step line from the case status
