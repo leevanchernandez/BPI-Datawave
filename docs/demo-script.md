@@ -30,7 +30,7 @@ The files are in `frontend/specimens/`. Visit 1 uses `01-application-form-first-
 | 5 | Switch the Assistant to "Ask about this case" and send "Ano pa ang kulang?", then "ano requirements ng corporation?". | The branch can ask what is still missing, and what another structure needs, instead of calling the BSO. |
 | 6 | Add the visit 2 photos (or press "Sample papers, visit 2") and check again. The status turns to "Ready for BSO review". Press "Send to BSO". | The client comes back with the missing page. The check passes and the case goes to the BSO. |
 | 7 | BSO window. Point at the "All cases" list at the top, then click the case. Show the timeline and the open items. Ask "Approved na ba ito?" in the BSO ask box, then press "Endorse to Credit". | The BSO sees every referral and its status in one list. The assistant refuses approval questions, because Credit decides the loan. The BSO endorses the complete packet to Credit, and the list counts how many finished cases were endorsed without a return. That is the share complete the first time, BPI's main metric, and endorsements to Credit are already part of the BSO's KPI. |
-| 8 | Optional. Return the case with a reason, then show the drafted heads-up and publish it. | When the BSO returns a case, the reason becomes a reminder that other branches see on similar cases. A BSO publishes it, and it never changes the checklist. |
+| 8 | Optional. Return the case with a reason, then show the drafted heads-up and publish it. Back in the branch window, check the same papers again. | When the BSO returns a case, the reason becomes a reminder that other branches see on similar cases. A BSO publishes it, and it never changes the checklist. On the next check the AI reads the new scan against the BSO's note, so the branch can't send it back without the paper the BSO asked for. |
 
 All documents are synthetic. Say that once on screen or in the voice-over.
 
@@ -49,7 +49,7 @@ This voice-over is timed to that take. The times are read off the video in 5 sec
 | 70 to 80 s | BSO view. "Approved na ba ito?" is refused. | The BSO sees every case in one list. The assistant refuses approval questions, because Credit decides the loan. |
 | 80 to 90 s | The BSO presses "Endorse to Credit", and the list shows the count. | The BSO endorses the complete packet to Credit. The list counts how many cases were endorsed with no return, which is the share complete the first time. |
 
-A longer silent take (168 seconds, 1280 by 800, waits left in) was recorded on Nov 13 at about 10:40 AM on case `RF-2026-310` with the loading states from `7726ab2`. It adds the BSO return, the heads-up and the second handoff. The file is `counter-check-demo-full-2026-11-13.mp4` in Simonee's Downloads. This voice-over is timed to it.
+A longer silent take (168 seconds, 1280 by 800, waits left in) was recorded on Nov 13 at about 10:40 AM on case `RF-2026-310` with the loading states from `7726ab2`. It adds the BSO return, the heads-up and the second handoff. The file is `counter-check-demo-full-2026-11-13.mp4` in Simonee's Downloads. This voice-over is timed to it. It was recorded before `fa6634e` (Nov 15), so it doesn't show the AI reading the new scan against the BSO's note. A new take of step 8 would show it.
 
 | Time | On screen | Voice-over |
 | --- | --- | --- |
