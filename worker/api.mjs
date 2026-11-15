@@ -69,6 +69,12 @@ export function openItems(events) {
   const done = new Set(events.slice(last + 1).filter((e) => e.type === 'cleared' || e.type === 'waived').map((e) => e.key));
   return { checked: true, defects: (events[last].defects || []).filter((d) => !done.has(d.key)), needsReview: (events[last].needsReview || []).filter((d) => !done.has(d.key)) };
 }
+/** the BSO's return reason stays open on every new check until a person types what the new paper shows */
+export function bsoRequest(events) {
+  const r = events.map((e) => e.type).lastIndexOf('returned');
+  if (r < 0 || events.slice(r + 1).some((e) => e.type === 'handed_off' || (e.type === 'cleared' && e.key === 'BSO_REQUEST'))) return null;
+  return { key: 'BSO_REQUEST', message: `The BSO asked for this: "${events[r].reason.replace(/[.\s]+$/, '')}." Find it in the new scan and type what the paper shows.` };
+}
 export function statusOf(events) {
   const s = deriveStatus(events), o = openItems(events);
   if ((s === 'Draft' || s === 'Missing requirements') && o.checked) return o.defects.length + o.needsReview.length ? 'Missing requirements' : 'Ready for BSO review';
@@ -212,6 +218,8 @@ export function makeApi({ store, llm, now = () => new Date(), demoKey, aws = nul
         };
         ({ result, trace } = await processPacket(c.referral, b.pages, deps, { today: now() }));
       }
+      const asked = bsoRequest(c.events);
+      if (asked) result = { ...result, needsReview: [...result.needsReview, asked], complete: false };
       const rec = reconcile(openItems(c.events).defects, result.defects, result.needsReview);
       const items = [...rec.stillMissing, ...rec.newIssues, ...result.needsReview].map((d) => d.message);
       if (!onAws && llm && items.length) { try { message = await llm.draftMessage({ items, audience: 'branch' }); if (message) drafted = 'model'; } catch { /* template below */ } }
