@@ -47,7 +47,7 @@ for (const [label, files] of VISITS) {
   const pageKeys = [];
   for (const f of files) pageKeys.push(await upload(f));
   const t0 = Date.now();
-  const r = await post('/check', { referral: REF, pageKeys });
+  const r = await post('/check', { referral: REF, pageKeys, ...(process.env.REQUEST ? { request: process.env.REQUEST } : {}) }); // REQUEST=<BSO note> runs the note match
   const secs = ((Date.now() - t0) / 1000).toFixed(1);
   if (r.status !== 200) fail(`${label} /check: ${r.status} after ${secs}s (API Gateway stops at 30 s) ${JSON.stringify(r.body).slice(0, 500)}`);
   const { result, status, message } = r.body;
