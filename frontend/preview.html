@@ -183,36 +183,130 @@
   [aria-busy="true"].dim { opacity: 0.5; transition: opacity var(--dur) var(--ease); }
   .retry { margin-left: var(--space-2); }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } .skel, .spin, .progress li.now::before { animation: none; } .dots::after { animation: none; content: '...'; } }
+
+  /* dashboard shell: burgundy side rail, top bar, cards, pipeline with the assistant beside it */
+  .app { display: grid; grid-template-columns: 248px minmax(0, 1fr); min-height: 100vh; }
+  .navrail { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; gap: var(--space-5); padding: var(--space-5) var(--space-4); background: linear-gradient(180deg, var(--color-brand) 0%, var(--color-brand-deep) 100%); color: #fff; }
+  .navrail .wordmark { color: #fff; }
+  .branchbox { display: flex; flex-direction: column; padding: var(--space-3); border: 1px solid rgb(255 255 255 / 0.3); border-radius: 8px; }
+  .branchbox small, .me small { color: rgb(255 255 255 / 0.75); font-size: var(--text-s); }
+  .navrail .side { position: static; padding: 0; gap: var(--space-1); }
+  .navrail .side { align-items: stretch; }
+  .navrail .side a { display: flex; gap: var(--space-2); justify-content: space-between; align-items: center; color: rgb(255 255 255 / 0.9); font-size: var(--text-m); font-weight: 500; padding: 10px 12px; }
+  .navrail .side a:hover { background: rgb(255 255 255 / 0.1); color: #fff; }
+  .navrail .side a[aria-current="page"] { background: #fff; color: var(--color-brand-deep); font-weight: 600; box-shadow: none; }
+  .navrail .side .count { min-width: 1.6em; text-align: center; padding: 0 6px; border-radius: 6px; background: var(--color-warn-tint); color: var(--color-warn); font-size: var(--text-s); font-weight: 700; }
+  .navrail .side a.disabled { color: rgb(255 255 255 / 0.5); pointer-events: none; }
+  .navfoot { margin-top: auto; display: flex; flex-direction: column; gap: var(--space-4); }
+  .navfoot .roles { align-self: flex-start; }
+  .me { display: flex; gap: var(--space-3); align-items: center; padding-top: var(--space-4); border-top: 1px solid rgb(255 255 255 / 0.25); }
+  .me > span:last-child { display: flex; flex-direction: column; line-height: 1.3; }
+  .avatar { flex: none; display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--color-brand-tint); color: var(--color-brand-deep); font-weight: 700; font-size: var(--text-s); }
+  .avatar.big { width: 48px; height: 48px; border-radius: 10px; font-size: var(--text-m); }
+  .content { min-width: 0; display: flex; flex-direction: column; }
+  .topbar { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); padding: var(--space-4) var(--space-5); background: var(--color-surface); border-bottom: 1px solid var(--color-line); }
+  .topbar .crumb { margin: 0; color: var(--color-ink-soft); font-weight: 500; }
+  .topbar #ph-id { font-family: var(--font-mono); }
+  main { display: block; max-width: 1280px; width: 100%; margin: 0; padding: var(--space-5); }
+  .intro { display: flex; justify-content: space-between; align-items: flex-end; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5); }
+  .intro h1 { font-size: 1.75rem; }
+  .intro .btn { text-decoration: none; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: var(--space-4); margin-bottom: var(--space-5); }
+  .card { padding: var(--space-4); background: var(--color-surface); border: 1px solid var(--color-line); border-radius: 10px; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+  .card:hover { border-color: var(--color-brand); background: var(--color-surface); }
+  .card[aria-pressed="true"] { border-color: var(--color-brand); box-shadow: inset 0 3px 0 var(--color-brand); }
+  .card b { display: block; font-size: 2rem; line-height: 1.2; color: var(--color-brand-deep); font-variant-numeric: tabular-nums; }
+  .card span { display: block; font-weight: 600; }
+  .card small { color: var(--color-ink-soft); font-size: var(--text-s); }
+  .work { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: var(--space-5); align-items: start; }
+  .work.solo { grid-template-columns: minmax(0, 1fr); }
+  .col { display: flex; flex-direction: column; gap: var(--space-5); min-width: 0; }
+  .col > section + section, .col > div + section, .col > section + div { margin-top: 0; }
+  .assist { position: sticky; top: var(--space-4); }
+  .assist .log { max-height: 50vh; }
+  .quick { display: flex; flex-direction: column; align-items: stretch; gap: var(--space-2); margin-top: var(--space-3); }
+  .quick button { text-align: left; white-space: normal; }
+  .filters { display: flex; gap: var(--space-2); flex-wrap: wrap; margin-top: var(--space-4); }
+  .filters button { background: none; border: 0; color: var(--color-ink-soft); padding: 6px 12px; border-radius: 6px; }
+  .filters button:hover { background: #f4f4f4; color: var(--color-ink); }
+  .filters button[aria-pressed="true"] { background: var(--color-brand-tint); color: var(--color-brand); }
+  #cases-search { margin-top: var(--space-3); }
+  .who { display: flex; gap: var(--space-3); align-items: center; }
+  .who .avatar { width: 32px; height: 32px; border-radius: 8px; }
+  .casepanel { padding: 0; overflow: hidden; }
+  .casepanel > .case-head { display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap; padding: var(--space-5) var(--space-5) 0; }
+  .case-head .grow { flex: 1; min-width: 160px; }
+  .steps { list-style: none; margin: var(--space-4) 0 0; padding: 0 var(--space-5) var(--space-4); display: flex; gap: var(--space-2); flex-wrap: wrap; border-bottom: 1px solid var(--color-line); counter-reset: step; font-size: var(--text-s); }
+  .steps li { counter-increment: step; display: flex; align-items: center; gap: var(--space-2); color: var(--color-ink-soft); }
+  .steps li + li::before { content: ''; width: 28px; height: 1px; background: var(--color-line); }
+  .steps li span::before { content: counter(step); display: inline-grid; place-items: center; width: 22px; height: 22px; margin-right: 6px; border-radius: 50%; border: 1px solid var(--color-line); font-size: 0.75rem; }
+  .steps li.done span::before { content: '\2713'; background: var(--color-ok-tint); border-color: var(--color-ok); color: var(--color-ok); }
+  .steps li.now { color: var(--color-brand); font-weight: 600; }
+  .steps li.now span::before { background: var(--color-brand); border-color: var(--color-brand); color: #fff; }
+  .casepanel .pair { display: grid; }
+  .casepanel section { border: 0; border-radius: 0; background: none; padding: var(--space-5); }
+  .casepanel .pair > section + section { border-left: 1px solid var(--color-line); }
+  .casepanel #bm-left, .casepanel #bm-right { gap: 0; border-bottom: 1px solid var(--color-line); }
+  .casepanel #bm-left { grid-template-columns: minmax(0, 1fr); }
+  .casepanel #result { border-top: 1px solid var(--color-line); }
+  .foot { padding: 0 var(--space-5) var(--space-5); margin: 0; max-width: 1280px; }
+  @media (max-width: 1100px) { .work { grid-template-columns: minmax(0, 1fr); } .assist { position: static; order: -1; } }
+  @media (max-width: 900px) {
+    .app { grid-template-columns: minmax(0, 1fr); }
+    .navrail { position: static; height: auto; flex-direction: row; flex-wrap: wrap; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); }
+    .navrail .branchbox, .navrail .me { display: none; }
+    .navrail .side { flex-direction: row; flex-wrap: wrap; order: 3; width: 100%; }
+    .navfoot { margin: 0 0 0 auto; }
+    main { padding: var(--space-4); }
+    .topbar { padding: var(--space-3) var(--space-4); }
+    .casepanel .pair > section + section { border-left: 0; border-top: 1px solid var(--color-line); }
+    .casepanel > .case-head, .casepanel section { padding-left: var(--space-4); padding-right: var(--space-4); }
+    .steps { padding: 0 var(--space-4) var(--space-4); }
+    .steps li + li::before { width: 12px; }
+  }
+  #cases-count { display: none; }
+  .work:not(.solo) table.cases th:nth-child(5), .work:not(.solo) table.cases td:nth-child(5) { display: none; }
+  .casepanel .pair, .casepanel #bm-right { grid-template-columns: minmax(0, 1fr); }
+  .casepanel .pair > section + section { border-left: 0; border-top: 1px solid var(--color-line); }
+  .steps li + li::before { width: 16px; }
+  @media (max-width: 560px) { table.cases th:nth-child(n+4), table.cases td:nth-child(n+4) { display: none; } }
 </style>
 </head>
 <body>
-<header class="top"><div class="top-inner">
-  <p class="wordmark">BPI <span class="name">Counter Check<small>Better prepared. Better connected.</small></span></p>
-  <nav class="roles" aria-label="View"><a id="nav-bm" href="#">Branch</a><a id="nav-bso" href="#">BSO</a></nav>
-</div></header>
-
-<div class="shell">
-<nav class="side" id="side" aria-label="Sections"></nav>
-<main id="main">
-  <div class="pagehead full">
-    <div><p class="crumb"><span id="ph-ws">Branch workspace</span> / <span id="ph-id"></span></p><h1 id="ph-title">New referral</h1><p class="soft" id="ph-meta"></p></div>
-    <div class="ph-right"><span id="ph-status" class="status">Not saved yet</span><p class="soft" id="ph-sub"></p></div>
+<div class="app">
+<aside class="navrail">
+  <p class="wordmark">BPI <span class="name">Counter Check<small>Business lending</small></span></p>
+  <div class="branchbox"><strong>Sample branch</strong><small id="ws-role">Branch workspace</small></div>
+  <nav class="side" id="side" aria-label="Sections"></nav>
+  <div class="navfoot">
+    <nav class="roles" aria-label="View"><a id="nav-bm" href="#">Branch</a><a id="nav-bso" href="#">BSO</a></nav>
+    <p class="me"><span class="avatar" id="me-initials">BM</span><span><strong id="me-name">Sample branch manager</strong><small>Synthetic user</small></span></p>
   </div>
-  <!-- Branch manager -->
-  <div id="bm-left" class="hidden full pair">
-    <section id="chat">
-      <div class="row"><h2>Intake assistant</h2><span class="soft">English or Taglish</span></div>
-      <div class="modes" role="group" aria-label="What the assistant does">
-        <button id="mode-fill" class="secondary small" aria-pressed="true">Fill the form</button>
-        <button id="mode-ask" class="secondary small hidden" aria-pressed="false">Ask about this case</button>
-      </div>
-      <div class="log" id="chat-log" aria-live="polite"></div>
-      <div class="composer">
-        <textarea id="chat-in" rows="5" maxlength="1000" aria-label="Message to the assistant">Si Elena Santos, may-ari ng Elena's Artisan Bakery, sole prop, food business. 750k ang loan. Married kay Ramon Santos, may BPI account.</textarea>
-        <button id="chat-send">Send</button>
-      </div>
-      <p class="soft" id="chat-hint">Tell it what the client said. It fills the case form, and you check it before you save. The note here is a sample.</p>
-    </section>
+</aside>
+<div class="content">
+<header class="topbar"><p class="crumb"><span id="ph-ws">Branch workspace</span> / <span id="crumb-page">Loan referrals</span> / <span id="ph-id"></span></p><span class="soft" id="today"></span></header>
+<main id="main">
+  <div class="intro" id="overview">
+    <div><h1 id="page-title">Loan referrals</h1><p class="soft" id="page-sub">Check each MSME client's papers at the counter before the BSO sees them.</p></div>
+    <a class="btn" id="new-ref" href="?">New referral</a>
+  </div>
+  <div class="cards" id="cards" aria-live="polite"></div>
+  <div class="work" id="work">
+  <div class="col">
+  <section id="cases-box">
+    <div class="row"><div><h2 id="cases-title">Referral pipeline</h2><div class="counts" id="cases-count"></div><p class="soft" id="cases-metric" style="margin-top:var(--space-2)"></p></div><button id="cases-refresh" class="small secondary">Refresh</button></div>
+    <div class="filters" id="cases-filters" role="group" aria-label="Filter referrals"></div><input id="cases-search" type="search" placeholder="Search client, business or referral number" aria-label="Search referrals">
+    <div class="tablewrap"><table class="trace cases">
+      <thead><tr><th>Client and business</th><th>Loan amount</th><th>Status</th><th>Open items</th><th>Last update</th></tr></thead>
+      <tbody id="cases"></tbody>
+    </table></div>
+    <div class="pager hidden" id="cases-pager"><button class="small secondary" id="cases-prev">Previous</button><span class="soft" id="cases-page"></span><button class="small secondary" id="cases-next">Next</button></div>
+  </section>
+
+  <section id="case-panel" class="casepanel hidden">
+    <div class="case-head"><span class="avatar big" id="ph-initials" aria-hidden="true">NR</span><div class="grow"><h2 id="ph-title">New referral</h2><p class="soft" id="ph-meta"></p></div><div class="ph-right"><span id="ph-status" class="status">Not saved yet</span><p class="soft" id="ph-sub"></p></div></div>
+    <ol class="steps" id="steps" aria-label="Where this referral is"></ol>
+  <div id="bm-left" class="hidden">
     <section id="case-sec">
       <h2>Case</h2>
       <p class="soft">The branch confirms these fields. The checklist comes from the rules, not from the AI.</p>
@@ -234,8 +328,7 @@
       <div class="actions"><button id="save-case">Save case</button></div>
     </section>
   </div>
-
-  <div id="bm-right" class="hidden full pair">
+  <div id="bm-right" class="hidden">
     <section id="req-sec">
       <div class="row"><h2 id="req-title">Papers this case needs</h2><span class="soft" id="req-count"></span></div>
       <p class="soft" id="req-for">Save the case above to see the papers this client needs.</p>
@@ -279,15 +372,17 @@
       </details>
     </section>
   </div>
-
-  <!-- BSO -->
-  <section id="cases-box" class="full">
-    <div class="row"><div><h2 id="cases-title">All cases</h2><div class="counts" id="cases-count"></div><p class="soft" id="cases-metric" style="margin-top:var(--space-2)"></p></div><button id="cases-refresh" class="small secondary">Refresh</button></div>
-    <div class="tablewrap"><table class="trace cases">
-      <thead><tr><th>Referral</th><th>Business</th><th>Status</th><th>Open items</th><th>Last update</th><th>Amount</th><th>Structure and industry</th></tr></thead>
-      <tbody id="cases"></tbody>
-    </table></div>
-    <div class="pager hidden" id="cases-pager"><button class="small secondary" id="cases-prev">Previous</button><span class="soft" id="cases-page"></span><button class="small secondary" id="cases-next">Next</button></div>
+  </section>
+  <section id="products" class="hidden">
+    <h2>Loan products</h2>
+    <p class="soft">These are BPI's MSME loan types. The BSO picks the product with the client, and this page doesn't suggest one.</p>
+    <table class="trace products"><thead><tr><th>Product</th><th>Amount</th><th>Source</th></tr></thead><tbody>
+      <tr><td>Ka-Negosyo SME Term Loan</td><td>From PHP 300,000</td><td><a href="https://www.bpi.com.ph/sme-banking/loans/sme-term-loan" target="_blank" rel="noopener">BPI page</a></td></tr>
+      <tr><td>Ka-Negosyo Credit Line</td><td>From PHP 1,000,000</td><td><a href="https://www.bpi.com.ph/sme-banking/loans/sme-credit-line" target="_blank" rel="noopener">BPI page</a></td></tr>
+      <tr><td>Property Acquisition Loan</td><td>From PHP 1,000,000</td><td><a href="https://www.bpi.com.ph/sme-banking/loans/property-acquisition-loan" target="_blank" rel="noopener">BPI page</a></td></tr>
+      <tr><td>Ready Loan</td><td>Up to PHP 300,000</td><td><a href="https://www.bpi.com.ph/sme-banking/loans/ready-loan" target="_blank" rel="noopener">BPI page</a></td></tr>
+    </tbody></table>
+    <p class="soft" style="margin-top:8px">The amounts come from BPI's public pages, read once and not cross-checked.</p>
   </section>
   <div id="bso-left" class="hidden">
     <section>
@@ -337,9 +432,28 @@
       <ul class="items" id="b-headsup"></ul>
     </section>
   </div>
+  </div>
+  <aside class="assist hidden" id="assist">
+    <section id="chat">
+      <div class="row"><h2>Referral assistant</h2><span class="soft">English or Taglish</span></div>
+      <div class="modes" role="group" aria-label="What the assistant does">
+        <button id="mode-fill" class="secondary small" aria-pressed="true">Fill the form</button>
+        <button id="mode-ask" class="secondary small hidden" aria-pressed="false">Ask about this case</button>
+      </div>
+      <div class="log" id="chat-log" aria-live="polite"></div>
+      <div class="composer">
+        <textarea id="chat-in" rows="5" maxlength="1000" aria-label="Message to the assistant">Si Elena Santos, may-ari ng Elena's Artisan Bakery, sole prop, food business. 750k ang loan. Married kay Ramon Santos, may BPI account.</textarea>
+        <button id="chat-send">Send</button>
+      </div>
+      <div class="quick hidden" id="quick"><button class="secondary small" data-q="Ano pa ang kulang?">What requirements are missing?</button><button class="secondary small" data-q="Ano ang next step dito?">What happens next?</button><button class="secondary small" data-q="Bakit ito ibinalik ng BSO?">Why did the BSO return it?</button></div>
+      <p class="soft" id="chat-hint">Tell it what the client said. It fills the case form, and you check it before you save. The note here is a sample.</p>
+    </section>
+  </aside>
+  </div>
 </main>
-</div>
 <footer class="foot"><span>BPI DATA Wave 2026 prototype. Synthetic data only.</span><span>The branch prepares, the BSO assesses, and Credit decides.</span></footer>
+</div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
 <script src="preview.js"></script>
