@@ -410,14 +410,14 @@
   .product a { font-size: var(--text-s); font-weight: 500; }
   @media (max-width: 560px) { #chat > .row:first-child { margin: calc(-1 * var(--space-4)) calc(-1 * var(--space-4)) var(--space-4); padding: var(--space-3) var(--space-4); } }
   /* rail from the team's mockup: gold accents, one column, more room */
-  @media (min-width: 901px) { .app { grid-template-columns: 272px minmax(0, 1fr); } }
+  @media (min-width: 901px) { .app { grid-template-columns: 288px minmax(0, 1fr); } }
   .navrail { padding: var(--space-6) var(--space-5) var(--space-5); gap: var(--space-6); }
   .wscard { padding: 0; background: none; border: 0; gap: var(--space-5); }
   .wscard .wordmark { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.03em; gap: var(--space-4); }
   .wscard .wordmark .name { display: block; padding-left: var(--space-4); border-left: 1px solid #e1c781; color: #e1c781; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; line-height: 1.5; }
   .wscard .branchbox { padding: var(--space-4); gap: var(--space-4); border: 1px solid rgb(225 199 129 / 0.5); border-radius: 10px; background: rgb(255 255 255 / 0.04); }
   .wscard .branchbox > svg { color: #e1c781; opacity: 1; }
-  .wscard .branchbox strong { font-size: 1.0625rem; }
+  .wscard .branchbox strong { font-size: 0.9375rem; white-space: nowrap; }
   .wscard .branchbox small { color: rgb(238 217 213 / 0.85); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; }
   .navrail .side { width: 100%; gap: var(--space-2); }
   .navrail .side a { box-sizing: border-box; width: 100%; padding: 12px var(--space-4); }
@@ -437,22 +437,22 @@
 <aside class="navrail">
   <div class="wscard">
     <p class="wordmark">BPI <span class="name">Business<br>lending</span></p>
-    <div class="branchbox" data-icon="bank"><span><strong id="ws-name">Sample branch</strong><small id="ws-code">Branch 001</small></span></div>
+    <div class="branchbox" data-icon="bank"><span><strong id="ws-name">Makati Main Branch</strong><small id="ws-code">Branch 001</small></span></div>
   </div>
   <nav class="side" id="side" aria-label="Sections"></nav>
   <div class="navfoot">
-    <p class="pitchcard" data-icon="shield"><strong>A better start for every business</strong><span>Every referral is tracked in one workspace.</span></p>
-    <button class="me" type="button" popovertarget="acct" aria-label="Account"><span class="avatar" id="me-initials">BM</span><span><strong id="me-name">Sample branch manager</strong><small>Synthetic user</small></span></button>
+    <p class="pitchcard" data-icon="shield"><strong>Counter Check</strong><span>Papers get checked at the counter, before the BSO sees them.</span></p>
+    <button class="me" type="button" popovertarget="acct" aria-label="Account"><span class="avatar" id="me-initials">AR</span><span><strong id="me-name">Ana Reyes</strong><small id="me-job">Branch manager</small></span></button>
     <div id="acct" class="acct" popover>
-      <p class="acct-h">Signed in as</p>
-      <p class="acct-row on"><span class="avatar" id="acct-me-initials">BM</span><span><strong id="acct-me-name">Sample branch manager</strong><small id="acct-me-role">Sample branch</small></span><span data-icon="check"></span></p>
+      <p class="acct-h">Signed in as (sample accounts)</p>
+      <p class="acct-row on"><span class="avatar" id="acct-me-initials">AR</span><span><strong id="acct-me-name">Ana Reyes</strong><small id="acct-me-role">Branch manager</small></span><span data-icon="check"></span></p>
       <p class="acct-h">Switch account</p>
-      <a class="acct-row" id="acct-other" href="#"><span class="avatar" id="acct-o-initials">BS</span><span><strong id="acct-o-name">Sample BSO</strong><small id="acct-o-role">BSO workspace</small></span></a>
+      <a class="acct-row" id="acct-other" href="#"><span class="avatar" id="acct-o-initials">MC</span><span><strong id="acct-o-name">Marco Cruz</strong><small id="acct-o-role">BSO, Business Banking</small></span></a>
     </div>
   </div>
 </aside>
 <div class="content">
-<header class="topbar"><p class="crumb"><span id="ph-ws">Branch workspace</span> / <span id="crumb-page">Loan referrals</span><span id="ph-id"></span></p><span class="right"><span class="soft today" id="today"></span><span class="avatar" id="top-initials" aria-hidden="true">BM</span></span></header>
+<header class="topbar"><p class="crumb"><span id="ph-ws">Branch workspace</span> / <span id="crumb-page">Loan referrals</span><span id="ph-id"></span></p><span class="right"><span class="soft today" id="today"></span><span class="avatar" id="top-initials" aria-hidden="true">AR</span></span></header>
 <main id="main">
   <div class="intro" id="overview">
     <div><h1 id="page-title">Loan referrals</h1><p class="soft" id="page-sub">Check each MSME client's papers at the counter before the BSO sees them.</p></div>

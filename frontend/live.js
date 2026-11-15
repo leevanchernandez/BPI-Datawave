@@ -105,7 +105,16 @@ if (role === 'bm') {
   new MutationObserver(mirror).observe($('handoff'), { attributes: true }); new MutationObserver(mirror).observe($('result'), { attributes: true }); mirror();
   $('sheet-send').onclick = () => $('handoff').click();
 }
-if (role === 'bso') { $('work').classList.add('solo'); $('ws-name').textContent = 'Sample area'; $('ws-code').textContent = 'Area 1'; $('me-initials').textContent = $('acct-me-initials').textContent = $('top-initials').textContent = 'BS'; $('me-name').textContent = $('acct-me-name').textContent = 'Sample BSO'; $('acct-me-role').textContent = 'BSO workspace'; $('acct-o-initials').textContent = 'BM'; $('acct-o-name').textContent = 'Sample branch manager'; $('acct-o-role').textContent = 'Sample branch'; $('page-title').textContent = 'Referral queue'; $('page-sub').textContent = 'Review what the branches sent, return what needs fixing, and endorse complete cases to Credit.'; $('new-ref').classList.add('hidden'); }
+// synthetic people for the two views
+const WHO = { bm: ['AR', 'Ana Reyes', 'Branch manager', 'Makati Main Branch', 'Branch 001'], bso: ['MC', 'Marco Cruz', 'BSO, Business Banking', 'Business Banking', 'Area 1'] };
+{
+  const [ini, name, job, ws, code] = WHO[role], [oIni, oName, oJob] = WHO[role === 'bm' ? 'bso' : 'bm'];
+  for (const id of ['me-initials', 'acct-me-initials', 'top-initials']) $(id).textContent = ini;
+  $('me-name').textContent = $('acct-me-name').textContent = name; $('me-job').textContent = $('acct-me-role').textContent = job;
+  $('ws-name').textContent = ws; $('ws-code').textContent = code;
+  $('acct-o-initials').textContent = oIni; $('acct-o-name').textContent = oName; $('acct-o-role').textContent = oJob;
+}
+if (role === 'bso') { $('work').classList.add('solo'); $('page-title').textContent = 'Referral queue'; $('page-sub').textContent = 'Review what the branches sent, return what needs fixing, and endorse complete cases to Credit.'; $('new-ref').classList.add('hidden'); }
 $('today').textContent = new Date().toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'Asia/Manila' });
 const initials = (t) => String(t || '').replace(/[^A-Za-z ]/g, ' ').trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || 'NR';
 // step line from the case status
