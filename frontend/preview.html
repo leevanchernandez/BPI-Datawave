@@ -234,7 +234,7 @@
   .filters button { background: none; border: 0; color: var(--color-ink-soft); padding: 6px 12px; border-radius: 6px; }
   .filters button:hover { background: #f4f4f4; color: var(--color-ink); }
   .filters button[aria-pressed="true"] { background: var(--color-brand-tint); color: var(--color-brand); }
-  #cases-search { margin-top: var(--space-3); }
+  .search { margin-top: var(--space-3); }
   .who { display: flex; gap: var(--space-3); align-items: center; }
   .who .avatar { width: 32px; height: 32px; border-radius: 8px; }
   .casepanel { padding: 0; overflow: hidden; }
@@ -276,13 +276,31 @@
   .steps li + li::before { width: 16px; }
   @media (max-width: 560px) { table.cases th:nth-child(2), table.cases td:nth-child(2) { display: none; } .card b { font-size: 1.5rem; } }
   @media (max-width: 560px) { table.cases th:nth-child(n+4), table.cases td:nth-child(n+4) { display: none; } }
+
+  /* icons */
+  h2 > svg, button > svg, .btn > svg { display: inline-block; vertical-align: -3px; margin: 0 8px 0 0; }
+  h2 > svg { width: 20px; height: 20px; color: var(--color-brand); }
+  button.small > svg { width: 15px; height: 15px; margin-right: 5px; }
+  .mark svg { width: 30px; height: 30px; margin: 0; display: block; }
+  .wordmark .mark { margin-right: -4px; }
+  .branchbox { flex-direction: row; gap: var(--space-3); align-items: center; }
+  .branchbox > svg { width: 28px; height: 28px; margin: 0; flex: none; opacity: 0.9; }
+  .branchbox > span { display: flex; flex-direction: column; }
+  .navrail .side a svg { width: 19px; height: 19px; margin: 0 10px 0 0; flex: none; }
+  .navrail .side a .lbl { flex: 1; display: flex; align-items: center; }
+  .card .ic { float: right; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 10px; background: var(--color-brand-tint); color: var(--color-brand); }
+  .card .ic svg { margin: 0; width: 20px; height: 20px; }
+  .search { position: relative; }
+  .search svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); margin: 0; color: var(--color-ink-soft); pointer-events: none; }
+  .search input { padding-left: 38px; }
+  .today::before { content: ''; }
 </style>
 </head>
 <body>
 <div class="app">
 <aside class="navrail">
-  <p class="wordmark">BPI <span class="name">Counter Check<small>Business lending</small></span></p>
-  <div class="branchbox"><strong>Sample branch</strong><small id="ws-role">Branch workspace</small></div>
+  <p class="wordmark"><span class="mark" data-icon="logo"></span>BPI <span class="name">Counter Check<small>Business lending</small></span></p>
+  <div class="branchbox" data-icon="bank"><span><strong>Sample branch</strong><small id="ws-role">Branch workspace</small></span></div>
   <nav class="side" id="side" aria-label="Sections"></nav>
   <div class="navfoot">
     <nav class="roles" aria-label="View"><a id="nav-bm" href="#">Branch</a><a id="nav-bso" href="#">BSO</a></nav>
@@ -290,18 +308,18 @@
   </div>
 </aside>
 <div class="content">
-<header class="topbar"><p class="crumb"><span id="ph-ws">Branch workspace</span> / <span id="crumb-page">Loan referrals</span> / <span id="ph-id"></span></p><span class="soft" id="today"></span></header>
+<header class="topbar"><p class="crumb"><span id="ph-ws">Branch workspace</span> / <span id="crumb-page">Loan referrals</span> / <span id="ph-id"></span></p><span class="soft today" id="today"></span></header>
 <main id="main">
   <div class="intro" id="overview">
     <div><h1 id="page-title">Loan referrals</h1><p class="soft" id="page-sub">Check each MSME client's papers at the counter before the BSO sees them.</p></div>
-    <a class="btn" id="new-ref" href="?">New referral</a>
+    <a class="btn" id="new-ref" data-icon="plus" href="?">New referral</a>
   </div>
   <div class="cards" id="cards" aria-live="polite"></div>
   <div class="work" id="work">
   <div class="col">
   <section id="cases-box">
-    <div class="row"><div><h2 id="cases-title">Referral pipeline</h2><div class="counts" id="cases-count"></div><p class="soft" id="cases-metric" style="margin-top:var(--space-2)"></p></div><button id="cases-refresh" class="small secondary">Refresh</button></div>
-    <div class="filters" id="cases-filters" role="group" aria-label="Filter referrals"></div><input id="cases-search" type="search" placeholder="Search client, business or referral number" aria-label="Search referrals">
+    <div class="row"><div><h2 data-icon="pipeline" id="cases-title">Referral pipeline</h2><div class="counts" id="cases-count"></div><p class="soft" id="cases-metric" style="margin-top:var(--space-2)"></p></div><button id="cases-refresh" data-icon="refresh" class="small secondary">Refresh</button></div>
+    <div class="filters" id="cases-filters" role="group" aria-label="Filter referrals"></div><div class="search" data-icon="search"><input id="cases-search" type="search" placeholder="Search client, business or referral number" aria-label="Search referrals"></div>
     <div class="tablewrap"><table class="trace cases">
       <thead><tr><th>Client and business</th><th>Loan amount</th><th>Status</th><th>Open items</th><th>Last update</th></tr></thead>
       <tbody id="cases"></tbody>
@@ -314,7 +332,7 @@
     <ol class="steps" id="steps" aria-label="Where this referral is"></ol>
   <div id="bm-left" class="hidden">
     <section id="case-sec">
-      <h2>Case</h2>
+      <h2 data-icon="user">Case</h2>
       <p class="soft">The branch confirms these fields. The checklist comes from the rules, not from the AI.</p>
       <div class="fields">
         <div><label for="f-id">Referral number</label><input id="f-id" value="RF-2026-042"></div>
@@ -331,12 +349,12 @@
         <label class="check"><input type="checkbox" id="f-secured"> Secured loan (property collateral)</label>
         <label class="check"><input type="checkbox" id="f-bpi" checked> Working account is with BPI</label>
       </div>
-      <div class="actions"><button id="save-case">Save case</button></div>
+      <div class="actions"><button id="save-case" data-icon="save">Save case</button></div>
     </section>
   </div>
   <div id="bm-right" class="hidden">
     <section id="req-sec">
-      <div class="row"><h2 id="req-title">Papers this case needs</h2><span class="soft" id="req-count"></span></div>
+      <div class="row"><h2 data-icon="clipboard"><span id="req-title">Papers this case needs</span></h2><span class="soft" id="req-count"></span></div>
       <p class="soft" id="req-for">Save the case above to see the papers this client needs.</p>
       <ul class="items" id="checklist"></ul>
       <p class="soft" id="rules-note" style="margin-top:8px"></p>
@@ -347,15 +365,15 @@
       </div>
     </section>
     <section>
-      <div class="row"><h2>Documents</h2><span class="soft" id="photo-note">Photos are uploaded to the AWS backend (S3 in Singapore, deleted after 1 day). Use synthetic documents only.</span></div>
+      <div class="row"><h2 data-icon="camera">Documents</h2><span class="soft" id="photo-note">Photos are uploaded to the AWS backend (S3 in Singapore, deleted after 1 day). Use synthetic documents only.</span></div>
       <p class="soft" id="stack-switch"></p>
       <div class="actions">
-        <label class="btn secondary" style="margin:0">Take or add photos<input id="files" type="file" accept="image/*,application/pdf" multiple hidden></label>
-        <button id="run-check" disabled>Check documents</button>
-        <button id="clear-pages" class="secondary" disabled>Remove photos</button>
+        <label class="btn secondary" style="margin:0" data-icon="camera">Take or add photos<input id="files" type="file" accept="image/*,application/pdf" multiple hidden></label>
+        <button id="run-check" data-icon="scan" disabled>Check documents</button>
+        <button id="clear-pages" data-icon="trash" class="secondary" disabled>Remove photos</button>
       </div>
       <p class="soft">No papers at hand? Load the synthetic sample papers for the sample client, Elena Santos, so fill the form from the sample note first. Visit 1 has two planted problems, and visit 2 is complete.</p>
-      <div class="actions"><button id="sample-1" class="secondary small">Sample papers, visit 1</button><button id="sample-2" class="secondary small">Sample papers, visit 2</button></div>
+      <div class="actions"><button id="sample-1" data-icon="file" class="secondary small">Sample papers, visit 1</button><button id="sample-2" data-icon="file" class="secondary small">Sample papers, visit 2</button></div>
       <div class="empty" id="pages-empty"><strong>No pages yet</strong>Take photos of the papers, drop images or PDFs here, or load the sample papers.</div>
       <div class="progress hidden" id="progress" role="status" aria-live="polite"><div class="row"><strong id="progress-title">Checking the documents</strong><span class="soft" id="progress-time"></span></div><ol id="progress-steps"></ol><div class="bar"><i id="progress-bar"></i></div></div>
       <div class="pages" id="pages"></div>
@@ -371,7 +389,7 @@
       <h3 style="margin-top:16px">Message to send</h3>
       <div class="message" id="message"></div>
       <p class="soft" id="drafted"></p>
-      <div class="actions"><button id="handoff" disabled data-why="Send to BSO unlocks once nothing is missing.">Send to BSO</button></div>
+      <div class="actions"><button id="handoff" data-icon="arrow" disabled data-why="Send to BSO unlocks once nothing is missing.">Send to BSO</button></div>
       <details><summary>How the AI worked on this check</summary>
         <table class="trace"><thead><tr><th>Page</th><th>Lines read</th><th>Placed as</th><th>Model</th><th>Checked against the text</th></tr></thead><tbody id="trace"></tbody></table>
         <p class="soft" id="trace-note"></p>
@@ -380,7 +398,7 @@
   </div>
   </section>
   <section id="products" class="hidden">
-    <h2>Loan products</h2>
+    <h2 data-icon="briefcase">Loan products</h2>
     <p class="soft">These are BPI's MSME loan types. The BSO picks the product with the client, and this page doesn't suggest one.</p>
     <table class="trace products"><thead><tr><th>Product</th><th>Amount</th><th>Source</th></tr></thead><tbody>
       <tr><td>Ka-Negosyo SME Term Loan</td><td>From PHP 300,000</td><td><a href="https://www.bpi.com.ph/sme-banking/loans/sme-term-loan" target="_blank" rel="noopener">BPI page</a></td></tr>
@@ -392,47 +410,47 @@
   </section>
   <div id="bso-left" class="hidden">
     <section>
-      <h2>Case</h2>
+      <h2 data-icon="user">Case</h2>
       <label for="b-id">Referral number</label>
-      <div class="row"><input id="b-id" value="RF-2026-042" style="max-width:200px"><button id="b-open" class="secondary">Open</button></div>
+      <div class="row"><input id="b-id" value="RF-2026-042" style="max-width:200px"><button id="b-open" data-icon="folder" class="secondary">Open</button></div>
       <div id="b-summary" style="margin-top:12px"></div>
     </section>
     <section>
-      <h2>Timeline</h2>
+      <h2 data-icon="clock">Timeline</h2>
       <ul class="items timeline" id="b-events"></ul>
     </section>
   </div>
   <div id="bso-right" class="hidden">
     <section id="ask-box">
-      <div class="row"><h2>Ask about this case</h2><span class="soft">Answers come only from the case record.</span></div>
-      <div class="row" style="margin-top:8px"><input id="b-q" aria-label="Question about this case"><button id="b-ask">Ask</button></div>
+      <div class="row"><h2 data-icon="sparkles">Ask about this case</h2><span class="soft">Answers come only from the case record.</span></div>
+      <div class="row" style="margin-top:8px"><input id="b-q" aria-label="Question about this case"><button id="b-ask" data-icon="send">Ask</button></div>
       <div class="answer" id="b-answer"></div>
       <details id="b-trace-box" class="hidden"><summary>Tools the assistant used</summary><pre class="mono" id="b-trace" style="white-space:pre-wrap"></pre></details>
     </section>
     <section>
-      <div class="row"><h2>Open items</h2><span id="b-status" class="status"></span></div>
+      <div class="row"><h2 data-icon="clipboard">Open items</h2><span id="b-status" class="status"></span></div>
       <ul class="items" id="b-open-items"></ul>
     </section>
     <section>
-      <h2>Message from the last check</h2>
+      <h2 data-icon="message">Message from the last check</h2>
       <div class="message" id="b-message">No check yet.</div>
-      <div class="actions"><button id="b-approve" class="secondary" disabled>Approve message</button></div>
+      <div class="actions"><button id="b-approve" data-icon="check" class="secondary" disabled>Approve message</button></div>
     </section>
     <section>
-      <h2>Endorse to Credit</h2>
+      <h2 data-icon="badge">Endorse to Credit</h2>
       <p class="soft">Use this when the packet is complete. Credit decides the loan. A case endorsed with no return counts as complete the first time.</p>
-      <div class="actions"><button id="b-endorse" disabled data-why="Endorse unlocks when the case is with the BSO and nothing is open.">Endorse to Credit</button></div>
+      <div class="actions"><button id="b-endorse" data-icon="badge" disabled data-why="Endorse unlocks when the case is with the BSO and nothing is open.">Endorse to Credit</button></div>
     </section>
     <section>
-      <h2>Return to branch</h2>
+      <h2 data-icon="undo">Return to branch</h2>
       <p class="soft">Use this when the checklist passed but the branch still has something to fix. The branch sees your reason, and the AI drafts a heads-up from it for you to review.</p>
       <form id="b-return">
         <textarea id="b-return-reason" rows="2" maxlength="300" required aria-label="Reason for returning this case" placeholder="What does the branch need to fix?"></textarea>
-        <div class="actions"><button id="b-return-btn" disabled data-why="Type a reason first.">Return to branch</button></div>
+        <div class="actions"><button id="b-return-btn" data-icon="undo" disabled data-why="Type a reason first.">Return to branch</button></div>
       </form>
     </section>
     <section>
-      <h2>Heads up for branches</h2>
+      <h2 data-icon="warn">Heads up for branches</h2>
       <p class="soft">Branches see a heads-up only after you publish it, and only on cases like the one it came from. It is a reminder and it never changes the checklist.</p>
       <div id="b-drafts"></div>
       <ul class="items" id="b-headsup"></ul>
@@ -441,7 +459,7 @@
   </div>
   <aside class="assist hidden" id="assist">
     <section id="chat">
-      <div class="row"><h2>Referral assistant</h2><span class="soft">English or Taglish</span></div>
+      <div class="row"><h2 data-icon="sparkles">Referral assistant</h2><span class="soft">English or Taglish</span></div>
       <div class="modes" role="group" aria-label="What the assistant does">
         <button id="mode-fill" class="secondary small" aria-pressed="true">Fill the form</button>
         <button id="mode-ask" class="secondary small hidden" aria-pressed="false">Ask about this case</button>
@@ -449,9 +467,9 @@
       <div class="log" id="chat-log" aria-live="polite"></div>
       <div class="composer">
         <textarea id="chat-in" rows="5" maxlength="1000" aria-label="Message to the assistant" placeholder="Type what the client said, or a question about this case">Si Elena Santos, may-ari ng Elena's Artisan Bakery, sole prop, food business. 750k ang loan. Married kay Ramon Santos, may BPI account.</textarea>
-        <button id="chat-send">Send</button>
+        <button id="chat-send" data-icon="send">Send</button>
       </div>
-      <div class="quick hidden" id="quick"><button class="secondary small" data-q="Ano pa ang kulang?">What requirements are missing?</button><button class="secondary small" data-q="Ano ang next step dito?">What happens next?</button><button class="secondary small" data-q="Bakit ito ibinalik ng BSO?">Why did the BSO return it?</button></div>
+      <div class="quick hidden" id="quick"><button class="secondary small" data-icon="message" data-q="Ano pa ang kulang?">What requirements are missing?</button><button class="secondary small" data-icon="message" data-q="Ano ang next step dito?">What happens next?</button><button class="secondary small" data-icon="message" data-q="Bakit ito ibinalik ng BSO?">Why did the BSO return it?</button></div>
       <p class="soft" id="chat-hint">Tell it what the client said. It fills the case form, and you check it before you save. The note here is a sample.</p>
     </section>
   </aside>

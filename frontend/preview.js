@@ -15,6 +15,41 @@ const ICON = {
   warn: '<svg viewBox="0 0 24 24" class="warn" aria-hidden="true"><path d="M12 8v5M12 17h.01M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>',
   doc: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z M14 3v6h6"/></svg>',
 };
+const svg = (d) => `<svg viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
+Object.assign(ICON, Object.fromEntries(Object.entries({
+  logo: '<rect x="3" y="3" width="18" height="18" rx="5"/><path d="M8 12.5l3 3 5-6"/>',
+  grid: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>',
+  file: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/>',
+  briefcase: '<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>',
+  inbox: '<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  bank: '<path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/>',
+  layers: '<path d="M12 2l10 5-10 5L2 7z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>',
+  alert: '<circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>',
+  users: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+  badge: '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/>',
+  sparkles: '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 3v4M17 5h4"/>',
+  send: '<path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/>',
+  camera: '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>',
+  scan: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h5"/><path d="M14 3v6h6v2"/><circle cx="17" cy="17" r="3"/><path d="M21 21l-1.8-1.8"/>',
+  save: '<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/>',
+  arrow: '<path d="M5 12h14M12 5l7 7-7 7"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
+  trash: '<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>',
+  clipboard: '<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 14l2 2 4-4"/>',
+  clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+  refresh: '<path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/>',
+  undo: '<path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/>',
+  message: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+  folder: '<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>',
+  pipeline: '<path d="M3 6h18M3 12h12M3 18h6"/>',
+  check: '<path d="M5 12l5 5 9-11"/>',
+  warnline: '<path d="M12 8v5M12 17h.01M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>',
+}).map(([k, d]) => [k, svg(d)])));
+// put an icon at the start of every element marked data-icon
+const iconize = (root = document) => root.querySelectorAll('[data-icon]:not([data-iconized])').forEach((el) => { el.insertAdjacentHTML('afterbegin', el.dataset.icon === 'warn' ? ICON.warnline : ICON[el.dataset.icon] || ''); el.dataset.iconized = '1'; });
+iconize();
 const DOC_LABELS = { '': 'Auto', application_form: 'Application form', gov_id: 'Government ID', spouse_id: 'Spouse ID', registration: 'DTI or SEC registration', business_permit: "Mayor's permit", itr: 'Income tax return', financials: 'Financial statements', audited_fs: 'Audited FS', bank_statements: 'Bank statement', articles: 'Articles', bylaws: 'By-laws', gis: 'GIS', collateral: 'Collateral' };
 const statusClass = (s) => (s === 'Missing requirements' || s === 'Returned by BSO' ? 'missing' : s === 'Ready for BSO review' ? 'ready' : s === 'With BSO' ? 'with' : s === 'Endorsed to Credit' ? 'ready' : '');
 
@@ -126,7 +161,7 @@ if (role === 'bm') {
   let mode = 'fill';
   const SAMPLE = $('chat-in').value;
   const HINT = {
-    fill: 'Tell it what the client said. It fills the form below, and you check it before you save.',
+    fill: 'Tell it what the client said. It fills the case form, and you check it before you save.',
     ask: 'Ask about this saved case, for example what is still missing or why the BSO sent it back.',
   };
   const say = (who, text) => { const b = document.createElement('div'); b.className = `bubble ${who}`; b.textContent = text; $('chat-log').append(b); $('chat-log').scrollTop = $('chat-log').scrollHeight; return b; };
@@ -368,7 +403,7 @@ if (role === 'bm') {
       return;
     }
     const empty = $('checklist').innerHTML; $('checklist').innerHTML = skelLines(4);
-    try { const v = await api('GET', `/api/case?id=${encodeURIComponent(caseId())}`); fillForm(v.referral); lastView = v; renderChecklist(v); if ($('chat-in').value === SAMPLE) $('chat-in').value = ''; if (v.open.checked) { renderResult(v); markStale('These results are from the last saved check. Photos are not kept after a refresh, so add them again and press Check documents to update.'); } } catch { $('checklist').innerHTML = empty; } })();
+    try { const v = await api('GET', `/api/case?id=${encodeURIComponent(caseId())}`); fillForm(v.referral); lastView = v; renderChecklist(v); if ($('chat-in').value === SAMPLE) { $('chat-in').value = ''; $('chat-hint').textContent = HINT[mode]; } if (v.open.checked) { renderResult(v); markStale('These results are from the last saved check. Photos are not kept after a refresh, so add them again and press Check documents to update.'); } } catch { $('checklist').innerHTML = empty; } })();
   function fillForm(r) { $('f-business').value = r.business; $('f-name').value = r.name; $('f-type').value = r.type; $('f-industry').value = r.industry; $('f-amount').value = r.amount; $('f-civil').value = r.civilStatus; $('f-spouse').value = r.spouseName || ''; $('f-secured').checked = !!r.secured; $('f-bpi').checked = r.bpiAccount !== false; $('f-channel').value = r.channel || 'Branch walk-in'; }
 }
 
@@ -395,6 +430,7 @@ async function loadCases(btn) {
   if (done) done();
 }
 // count cards double as filters
+const CARD_ICON = { all: 'layers', attention: 'alert', bso: 'users', credit: 'badge' };
 const FILTERS = [
   ['all', 'Total referrals', 'All saved cases', () => true],
   ['attention', 'Needs attention', 'Missing papers or returned', (c) => ['Missing requirements', 'Returned by BSO', 'Draft'].includes(c.status)],
@@ -403,7 +439,7 @@ const FILTERS = [
 ];
 let filter = 'all', query = '';
 function renderCards(cases) {
-  $('cards').innerHTML = FILTERS.map(([k, t, sub, f]) => `<button class="card" data-filter="${k}" aria-pressed="${k === filter}"><span>${t}</span><b>${cases.filter(f).length}</b><small>${sub}</small></button>`).join('');
+  $('cards').innerHTML = FILTERS.map(([k, t, sub, f]) => `<button class="card" data-filter="${k}" aria-pressed="${k === filter}"><i class="ic">${ICON[CARD_ICON[k]]}</i><span>${t}</span><b>${cases.filter(f).length}</b><small>${sub}</small></button>`).join('');
   $('cases-filters').innerHTML = FILTERS.map(([k, t]) => `<button class="small" data-filter="${k}" aria-pressed="${k === filter}">${k === 'all' ? 'All referrals' : t}</button>`).join('');
   const c = document.querySelector('#side .count'); if (c) c.textContent = cases.length;
 }
@@ -543,7 +579,8 @@ function showView(key) {
   else { for (const [k, , ids] of VIEWS) for (const id of ids) $(id).classList.toggle('off', k !== key); $('overview').classList.toggle('off', key !== 'queue'); $('crumb-page').textContent = key === 'queue' ? 'Referral queue' : 'Selected case'; }
   for (const a of $('side').children) { if (a.dataset.view === key) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); }
 }
-$('side').innerHTML = VIEWS.map(([k, label]) => `<a href="#${k}" data-view="${k}">${label}${k === 'referrals' || k === 'queue' ? '<span class="count"></span>' : ''}</a>`).join('');
+const NAV_ICON = { overview: 'grid', referrals: 'file', products: 'briefcase', queue: 'inbox', case: 'user' };
+$('side').innerHTML = VIEWS.map(([k, label]) => `<a href="#${k}" data-view="${k}"><span class="lbl">${ICON[NAV_ICON[k]]}${label}</span>${k === 'referrals' || k === 'queue' ? '<span class="count"></span>' : ''}</a>`).join('');
 $('side').onclick = (e) => { const a = e.target.closest('a'); if (a) { e.preventDefault(); history.replaceState(null, '', `${location.search}#${a.dataset.view}`); showView(a.dataset.view); } };
 if (role === 'bm') { for (const a of $('side').children) if (a.dataset.view === 'overview') a.setAttribute('aria-current', 'page'); if (location.hash === '#case-panel') setTimeout(() => $('case-panel').scrollIntoView({ block: 'start' }), 600); }
 else showView(VIEWS.some(([k]) => k === location.hash.slice(1)) ? location.hash.slice(1) : !params.get('id') ? 'queue' : 'case');
