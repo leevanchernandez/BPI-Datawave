@@ -105,6 +105,8 @@ Regina asked on Nov 15 for the note step to be typed three ways for some humor, 
 - Taglish. Si Elena Santos, may-ari ng Elena's Artisan Bakery, sole prop siya, food business. Gusto niya mag-loan ng 750k. Kasal kay Ramon Santos, may BPI account na, walang collateral.
 - Nokia. musta po!! c elena santos po ung owner ng Elena's Artisan Bakery, sole prop po xa, fud bsnes. gs2 nya po mg loan ng 750k. kSal n po xa ky Ramon Santos, my bpi acct n po, wLa pong collateral. tnx po :)
 
+A silent real-time take of this run sheet is `~/Downloads/counter-check-demo-live-2026-11-15.mp4` (2:47, case `RF-2026-399`, all three note styles, the return and the re-check flagging the Aug to Oct statement). Talk over it, or record your own with it as the guide.
+
 The return step needs a BSO note that the sample photos fail. "Bank statements must cover Sep to Nov 2026." works because the visit 2 statement covers Aug to Oct 2026 (checked on AWS on Nov 15). A check takes 15 to 30 seconds, so keep talking or cut the wait in editing.
 
 ## Claims to avoid
