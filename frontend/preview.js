@@ -45,10 +45,10 @@ if (params.get('id')) { $('f-id').value = params.get('id'); $('b-id').value = pa
 navLinks();
 
 function checklistHtml(rows) {
-  return rows.map((r) => `<li>${ICON.doc}<span>${esc(r.title)}${r.reason ? ` <span class="src">(because: ${esc(r.reason)})</span>` : ''}<br>${r.sourceUrl
-    ? `<a class="chip" href="${esc(r.sourceUrl)}" target="_blank" rel="noopener">Source: BPI public page</a>`
-    : r.source === 'J1' ? `<span class="chip" title="${esc(r.sourceTitle)}">Source: BSO checklist</span>`
-    : '<span class="chip assumed">Team assumption, BSO confirms</span>'}</span><span></span></li>`).join('');
+  return rows.map((r) => `<li>${ICON.doc}<span>${esc(r.title)}${r.reason ? ` <span class="src">(because: ${esc(r.reason)})</span>` : ''}</span>${r.sourceUrl
+    ? `<a class="chip" href="${esc(r.sourceUrl)}" target="_blank" rel="noopener">BPI page</a>`
+    : r.source === 'J1' ? `<span class="chip" title="${esc(r.sourceTitle)}">BSO checklist</span>`
+    : '<span class="chip assumed">Assumed</span>'}</li>`).join('');
 }
 // a button shows a spinner and its own label while its request runs, and comes back as it was
 function busy(btn, label) {

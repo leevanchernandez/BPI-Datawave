@@ -228,20 +228,19 @@
       <label class="check"><input type="checkbox" id="f-bpi" checked> Working account is with BPI</label>
       <div class="actions"><button id="save-case">Save case</button></div>
     </section>
-    <section>
-      <details id="req-box" style="margin-top:0"><summary><h2 style="display:inline">Requirements</h2> <span class="soft" id="req-count">Save the case to see the papers</span></summary>
+  </div>
+
+  <div id="bm-right" class="hidden">
+    <section id="req-sec">
+      <div class="row"><h2>Requirements</h2><span class="soft" id="req-count"></span></div>
       <ul class="items" id="checklist"><li><span></span><span class="soft">Save the case to see the papers this client needs.</span><span></span></li></ul>
       <p class="soft" id="rules-note" style="margin-top:8px"></p>
-      </details>
       <div id="headsup-box" class="hidden">
         <h3 style="margin-top:16px">Heads up from BSO</h3>
         <ul class="items" id="headsup"></ul>
         <p class="soft">These are reminders from past returns, and a BSO published each one. They do not change the checklist.</p>
       </div>
     </section>
-  </div>
-
-  <div id="bm-right" class="hidden">
     <section>
       <div class="row"><h2>Documents</h2><span class="soft" id="photo-note">Photos are uploaded to the AWS backend (S3 in Singapore, deleted after 1 day). Use synthetic documents only.</span></div>
       <p class="soft" id="stack-switch"></p>
