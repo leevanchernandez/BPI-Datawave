@@ -668,7 +668,7 @@ const VIEWS = role === 'bm'
 if (role === 'bm') $('by-status').after($('cases-metric'));
 function showView(key) {
   for (const [k, , ids] of VIEWS) for (const id of ids) $(id).classList.toggle('off', k !== key);
-  if (role === 'bm') { $('ph-id').classList.toggle('off', $('casepage').hidden); if (!$('casepage').hidden) { $('side').querySelector('[data-view=referrals]')?.setAttribute('aria-current', 'page'); return; } $('crumb-page').textContent = $('page-title').textContent = VIEWS.find(([k]) => k === key)[1]; $('page-sub').textContent = SUB[key]; }
+  if (role === 'bm') { $('ph-id').classList.toggle('off', $('casepage').hidden); if (!$('casepage').hidden) { $('cards').classList.add('off'); $('side').querySelector('[data-view=referrals]')?.setAttribute('aria-current', 'page'); return; } $('crumb-page').textContent = $('page-title').textContent = VIEWS.find(([k]) => k === key)[1]; $('page-sub').textContent = SUB[key]; }
   else { $('overview').classList.toggle('off', key !== 'queue'); $('crumb-page').textContent = key === 'queue' ? 'Referral queue' : 'Selected case'; }
   for (const a of $('side').children) { if (a.dataset.view === key) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); }
 }
