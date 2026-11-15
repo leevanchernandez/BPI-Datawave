@@ -53,6 +53,13 @@
   main { max-width: 1180px; margin: 0 auto; padding: var(--space-5); display: grid; grid-template-columns: minmax(0, 380px) minmax(0, 1fr); gap: var(--space-5); }
   @media (max-width: 900px) { main { grid-template-columns: minmax(0, 1fr); gap: var(--space-5); padding: var(--space-4); } }
   .full { grid-column: 1 / -1; }
+  .pair { display: grid; grid-template-columns: minmax(0, 360px) minmax(0, 1fr); gap: var(--space-5); align-items: start; }
+  .pair > #result { grid-column: 1 / -1; }
+  .pair > section + section { margin-top: 0; }
+  #bm-right { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  @media (max-width: 900px) { .pair, #bm-right { grid-template-columns: minmax(0, 1fr); } }
+  .fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: 0 var(--space-3); }
+  .checks { display: flex; flex-wrap: wrap; gap: 0 var(--space-5); }
 
   section { padding: var(--space-5); background: var(--color-surface); border: 1px solid var(--color-line); border-radius: 10px; }
   section + section { margin-top: var(--space-4); }
@@ -192,48 +199,47 @@
     <div class="ph-right"><span id="ph-status" class="status">Not saved yet</span><p class="soft" id="ph-sub"></p></div>
   </div>
   <!-- Branch manager -->
-  <div id="bm-left" class="hidden">
+  <div id="bm-left" class="hidden full pair">
     <section id="chat">
       <div class="row"><h2>Intake assistant</h2><span class="soft">English or Taglish</span></div>
       <div class="modes" role="group" aria-label="What the assistant does">
         <button id="mode-fill" class="secondary small" aria-pressed="true">Fill the form</button>
-        <button id="mode-ask" class="secondary small" aria-pressed="false">Ask about this case</button>
+        <button id="mode-ask" class="secondary small hidden" aria-pressed="false">Ask about this case</button>
       </div>
       <div class="log" id="chat-log" aria-live="polite"></div>
       <div class="composer">
         <textarea id="chat-in" rows="5" maxlength="1000" aria-label="Message to the assistant">Si Elena Santos, may-ari ng Elena's Artisan Bakery, sole prop, food business. 750k ang loan. Married kay Ramon Santos, may BPI account.</textarea>
         <button id="chat-send">Send</button>
       </div>
-      <p class="soft" id="chat-hint">Tell it what the client said. It fills the form below, and you check it before you save. The note here is a sample.</p>
+      <p class="soft" id="chat-hint">Tell it what the client said. It fills the case form, and you check it before you save. The note here is a sample.</p>
     </section>
-    <section>
+    <section id="case-sec">
       <h2>Case</h2>
       <p class="soft">The branch confirms these fields. The checklist comes from the rules, not from the AI.</p>
-      <div class="two">
+      <div class="fields">
         <div><label for="f-id">Referral number</label><input id="f-id" value="RF-2026-042"></div>
         <div><label for="f-channel">Channel</label><select id="f-channel"><option>Branch walk-in</option><option>Ka-Negosyo online</option></select></div>
-      </div>
-      <label for="f-type">Business structure</label><select id="f-type"><option>Sole proprietorship</option><option>Partnership</option><option>Corporation</option></select>
-      <label for="f-business">Business name</label><input id="f-business">
-      <label for="f-name">Owner or signatory</label><input id="f-name">
-      <div class="two">
+        <div><label for="f-type">Business structure</label><select id="f-type"><option>Sole proprietorship</option><option>Partnership</option><option>Corporation</option></select></div>
+        <div><label for="f-business">Business name</label><input id="f-business"></div>
+        <div><label for="f-name">Owner or signatory</label><input id="f-name"></div>
         <div><label for="f-industry">Industry</label><select id="f-industry"><option>Food & beverage</option><option>Services</option><option>Wholesale & retail</option><option>Manufacturing</option><option>Construction</option></select></div>
         <div><label for="f-amount">Loan amount (PHP)</label><input id="f-amount" inputmode="numeric"></div>
-      </div>
-      <div class="two">
         <div><label for="f-civil">Civil status</label><select id="f-civil"><option value="married">Married</option><option value="single">Single</option><option value="widowed">Widowed</option><option value="separated">Separated</option></select></div>
         <div><label for="f-spouse">Spouse name</label><input id="f-spouse"></div>
       </div>
-      <label class="check"><input type="checkbox" id="f-secured"> Secured loan (property collateral)</label>
-      <label class="check"><input type="checkbox" id="f-bpi" checked> Working account is with BPI</label>
+      <div class="checks">
+        <label class="check"><input type="checkbox" id="f-secured"> Secured loan (property collateral)</label>
+        <label class="check"><input type="checkbox" id="f-bpi" checked> Working account is with BPI</label>
+      </div>
       <div class="actions"><button id="save-case">Save case</button></div>
     </section>
   </div>
 
-  <div id="bm-right" class="hidden">
+  <div id="bm-right" class="hidden full pair">
     <section id="req-sec">
-      <div class="row"><h2>Requirements</h2><span class="soft" id="req-count"></span></div>
-      <ul class="items" id="checklist"><li><span></span><span class="soft">Save the case to see the papers this client needs.</span><span></span></li></ul>
+      <div class="row"><h2 id="req-title">Papers this case needs</h2><span class="soft" id="req-count"></span></div>
+      <p class="soft" id="req-for">Save the case above to see the papers this client needs.</p>
+      <ul class="items" id="checklist"></ul>
       <p class="soft" id="rules-note" style="margin-top:8px"></p>
       <div id="headsup-box" class="hidden">
         <h3 style="margin-top:16px">Heads up from BSO</h3>

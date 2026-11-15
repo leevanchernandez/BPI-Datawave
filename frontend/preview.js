@@ -98,6 +98,10 @@ if (role === 'bm') {
   function renderChecklist(v) {
     $('checklist').innerHTML = checklistHtml(v.rules.rows);
     $('req-count').textContent = `${v.rules.rows.length} papers`;
+    const r = v.referral || referral();
+    $('req-title').textContent = r.business ? `Papers for ${r.business}` : 'Papers this case needs';
+    $('req-for').textContent = `${r.id}, ${String(r.type || '').toLowerCase()}${r.secured ? ', secured' : ''}`;
+    $('mode-ask').classList.remove('hidden');
     $('rules-note').textContent = `Rules version ${v.rules.version}. Rows marked BSO checklist are what the BSO expects from the branch at referral. The other rows come from BPI's public page, which BPI calls indicative.`;
     $('headsup-box').classList.toggle('hidden', !v.headsUp.length);
     $('headsup').innerHTML = v.headsUp.map((l) => `<li>${ICON.warn}<span>${esc(l.text)}</span><span></span></li>`).join('');
@@ -113,7 +117,7 @@ if (role === 'bm') {
   const SAMPLE = $('chat-in').value;
   const HINT = {
     fill: 'Tell it what the client said. It fills the form below, and you check it before you save.',
-    ask: 'Ask about the saved case, for example what is still missing or why the BSO sent it back.',
+    ask: 'Ask about this saved case, for example what is still missing or why the BSO sent it back.',
   };
   const say = (who, text) => { const b = document.createElement('div'); b.className = `bubble ${who}`; b.textContent = text; $('chat-log').append(b); $('chat-log').scrollTop = $('chat-log').scrollHeight; return b; };
   const setMode = (m) => {
