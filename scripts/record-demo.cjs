@@ -22,7 +22,7 @@ const RETURN_NOTE = 'Bank statements must cover Sep to Nov 2026.';
   const idle = () => p.waitForFunction(() => !document.getElementById('chat-send').disabled, null, { timeout: 60000 });
   const checkDone = () => p.waitForFunction(() => !document.getElementById('run-check').disabled && document.getElementById('progress').classList.contains('hidden'), null, { timeout: 120000 });
 
-  await p.goto(`${BASE}?v=${Date.now()}`, { waitUntil: 'networkidle' });
+  await p.goto(`${BASE}?v=${Date.now()}#case`, { waitUntil: 'networkidle' });
   await p.waitForTimeout(1500);
   const id = await p.inputValue('#f-id');
   mark(`case ${id}`);
@@ -88,7 +88,7 @@ const RETURN_NOTE = 'Bank statements must cover Sep to Nov 2026.';
   await p.waitForTimeout(3000);
   mark('returned');
 
-  await p.goto(`${BASE}?id=${id}&v=${Date.now()}`, { waitUntil: 'networkidle' });
+  await p.goto(`${BASE}?id=${id}&v=${Date.now()}#case`, { waitUntil: 'networkidle' });
   await p.waitForTimeout(3000);
   await visit2();
   await p.waitForTimeout(3000);

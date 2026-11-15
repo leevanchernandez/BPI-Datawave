@@ -45,6 +45,8 @@ Object.assign(ICON, Object.fromEntries(Object.entries({
   folder: '<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>',
   pipeline: '<path d="M3 6h18M3 12h12M3 18h6"/>',
   check: '<path d="M5 12l5 5 9-11"/>',
+  x: '<path d="M6 6l12 12M18 6L6 18"/>',
+  back: '<path d="M19 12H5M12 19l-7-7 7-7"/>',
   warnline: '<path d="M12 8v5M12 17h.01M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>',
 }).map(([k, d]) => [k, svg(d)])));
 // put an icon at the start of every element marked data-icon
@@ -72,6 +74,26 @@ function navLinks() {
   $('ph-id').textContent = caseId();
 }
 for (const id of role === 'bm' ? ['bm-left', 'bm-right', 'case-panel', 'assist', 'products'] : ['bso-left', 'bso-right']) $(id).classList.remove('hidden');
+// the branch case is its own page (#case), and the dashboard keeps the cards and the pipeline
+if (role === 'bm') {
+  $('work').classList.add('solo');
+  const page = document.createElement('div');
+  page.className = 'casepage'; page.id = 'casepage'; page.hidden = true;
+  page.innerHTML = `<div class="casebar"><a class="back" id="case-back" data-icon="back" href="?${stack === 'free' ? 'stack=free' : ''}">Loan referrals</a><span class="soft" id="sheet-note">Send to BSO unlocks once nothing is missing.</span><button id="sheet-send" data-icon="arrow" disabled>Send to BSO</button></div><div class="casegrid"></div>`;
+  $('main').prepend(page);
+  page.querySelector('.casegrid').append($('case-panel'), $('assist'));
+  iconize(page);
+  const caseView = location.hash === '#case' || location.hash === '#case-panel';
+  page.hidden = !caseView;
+  for (const id of ['overview', 'cards', 'work']) $(id).classList.toggle('off', caseView);
+  if (caseView) $('crumb-page').textContent = 'Case';
+  addEventListener('hashchange', () => { if (location.hash === '#case' || !page.hidden) location.reload(); });
+  $('new-ref').href = `?${stack === 'free' ? 'stack=free' : ''}#case`;
+  // the bar button mirrors Send to BSO at the end of the result
+  const mirror = () => { $('sheet-send').disabled = $('handoff').disabled || $('result').classList.contains('hidden'); $('sheet-note').textContent = $('sheet-send').disabled ? 'Send to BSO unlocks once nothing is missing.' : 'Nothing is missing. The BSO can take it from here.'; };
+  new MutationObserver(mirror).observe($('handoff'), { attributes: true }); new MutationObserver(mirror).observe($('result'), { attributes: true }); mirror();
+  $('sheet-send').onclick = () => $('handoff').click();
+}
 if (role === 'bso') { $('work').classList.add('solo'); $('ws-role').textContent = 'BSO workspace'; $('me-initials').textContent = 'BS'; $('me-name').textContent = 'Sample BSO'; $('page-title').textContent = 'Referral queue'; $('page-sub').textContent = 'Review what the branches sent, return what needs fixing, and endorse complete cases to Credit.'; $('new-ref').classList.add('hidden'); }
 $('today').textContent = new Date().toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'Asia/Manila' });
 const initials = (t) => String(t || '').replace(/[^A-Za-z ]/g, ' ').trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || 'NR';
@@ -84,7 +106,7 @@ function steps(status) {
 // a branch link without a case number gets its own random one, so visitors do not share a case
 const freshCase = role === 'bm' && !params.get('id');
 const randomId = () => `RF-2026-${300 + Math.floor(Math.random() * 500)}`;
-if (freshCase) { params.set('id', randomId()); history.replaceState(null, '', `?${params}`); }
+if (freshCase) { params.set('id', randomId()); history.replaceState(null, '', `?${params}${location.hash}`); }
 if (params.get('id')) { $('f-id').value = params.get('id'); $('b-id').value = params.get('id'); }
 navLinks();
 
@@ -399,7 +421,7 @@ if (role === 'bm') {
       for (let i = 0; i < 5; i++) {
         const r = await fetch(`/api/case?id=${caseId()}&exists=1`, { headers: { 'x-demo-key': demoKey } }).then((x) => x.json()).catch(() => null);
         if (!r || !r.exists) return;
-        params.set('id', randomId()); history.replaceState(null, '', `?${params}`); $('f-id').value = $('b-id').value = params.get('id'); navLinks();
+        params.set('id', randomId()); history.replaceState(null, '', `?${params}${location.hash}`); $('f-id').value = $('b-id').value = params.get('id'); navLinks();
       }
       return;
     }
@@ -445,7 +467,7 @@ function renderCards(cases) {
   const c = document.querySelector('#side .count'); if (c) c.textContent = cases.length;
 }
 function setFilter(k) { filter = k; casePage = 0; renderCards(allCases); renderCases(); }
-for (const id of ['cards', 'cases-filters']) $(id).onclick = (e) => { const b = e.target.closest('[data-filter]'); if (b) { setFilter(b.dataset.filter); if (id === 'cards') $('cases-box').scrollIntoView({ behavior: 'smooth', block: 'start' }); } };
+for (const id of ['cards', 'cases-filters']) $(id).onclick = (e) => { const b = e.target.closest('[data-filter]'); if (b) { setFilter(b.dataset.filter); if (id === 'cards' && role === 'bm') { history.replaceState(null, '', `${location.search}#referrals`); showView('referrals'); } else if (id === 'cards') $('cases-box').scrollIntoView({ behavior: 'smooth', block: 'start' }); } };
 $('cases-search').oninput = (e) => { query = e.target.value.trim().toLowerCase(); casePage = 0; renderCases(); };
 function renderCases() {
   const f = FILTERS.find(([k]) => k === filter)[3];
@@ -462,7 +484,7 @@ $('cases-next').onclick = () => { casePage++; renderCases(); };
 const pick = (e) => {
   if (e.target.closest('[data-retry]')) { loadCases(); return; }
   const tr = e.target.closest('tr[data-id]'); if (!tr) return;
-  if (role === 'bm') { location.href = `?id=${encodeURIComponent(tr.dataset.id)}${stackQuery}#case-panel`; return; }
+  if (role === 'bm') { location.href = `?id=${encodeURIComponent(tr.dataset.id)}${stackQuery}#case`; return; }
   $('b-id').value = tr.dataset.id; history.replaceState(null, '', `?role=bso&id=${encodeURIComponent(tr.dataset.id)}${stackQuery}#case`); showView('case'); $('b-open').onclick();
 };
 $('cases').onclick = pick;
@@ -571,28 +593,21 @@ function toast(msg, kind = '') {
 function alertInline(msg) { toast(msg, 'error'); }
 
 // sidebar: one section per job
-// the branch view scrolls to a part of one page, the BSO view switches between the queue and one case
 const VIEWS = role === 'bm'
-  ? [['overview', 'Overview', []], ['referrals', 'Loan referrals', []], ['products', 'Loan products', []]]
+  ? [['referrals', 'Loan referrals', ['cases-box']], ['overview', 'Overview', ['cards', 'cases-metric']], ['products', 'Loan products', ['products']]]
   : [['queue', 'Referral queue', ['cases-box', 'cards']], ['case', 'Selected case', ['bso-left', 'bso-right']]];
+if (role === 'bm') $('cards').after($('cases-metric'));
 function showView(key) {
-  if (role === 'bm') { $({ referrals: 'cases-box', products: 'products' }[key] || 'overview').scrollIntoView({ behavior: 'smooth', block: 'start' }); $('crumb-page').textContent = VIEWS.find(([k]) => k === key)[1]; }
-  else { for (const [k, , ids] of VIEWS) for (const id of ids) $(id).classList.toggle('off', k !== key); $('overview').classList.toggle('off', key !== 'queue'); $('crumb-page').textContent = key === 'queue' ? 'Referral queue' : 'Selected case'; }
+  for (const [k, , ids] of VIEWS) for (const id of ids) $(id).classList.toggle('off', k !== key);
+  if (role === 'bm') { $('ph-id').classList.toggle('off', $('casepage').hidden); if (!$('casepage').hidden) { $('side').querySelector('[data-view=referrals]')?.setAttribute('aria-current', 'page'); return; } $('crumb-page').textContent = $('page-title').textContent = VIEWS.find(([k]) => k === key)[1]; }
+  else { $('overview').classList.toggle('off', key !== 'queue'); $('crumb-page').textContent = key === 'queue' ? 'Referral queue' : 'Selected case'; }
   for (const a of $('side').children) { if (a.dataset.view === key) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); }
 }
 const NAV_ICON = { overview: 'grid', referrals: 'file', products: 'briefcase', queue: 'inbox', case: 'user' };
 $('side').innerHTML = VIEWS.map(([k, label]) => `<a href="#${k}" data-view="${k}"><span class="lbl">${ICON[NAV_ICON[k]]}${label}</span>${k === 'referrals' || k === 'queue' ? '<span class="count"></span>' : ''}</a>`).join('');
-$('side').onclick = (e) => { const a = e.target.closest('a'); if (a) { e.preventDefault(); history.replaceState(null, '', `${location.search}#${a.dataset.view}`); showView(a.dataset.view); } };
-if (role === 'bm') {
-  // the side rail follows the part of the page in view
-  const spy = () => {
-    const end = innerHeight + scrollY >= document.documentElement.scrollHeight - 4;
-    const k = end || $('products').getBoundingClientRect().top < innerHeight * 0.35 ? 'products' : $('cases-box').getBoundingClientRect().top < innerHeight * 0.35 ? 'referrals' : 'overview';
-    for (const a of $('side').children) { if (a.dataset.view === k) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); }
-  };
-  addEventListener('scroll', spy, { passive: true });
-  for (const a of $('side').children) if (a.dataset.view === 'overview') a.setAttribute('aria-current', 'page'); if (location.hash === '#case-panel') setTimeout(() => $('case-panel').scrollIntoView({ block: 'start' }), 600); }
-else showView(VIEWS.some(([k]) => k === location.hash.slice(1)) ? location.hash.slice(1) : !params.get('id') ? 'queue' : 'case');
+$('side').onclick = (e) => { const a = e.target.closest('a'); if (!a) return; e.preventDefault(); if (role === 'bm' && !$('casepage').hidden) { location.href = `?${stack === 'free' ? 'stack=free' : ''}#${a.dataset.view}`; return; } history.replaceState(null, '', `${location.search}#${a.dataset.view}`); showView(a.dataset.view); };
+const hashView = location.hash.slice(1);
+showView(VIEWS.some(([k]) => k === hashView) ? hashView : role === 'bm' ? 'referrals' : !params.get('id') ? 'queue' : 'case');
 
 // says why a button is off
 for (const b of document.querySelectorAll('button[data-why]')) {
