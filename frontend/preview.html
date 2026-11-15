@@ -221,6 +221,9 @@
   .card small { color: var(--color-ink-soft); font-size: var(--text-s); }
   .work { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: var(--space-5); align-items: start; }
   .work.solo { grid-template-columns: minmax(0, 1fr); }
+  .work.solo .col { display: grid; grid-template-columns: minmax(0, 360px) minmax(0, 1fr); align-items: start; }
+  .work.solo .col > #cases-box { grid-column: 1 / -1; }
+  @media (max-width: 900px) { .work.solo .col { grid-template-columns: minmax(0, 1fr); } }
   .col { display: flex; flex-direction: column; gap: var(--space-5); min-width: 0; }
   .col > section + section, .col > div + section, .col > section + div { margin-top: 0; }
   .assist { position: sticky; top: var(--space-4); }
