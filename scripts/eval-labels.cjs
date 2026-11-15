@@ -1,6 +1,6 @@
 // Side test: read the application form from plain Textract text (line positions) instead of the Forms pass.
 // Compares mapped fields from both on the specimen forms at four damage levels. Not used by the live pipeline.
-// Run from app/ with AWS_PROFILE set. It makes 8 text and 8 Forms calls (about $0.41).
+// Run from app/ with AWS_PROFILE set. It makes 8 text and 8 Forms calls (about $0.41), plus 2 calls per form for each of VARIANTS.
 const { createRequire } = require('module');
 const { execFileSync } = require('child_process');
 const fs = require('fs'), path = require('path');
@@ -51,8 +51,24 @@ const LEVELS = {
 const FORMS = { visit1: '01-application-form-first-visit', corrected: '01b-application-form-corrected' };
 const KEYS = ['business_name', 'owner_name', 'address', 'tin', 'contact', 'civil_status', 'spouse_name', 'signature'];
 
+// the values printed on each specimen ('' means the field is left blank)
+const BASE = { business_name: 'Elena Artisan Bakery', owner_name: 'Elena Santos', address: '12 Rizal Street, Los Banos, Laguna', contact: '0917 555 0142', spouse_name: 'Ramon Santos', signature: '' };
+const TRUTH = { visit1: { ...BASE, tin: '', civil_status: 'Kasal' }, corrected: { ...BASE, tin: '123-456-789-000', civil_status: 'Married' } };
+const same = (a, b) => norm(a || '') === norm(b || '');
+// VARIANTS=n adds n random phone-photo damages per form (seeded, so a rerun gives the same images)
+function randomRecipe(seed) {
+  let x = seed * 9301 + 49297; const r = () => ((x = (x * 9301 + 49297) % 233280) / 233280);
+  const k = (a, b) => (a + r() * (b - a)).toFixed(2), corner = () => `%[fx:w*${k(0, 0.07)}],%[fx:h*${k(0, 0.05)}]`;
+  return ['-seed', String(seed), '-background', `gray${Math.round(40 + r() * 45)}`, '-virtual-pixel', 'background', '-distort', 'Perspective',
+    `0,0 ${corner()} %[fx:w],0 %[fx:w*${k(0.93, 1)}],%[fx:h*${k(0, 0.05)}] 0,%[fx:h] %[fx:w*${k(0, 0.07)}],%[fx:h*${k(0.95, 1)}] %[fx:w],%[fx:h] %[fx:w*${k(0.93, 1)}],%[fx:h*${k(0.95, 1)}]`,
+    '-rotate', k(-7, 7), '-resize', `${Math.round(45 + r() * 35)}%`, '-blur', `0x${k(0.3, 1.4)}`, '-brightness-contrast', `${Math.round(-15 + r() * 15)}x${Math.round(-15 + r() * 10)}`,
+    '-attenuate', k(0.1, 0.6), '+noise', 'Gaussian', '-quality', String(Math.round(30 + r() * 40))];
+}
+for (let i = 1; i <= Number(process.env.VARIANTS || 0); i++) LEVELS[`random${i}`] = randomRecipe(i);
+
 (async () => {
-  const rows = [];
+  const rows = [], tally = { text: { right: 0, empty: 0, wrong: 0 }, forms: { right: 0, empty: 0, wrong: 0 } };
+  const score = (who, got, want) => { const t = tally[who]; if (same(got, want)) t.right++; else if (!norm(got || '')) t.empty++; else t.wrong++; };
   for (const [fname, f] of Object.entries(FORMS)) for (const [level, recipe] of Object.entries(LEVELS)) {
     const img = path.join(OUT, `${fname}-${level}.jpg`);
     execFileSync('magick', [path.join(APP, 'frontend/specimens', `${f}.png`), '-channel', 'R', '-separate', '+channel', ...recipe, img]);
@@ -61,7 +77,10 @@ const KEYS = ['business_name', 'owner_name', 'address', 'tin', 'contact', 'civil
     const viaText = mapForm(labelsFromWords(det.Blocks || [])).fields;
     const viaForms = mapForm(await analyzeForm(bytes, c)).fields;
     const diff = KEYS.filter((k) => (viaText[k] ?? null) !== (viaForms[k] ?? null)).map((k) => `${k}: text=${JSON.stringify(viaText[k] ?? null)} forms=${JSON.stringify(viaForms[k] ?? null)}`);
+    for (const k of KEYS) { score('text', viaText[k], TRUTH[fname][k]); score('forms', viaForms[k], TRUTH[fname][k]); }
     rows.push({ fname, level, same: KEYS.length - diff.length, diff });
     console.log(`${fname} ${level}: ${KEYS.length - diff.length}/${KEYS.length} same${diff.length ? '\n  ' + diff.join('\n  ') : ''}`);
   }
+  console.log('\nagainst the printed values (right / left empty / wrong):');
+  for (const [who, t] of Object.entries(tally)) console.log(`  ${who}: ${t.right} / ${t.empty} / ${t.wrong}`);
 })().catch((e) => { console.error(e); process.exit(1); });

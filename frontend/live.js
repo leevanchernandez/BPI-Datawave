@@ -83,6 +83,7 @@ if (role === 'bm') {
   }
   function renderChecklist(v) {
     $('checklist').innerHTML = checklistHtml(v.rules.rows);
+    $('req-count').textContent = `${v.rules.rows.length} papers`;
     $('rules-note').textContent = `Rules version ${v.rules.version}. Rows marked BSO checklist are what the BSO expects from the branch at referral. The other rows come from BPI's public page, which BPI calls indicative.`;
     $('headsup-box').classList.toggle('hidden', !v.headsUp.length);
     $('headsup').innerHTML = v.headsUp.map((l) => `<li>${ICON.warn}<span>${esc(l.text)}</span><span></span></li>`).join('');
