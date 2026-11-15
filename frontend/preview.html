@@ -494,7 +494,7 @@
     <div class="row"><div><h2 data-icon="pipeline" id="cases-title">Referral pipeline</h2><div class="counts" id="cases-count"></div><p class="soft" id="cases-metric" style="margin-top:var(--space-2)"></p></div><button id="cases-refresh" data-icon="refresh" class="small secondary">Refresh</button></div>
     <div class="filters" id="cases-filters" role="group" aria-label="Filter referrals"></div><div class="search" data-icon="search"><input id="cases-search" type="search" placeholder="Search client, business or referral number" aria-label="Search referrals"></div>
     <div class="tablewrap"><table class="trace cases">
-      <thead><tr><th>Client and business</th><th>Loan amount</th><th>Status</th><th>Open items</th><th>Last update</th></tr></thead>
+      <thead><tr><th>Client and business</th><th id="th-branch" hidden>Branch</th><th>Loan amount</th><th>Status</th><th>Open items</th><th>Last update</th></tr></thead>
       <tbody id="cases"></tbody>
     </table></div>
     <div class="pager hidden" id="cases-pager"><button class="small secondary" id="cases-prev">Previous</button><span class="soft" id="cases-page"></span><button class="small secondary" id="cases-next">Next</button></div>

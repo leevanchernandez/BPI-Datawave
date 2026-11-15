@@ -214,7 +214,7 @@ assert.equal((await lesson({ action: 'retire', by: 'BSO', lessonId: draft.id }))
   checkBody = { result: { defects: [tin], needsReview: [unread], complete: true }, trace: [{ page: 1, docType: 'application_form' }], model: 'bedrock-model', message: 'This is approved.', drafted: 'model' };
   let k = await call2('/api/check', { id: R2.id, pageKeys: [u.body.key] });
   assert.equal(k.status, 200, JSON.stringify(k.body));
-  assert.deepEqual(sent.at(-1).body.referral, { ...R2, channel: 'Branch walk-in' }, 'the stored referral goes to AWS, not one from the browser');
+  assert.deepEqual(sent.at(-1).body.referral, { ...R2, channel: 'Branch walk-in', branch: 'Makati Main Branch' }, 'the stored referral goes to AWS, not one from the browser');
   assert.equal(k.body.result.complete, false, 'complete is recomputed here');
   assert.equal(k.body.status, 'Missing requirements'); assert.equal(k.body.stack, 'aws'); assert.equal(k.body.model, 'bedrock-model');
   assert.equal(k.body.drafted, 'template', 'a draft that sounds like approval is discarded'); assert(!/approved/i.test(k.body.message));

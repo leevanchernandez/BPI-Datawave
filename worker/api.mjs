@@ -49,7 +49,8 @@ export function validReferral(r) {
     && (r.bpiAccount == null || typeof r.bpiAccount === 'boolean');
 }
 const CHANNELS = ['Branch walk-in', 'Ka-Negosyo online'];
-const cleanReferral = (r) => ({ id: r.id, business: r.business.trim(), name: r.name.trim(), type: r.type, industry: r.industry.trim(), amount: r.amount, civilStatus: civilOf(r.civilStatus), spouseName: (r.spouseName || '').trim(), secured: Boolean(r.secured), bpiAccount: r.bpiAccount === true, channel: CHANNELS.includes(r.channel) ? r.channel : CHANNELS[0] });
+const BRANCHES = ['Makati Main Branch', 'Quezon Avenue Branch', 'Caloocan Branch', 'Malabon Branch']; // sample branches, the first is the demo's own
+const cleanReferral = (r) => ({ id: r.id, business: r.business.trim(), name: r.name.trim(), type: r.type, industry: r.industry.trim(), amount: r.amount, civilStatus: civilOf(r.civilStatus), spouseName: (r.spouseName || '').trim(), secured: Boolean(r.secured), bpiAccount: r.bpiAccount === true, channel: CHANNELS.includes(r.channel) ? r.channel : CHANNELS[0], branch: BRANCHES.includes(r.branch) ? r.branch : BRANCHES[0] });
 
 function validPages(pages) {
   return Array.isArray(pages) && pages.length > 0 && pages.length <= MAX_PAGES && pages.every((p) =>
@@ -155,7 +156,7 @@ export function makeApi({ store, llm, now = () => new Date(), demoKey, aws = nul
         // After the first handoff: 'returned' if the BSO ever sent it back, 'complete' if endorsed with no return, else 'pending'.
         const h = c.events.findIndex((e) => e.type === 'handed_off'), after = h < 0 ? [] : c.events.slice(h);
         const firstHandoff = h < 0 ? null : after.some((e) => e.type === 'returned') ? 'returned' : after.some((e) => e.type === 'endorsed') ? 'complete' : 'pending';
-        return { id: r.id, business: r.business, name: r.name || '', channel: r.channel || CHANNELS[0], type: r.type, industry: r.industry, amount: r.amount, status: statusOf(c.events), open: o.defects.length + o.needsReview.length, updated: (c.events[c.events.length - 1] || {}).at || null, firstHandoff, issues: o.defects.slice(0, 20).map((d) => d.message) };
+        return { id: r.id, business: r.business, name: r.name || '', channel: r.channel || CHANNELS[0], branch: r.branch || BRANCHES[0], type: r.type, industry: r.industry, amount: r.amount, status: statusOf(c.events), open: o.defects.length + o.needsReview.length, updated: (c.events[c.events.length - 1] || {}).at || null, firstHandoff, issues: o.defects.slice(0, 20).map((d) => d.message) };
       });
       cases.sort((a, b) => String(b.updated || '').localeCompare(String(a.updated || '')));
       return json(200, { cases: cases.slice(0, MAX_LIST) });

@@ -131,7 +131,7 @@ function renderNotif(cases) {
   $('notif-h').textContent = mine.length ? (role === 'bm' ? 'Waiting on the branch' : 'Waiting on you') : 'Nothing is waiting on you right now.';
   $('notif-list').innerHTML = mine.map((c) => `<li><a href="?${role === 'bso' ? 'role=bso&' : ''}id=${encodeURIComponent(c.id)}${stackQuery}${role === 'bm' ? '#case' : ''}"><span class="grow">${esc(c.business)}<span class="soft">${esc(c.id)}, ${when(c.updated)}</span></span><span class="status ${statusClass(c.status)}">${esc(c.status)}</span></a></li>`).join('');
 }
-if (role === 'bso') { $('work').classList.add('solo'); $('page-title').textContent = 'Referral queue'; $('page-sub').textContent = 'Review what the branches sent, return what needs fixing, and endorse complete cases to Credit.'; $('new-ref').classList.add('hidden'); }
+if (role === 'bso') { $('work').classList.add('solo'); $('page-title').textContent = 'Referral queue'; $('page-sub').textContent = 'Review what the branches sent, return what needs fixing, and endorse complete cases to Credit.'; $('new-ref').classList.add('hidden'); $('th-branch').hidden = false; }
 $('today').textContent = new Date().toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'Asia/Manila' });
 const initials = (t) => String(t || '').replace(/[^A-Za-z ]/g, ' ').trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || 'NR';
 // step line from the case status
@@ -169,7 +169,7 @@ function head(r, status, open) {
   $('ph-id').textContent = caseId();
   $('ph-title').textContent = r.business || 'New referral';
   if (role === 'bm') { $('ph-initials').textContent = initials(r.business || 'New referral'); steps(status); }
-  $('ph-meta').textContent = [r.name, r.type, r.channel].filter(Boolean).join(', ');
+  $('ph-meta').textContent = [r.name, r.type, r.channel, role === 'bso' && r.branch].filter(Boolean).join(', ');
   $('ph-status').textContent = status || 'Not saved yet'; $('ph-status').className = `status ${statusClass(status)}`;
   $('ph-sub').textContent = open ? `${open} ${open === 1 ? 'item' : 'items'} open` : '';
 }
@@ -182,7 +182,7 @@ if (role === 'bm') {
     id: $('f-id').value.trim(), business: $('f-business').value, name: $('f-name').value, type: $('f-type').value,
     industry: $('f-industry').value, amount: Number(String($('f-amount').value).replace(/[^\d.]/g, '')),
     civilStatus: $('f-civil').value, spouseName: $('f-civil').value === 'married' ? $('f-spouse').value : '', secured: $('f-secured').checked,
-    bpiAccount: $('f-bpi').checked, channel: $('f-channel').value,
+    bpiAccount: $('f-bpi').checked, channel: $('f-channel').value, branch: WHO.bm[3],
   });
   $('f-civil').onchange = () => { $('f-spouse').disabled = $('f-civil').value !== 'married'; };
   const refreshHead = () => head(referral(), lastView?.status, (lastView?.open?.defects?.length || 0) + (lastView?.open?.needsReview?.length || 0));
@@ -497,7 +497,7 @@ let reportCases = [];
 $('export-csv').onclick = () => {
   // a leading quote keeps a spreadsheet from running a cell as a formula
   const q = (v) => `"${String(v ?? '').replace(/^[=+\-@]/, "'$&").replace(/"/g, '""')}"`;
-  const rows = [['Referral', 'Business', 'Client', 'Channel', 'Structure', 'Loan amount', 'Status', 'Open items', 'Last update'], ...reportCases.map((c) => [c.id, c.business, c.name, c.channel, c.type, c.amount, c.status, c.open, c.updated])];
+  const rows = [['Referral', 'Business', 'Client', 'Branch', 'Channel', 'Structure', 'Loan amount', 'Status', 'Open items', 'Last update'], ...reportCases.map((c) => [c.id, c.business, c.name, c.branch, c.channel, c.type, c.amount, c.status, c.open, c.updated])];
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([rows.map((r) => r.map(q).join(',')).join('\n')], { type: 'text/csv' })); a.download = 'counter-check-referrals.csv'; a.click(); URL.revokeObjectURL(a.href);
 };
 $('print-req').onclick = () => { document.body.classList.add('print-req'); window.print(); };
@@ -540,9 +540,9 @@ for (const id of ['cards', 'cases-filters']) $(id).onclick = (e) => { const b = 
 $('cases-search').oninput = (e) => { query = e.target.value.trim().toLowerCase(); casePage = 0; renderCases(); };
 function renderCases() {
   const f = FILTERS.find(([k]) => k === filter)[3];
-  const list = allCases.filter((c) => f(c) && (!query || `${c.id} ${c.business} ${c.name || ''}`.toLowerCase().includes(query)));
-  $('cases').innerHTML = list.slice(casePage * PAGE, casePage * PAGE + PAGE).map((c) => `<tr data-id="${esc(c.id)}" tabindex="0"${c.id === caseId() ? ' aria-current="true"' : ''}><td><div class="who"><span class="avatar" aria-hidden="true">${esc(initials(c.business))}</span><span>${esc(c.business)}<br><span class="soft">${c.name ? `${esc(c.name)}, ` : ''}<span class="mono">${esc(c.id)}</span></span></span></div></td><td>₱${Number(c.amount).toLocaleString('en-PH')}</td><td><span class="status ${statusClass(c.status)}">${esc(c.status)}</span></td><td>${c.open ?? ''}</td><td>${c.updated ? new Date(c.updated).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Manila' }) : ''}</td></tr>`).join('')
-      || `<tr><td colspan="5"><div class="empty"><strong>${allCases.length ? 'No referrals match' : `No ${role === 'bm' ? 'referrals' : 'cases'} yet`}</strong>${allCases.length ? 'Try another filter or search.' : role === 'bm' ? 'Save a case and it shows up here.' : 'Cases show up here once a branch saves one.'}</div></td></tr>`;
+  const list = allCases.filter((c) => f(c) && (!query || `${c.id} ${c.business} ${c.name || ''} ${c.branch || ''}`.toLowerCase().includes(query)));
+  $('cases').innerHTML = list.slice(casePage * PAGE, casePage * PAGE + PAGE).map((c) => `<tr data-id="${esc(c.id)}" tabindex="0"${c.id === caseId() ? ' aria-current="true"' : ''}><td><div class="who"><span class="avatar" aria-hidden="true">${esc(initials(c.business))}</span><span>${esc(c.business)}<br><span class="soft">${c.name ? `${esc(c.name)}, ` : ''}<span class="mono">${esc(c.id)}</span></span></span></div></td>${role === 'bso' ? `<td>${esc(c.branch || '')}</td>` : ''}<td>₱${Number(c.amount).toLocaleString('en-PH')}</td><td><span class="status ${statusClass(c.status)}">${esc(c.status)}</span></td><td>${c.open ?? ''}</td><td>${c.updated ? new Date(c.updated).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Manila' }) : ''}</td></tr>`).join('')
+      || `<tr><td colspan="6"><div class="empty"><strong>${allCases.length ? 'No referrals match' : `No ${role === 'bm' ? 'referrals' : 'cases'} yet`}</strong>${allCases.length ? 'Try another filter or search.' : role === 'bm' ? 'Save a case and it shows up here.' : 'Cases show up here once a branch saves one.'}</div></td></tr>`;
   const pages = Math.max(1, Math.ceil(list.length / PAGE));
   $('cases-pager').classList.toggle('hidden', pages < 2);
   $('cases-page').textContent = `Page ${casePage + 1} of ${pages}`;
