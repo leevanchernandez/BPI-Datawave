@@ -313,7 +313,8 @@ if (role === 'bm') {
     if (v.drafted) $('drafted').textContent = v.drafted === 'model' ? `Drafted by ${v.model}, checked for approval words. A person sends it.` : 'Written from a template.';
     $('handoff').disabled = v.status !== 'Ready for BSO review';
     if (v.trace) {
-      $('trace').innerHTML = v.trace.map((t) => `<tr><td>${t.page}</td><td>${t.lines}</td><td>${esc(DOC_LABELS[t.docType] || (t.label ? `${DOC_LABELS[t.label]} (labeled)` : 'Not placed'))}</td><td>${t.model ? esc(v.model) : 'Rules only'}</td><td>${t.grounded ? Object.entries(t.grounded).map(([k, ok]) => `${k.replace('_', ' ')}: ${ok ? 'found' : 'not found, sent to a person'}`).join('<br>') : ''}</td></tr>`).join('');
+      const VERDICT = { found: (t) => `found on page ${t.page}`, missing: () => 'not found, Send to BSO stays locked', unsure: () => 'not sure, sent to a person', none: () => 'no answer, sent to a person' };
+      $('trace').innerHTML = v.trace.map((t) => t.bsoRequest ? `<tr><td></td><td></td><td>BSO's note</td><td>${esc(v.model)}</td><td>${esc((VERDICT[t.verdict] || VERDICT.none)(t))}</td></tr>` : `<tr><td>${t.page}</td><td>${t.lines}</td><td>${esc(DOC_LABELS[t.docType] || (t.label ? `${DOC_LABELS[t.label]} (labeled)` : 'Not placed'))}</td><td>${t.model ? esc(v.model) : 'Rules only'}</td><td>${t.grounded ? Object.entries(t.grounded).map(([k, ok]) => `${k.replace('_', ' ')}: ${ok ? 'found' : 'not found, sent to a person'}`).join('<br>') : ''}</td></tr>`).join('');
       $('trace-note').textContent = v.stack === 'aws'
         ? 'Textract reads every page. The model reads ID, registration and permit pages. On the form it only tells an empty field from one that has marks in it. Rules decide what is missing.'
         : 'The model sees only ID, registration and permit pages, as text with ID numbers masked. Bank statements and forms are read by rules.';
