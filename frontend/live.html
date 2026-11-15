@@ -31,20 +31,39 @@
   .soft { color: var(--color-ink-soft); font-size: var(--text-s); }
   a { color: var(--color-brand-deep); }
 
-  .top { border-top: 3px solid var(--color-brand); background: var(--color-surface); border-bottom: 2px solid var(--color-gold); }
-  .top-inner { max-width: 1180px; margin: 0 auto; padding: var(--space-3) var(--space-5); display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); flex-wrap: wrap; }
-  .wordmark { margin: 0; line-height: inherit; font-weight: 800; font-size: var(--text-l); letter-spacing: -0.02em; color: var(--color-brand); }
-  .wordmark span { font-weight: 500; font-size: var(--text-m); letter-spacing: 0; color: var(--color-ink-soft); margin-left: var(--space-2); }
-  .roles { display: flex; gap: var(--space-1); }
-  .roles a { text-decoration: none; padding: 6px 12px; border-radius: var(--radius); color: var(--color-ink-soft); font-weight: 600; }
-  .roles a[aria-current="page"] { background: var(--color-brand-tint); color: var(--color-brand-deep); }
+  .top { background: var(--color-brand-deep); color: #fff; border-bottom: 3px solid var(--color-gold); }
+  .top-inner { max-width: 1400px; margin: 0 auto; padding: var(--space-3) var(--space-5); display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); flex-wrap: wrap; }
+  .wordmark { margin: 0; display: flex; align-items: center; gap: var(--space-3); font-weight: 800; font-size: 1.375rem; letter-spacing: -0.02em; }
+  .wordmark .name { display: flex; flex-direction: column; padding-left: var(--space-3); border-left: 1px solid rgb(255 255 255 / 0.35); font-weight: 600; font-size: var(--text-m); letter-spacing: 0; line-height: 1.25; }
+  .wordmark small { font-weight: 400; font-size: var(--text-s); color: rgb(255 255 255 / 0.75); }
+  .roles { display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: rgb(0 0 0 / 0.2); }
+  .roles a { text-decoration: none; padding: 5px 14px; border-radius: 999px; color: rgb(255 255 255 / 0.85); font-weight: 600; font-size: var(--text-s); }
+  .roles a:hover { color: #fff; }
+  .roles a[aria-current="page"] { background: #fff; color: var(--color-brand-deep); }
+  .roles a:focus-visible { outline-color: #fff; }
 
-  main { max-width: 1180px; margin: 0 auto; padding: var(--space-5); display: grid; grid-template-columns: minmax(0, 360px) minmax(0, 1fr); gap: var(--space-6); }
+  .pagehead { display: flex; justify-content: space-between; align-items: flex-end; gap: var(--space-4); flex-wrap: wrap; }
+  .crumb { font-size: var(--text-s); color: var(--color-brand); font-weight: 600; margin-bottom: 2px; }
+  .crumb #ph-id { color: var(--color-ink-soft); font-weight: 500; font-family: var(--font-mono); }
+  .pagehead h1 { font-size: 1.75rem; color: var(--color-ink); }
+  .ph-right { text-align: right; }
+  .ph-right .soft { margin-top: var(--space-1); }
+  .foot { max-width: 1400px; margin: 0 auto; padding: 0 var(--space-5) var(--space-6); display: flex; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; font-size: var(--text-s); color: var(--color-ink-soft); }
+
+  main { max-width: 1180px; margin: 0 auto; padding: var(--space-5); display: grid; grid-template-columns: minmax(0, 380px) minmax(0, 1fr); gap: var(--space-5); }
   @media (max-width: 900px) { main { grid-template-columns: minmax(0, 1fr); gap: var(--space-5); padding: var(--space-4); } }
   .full { grid-column: 1 / -1; }
+  .pair { display: grid; grid-template-columns: minmax(0, 360px) minmax(0, 1fr); gap: var(--space-5); align-items: start; }
+  .pair > #result { grid-column: 1 / -1; }
+  .pair > section + section { margin-top: 0; }
+  #bm-right { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  @media (max-width: 900px) { .pair, #bm-right { grid-template-columns: minmax(0, 1fr); } }
+  .fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: 0 var(--space-3); }
+  .checks { display: flex; flex-wrap: wrap; gap: 0 var(--space-5); }
 
-  section { padding-top: var(--space-4); border-top: 1px solid var(--color-line); }
-  section + section { margin-top: var(--space-5); }
+  section { padding: var(--space-5); background: var(--color-surface); border: 1px solid var(--color-line); border-radius: 10px; }
+  section + section { margin-top: var(--space-4); }
+  @media (max-width: 560px) { section { padding: var(--space-4); } }
   .row { display: flex; gap: var(--space-3); align-items: baseline; justify-content: space-between; flex-wrap: wrap; }
 
   label { display: block; margin-top: var(--space-3); font-weight: 600; font-size: var(--text-s); }
@@ -58,14 +77,16 @@
   button, .btn { font: inherit; font-weight: 600; white-space: nowrap; padding: 9px 16px; border-radius: var(--radius); border: 1px solid var(--color-brand); background: var(--color-brand); color: #fff; cursor: pointer; transition: background var(--dur) var(--ease), transform var(--dur) var(--ease); display: inline-block; }
   button:hover, .btn:hover { background: var(--color-brand-deep); border-color: var(--color-brand-deep); }
   button:active { transform: translateY(1px); }
-  button.secondary, .btn.secondary { background: var(--color-surface); color: var(--color-brand); }
-  button.secondary:hover, .btn.secondary:hover { background: var(--color-brand-tint); }
+  button.secondary, .btn.secondary { background: var(--color-surface); color: var(--color-ink); border-color: var(--color-line); }
+  button.secondary:hover, .btn.secondary:hover { background: #f4f4f4; border-color: var(--color-ink-soft); }
+  button.secondary:disabled:hover { background: var(--color-surface); }
+  .why { margin-top: var(--space-2); }
   button.small { padding: 4px 10px; font-size: var(--text-s); }
   button:disabled { opacity: 0.45; cursor: default; transform: none; }
   button:disabled:hover { background: var(--color-brand); }
   :focus-visible { outline: 3px solid var(--color-ink); outline-offset: 2px; }
 
-  .status { display: inline-block; padding: 2px 10px; border-radius: var(--radius); font-weight: 700; font-size: var(--text-s); background: var(--color-info-tint); color: var(--color-info); }
+  .status { display: inline-block; padding: 2px 10px; border-radius: 999px; font-weight: 700; font-size: var(--text-s); background: var(--color-info-tint); color: var(--color-info); }
   .status.missing { background: var(--color-warn-tint); color: var(--color-warn); }
   .status.ready, .status.with { background: var(--color-ok-tint); color: var(--color-ok); }
 
@@ -100,24 +121,38 @@
   .timeline time { white-space: nowrap; color: var(--color-ink-soft); font-variant-numeric: tabular-nums; }
   .answer { margin-top: var(--space-2); }
   .ai { background: var(--color-info-tint); border-color: var(--color-info); }
-  .modes { display: flex; gap: var(--space-2); margin-top: var(--space-3); flex-wrap: wrap; }
-  .modes button[aria-pressed="true"] { background: var(--color-brand); color: #fff; }
+  .modes { display: flex; gap: var(--space-4); margin-top: var(--space-3); flex-wrap: wrap; border-bottom: 1px solid var(--color-line); }
+  .modes button, .modes button:hover { background: none; border: 0; border-bottom: 2px solid transparent; border-radius: 0; padding: 6px 0; margin-bottom: -1px; color: var(--color-ink-soft); }
+  .modes button:hover { color: var(--color-ink); }
+  .modes button[aria-pressed="true"] { color: var(--color-brand); border-bottom-color: var(--color-brand); }
   .log { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-3); max-height: 320px; overflow-y: auto; }
   .log:empty { display: none; }
   .bubble { max-width: 88%; padding: var(--space-2) var(--space-3); border-radius: 12px; white-space: pre-wrap; font-size: var(--text-s); }
   .bubble.me { align-self: flex-end; background: var(--color-brand-tint); color: var(--color-ink); }
   .bubble.bot { align-self: flex-start; background: var(--color-surface); border: 1px solid var(--color-line); }
   .bubble.wait { color: var(--color-ink-soft); }
-  .composer { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-2); align-items: end; margin-top: var(--space-3); }
+  .composer { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: end; gap: var(--space-2); margin-top: var(--space-3); }
   .tablewrap { overflow-x: auto; }
   #bm-right table.cases th:last-child, #bm-right table.cases td:last-child { display: none; }
   @media (max-width: 560px) { #bm-right table.cases th:nth-child(n+4), #bm-right table.cases td:nth-child(n+4) { display: none; } table.cases td:nth-child(2) { white-space: normal; } }
   .counts { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
-  table.cases td { white-space: nowrap; vertical-align: middle; }
+  table.cases td { white-space: nowrap; vertical-align: middle; padding: 8px 6px; }
+  table.cases thead th { background: #f4f4f4; padding: 8px 6px; }
   .pager { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-3); }
   table.cases tbody tr { cursor: pointer; }
   table.cases tbody tr:hover, table.cases tbody tr[aria-current="true"] { background: var(--color-brand-tint); }
-  .hidden { display: none !important; }
+  .hidden, .off { display: none !important; }
+  .shell { max-width: 1400px; margin: 0 auto; display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 0 var(--space-2); padding-left: var(--space-5); }
+  .shell main { margin: 0; max-width: none; }
+  .side { position: sticky; top: 0; align-self: start; display: flex; flex-direction: column; gap: 2px; padding-top: var(--space-5); }
+  .side a { padding: 9px 12px; border-radius: 8px; text-decoration: none; color: var(--color-ink-soft); font-weight: 600; font-size: var(--text-s); }
+  .side a:hover { background: rgb(0 0 0 / 0.05); color: var(--color-ink); }
+  .side a[aria-current="page"] { background: var(--color-surface); color: var(--color-brand-deep); box-shadow: 0 1px 2px rgb(0 0 0 / 0.08); }
+  @media (max-width: 900px) {
+    .shell { grid-template-columns: minmax(0, 1fr); padding-left: 0; }
+    .side { position: static; flex-direction: row; overflow-x: auto; padding: var(--space-3) var(--space-4) 0; }
+    .side a { white-space: nowrap; }
+  }
 
   /* loading, empty and error states */
   :root { --z-toast: 30; }
@@ -148,76 +183,296 @@
   [aria-busy="true"].dim { opacity: 0.5; transition: opacity var(--dur) var(--ease); }
   .retry { margin-left: var(--space-2); }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } .skel, .spin, .progress li.now::before { animation: none; } .dots::after { animation: none; content: '...'; } }
+
+  /* dashboard shell: burgundy side rail, top bar, cards, pipeline with the assistant beside it */
+  .app { display: grid; grid-template-columns: 248px minmax(0, 1fr); min-height: 100vh; }
+  .navrail { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; gap: var(--space-5); padding: var(--space-5) var(--space-4); background: linear-gradient(180deg, var(--color-brand) 0%, var(--color-brand-deep) 100%); color: #fff; }
+  .navrail .wordmark { color: #fff; }
+  .branchbox { display: flex; flex-direction: column; padding: var(--space-3); border: 1px solid rgb(255 255 255 / 0.3); border-radius: 8px; }
+  .branchbox small, .me small { color: rgb(255 255 255 / 0.75); font-size: var(--text-s); }
+  .navrail .side { position: static; padding: 0; gap: var(--space-1); }
+  .navrail .side { align-items: stretch; }
+  .navrail .side a { width: 100%; display: flex; gap: var(--space-2); justify-content: space-between; align-items: center; color: rgb(255 255 255 / 0.9); font-size: var(--text-m); font-weight: 500; padding: 10px 12px; }
+  .navrail .side a:hover { background: rgb(255 255 255 / 0.1); color: #fff; }
+  .navrail .side a[aria-current="page"] { background: #fff; color: var(--color-brand-deep); font-weight: 600; box-shadow: none; }
+  .navrail .side .count { min-width: 1.6em; text-align: center; padding: 0 6px; border-radius: 6px; background: var(--color-warn-tint); color: var(--color-warn); font-size: var(--text-s); font-weight: 700; }
+  .navrail .side a.disabled { color: rgb(255 255 255 / 0.5); pointer-events: none; }
+  .navfoot { margin-top: auto; display: flex; flex-direction: column; gap: var(--space-4); }
+  .navfoot .roles { align-self: flex-start; }
+  .me { display: flex; gap: var(--space-3); align-items: center; padding-top: var(--space-4); border-top: 1px solid rgb(255 255 255 / 0.25); }
+  .me > span:last-child { display: flex; flex-direction: column; line-height: 1.3; }
+  .avatar { flex: none; display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--color-brand-tint); color: var(--color-brand-deep); font-weight: 700; font-size: var(--text-s); }
+  .avatar.big { width: 48px; height: 48px; border-radius: 10px; font-size: var(--text-m); }
+  .content { min-width: 0; display: flex; flex-direction: column; }
+  .topbar { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); padding: var(--space-4) var(--space-5); background: var(--color-surface); border-bottom: 1px solid var(--color-line); }
+  .topbar .crumb { margin: 0; color: var(--color-ink-soft); font-weight: 500; }
+  .topbar #ph-id { font-family: var(--font-mono); }
+  .topbar #ph-id::before { content: " / "; font-family: var(--font-ui); }
+  main { display: block; max-width: 1280px; width: 100%; margin: 0; padding: var(--space-5); }
+  .intro { display: flex; justify-content: space-between; align-items: flex-end; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5); }
+  .intro h1 { font-size: 1.75rem; }
+  .intro .btn { text-decoration: none; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); gap: var(--space-4); margin-bottom: var(--space-5); }
+  .card { padding: var(--space-4); background: var(--color-surface); border: 1px solid var(--color-line); border-radius: 10px; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+  .card:hover { border-color: var(--color-brand); background: var(--color-surface); }
+  .card[aria-pressed="true"] { border-color: var(--color-brand); box-shadow: inset 0 3px 0 var(--color-brand); }
+  .card { white-space: normal; }
+  .card b { display: block; font-size: 2rem; line-height: 1.2; color: var(--color-brand-deep); font-variant-numeric: tabular-nums; }
+  .card span { display: block; font-weight: 600; }
+  .card small { color: var(--color-ink-soft); font-size: var(--text-s); }
+  .work { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: var(--space-5); align-items: start; }
+  .work.solo { grid-template-columns: minmax(0, 1fr); }
+  .work.solo .col { display: grid; grid-template-columns: minmax(0, 360px) minmax(0, 1fr); align-items: start; }
+  .work.solo .col > #cases-box { grid-column: 1 / -1; }
+  @media (max-width: 900px) { .work.solo .col { grid-template-columns: minmax(0, 1fr); } }
+  .col { display: flex; flex-direction: column; gap: var(--space-5); min-width: 0; }
+  .col > section + section, .col > div + section, .col > section + div { margin-top: 0; }
+  .assist { position: sticky; top: var(--space-4); }
+  .assist .log { max-height: 50vh; }
+  .quick { display: flex; flex-direction: column; align-items: stretch; gap: var(--space-2); margin-top: var(--space-3); }
+  .quick button { text-align: left; white-space: normal; }
+  .filters { display: flex; gap: var(--space-2); flex-wrap: wrap; margin-top: var(--space-4); }
+  .filters button { background: none; border: 0; color: var(--color-ink-soft); padding: 6px 12px; border-radius: 6px; }
+  .filters button:hover { background: #f4f4f4; color: var(--color-ink); }
+  .filters button[aria-pressed="true"] { background: var(--color-brand-tint); color: var(--color-brand); }
+  .search { margin-top: var(--space-3); }
+  .who { display: flex; gap: var(--space-3); align-items: center; }
+  .who .avatar { width: 32px; height: 32px; border-radius: 8px; }
+  .casepanel { padding: 0; overflow: hidden; }
+  .casepanel > .case-head { display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap; padding: var(--space-5) var(--space-5) 0; }
+  .case-head .grow { flex: 1; min-width: 160px; }
+  .steps { list-style: none; margin: var(--space-4) 0 0; padding: 0 var(--space-5) var(--space-4); display: flex; gap: var(--space-2); flex-wrap: wrap; border-bottom: 1px solid var(--color-line); counter-reset: step; font-size: var(--text-s); }
+  .steps li { counter-increment: step; display: flex; align-items: center; gap: var(--space-2); color: var(--color-ink-soft); }
+  .steps li + li::before { content: ''; width: 28px; height: 1px; background: var(--color-line); }
+  .steps li span::before { content: counter(step); display: inline-grid; place-items: center; width: 22px; height: 22px; margin-right: 6px; border-radius: 50%; border: 1px solid var(--color-line); font-size: 0.75rem; }
+  .steps li.done span::before { content: '\2713'; background: var(--color-ok-tint); border-color: var(--color-ok); color: var(--color-ok); }
+  .steps li.now { color: var(--color-brand); font-weight: 600; }
+  .steps li.now span::before { background: var(--color-brand); border-color: var(--color-brand); color: #fff; }
+  .casepanel .pair { display: grid; }
+  .casepanel section { border: 0; border-radius: 0; background: none; padding: var(--space-5); }
+  .casepanel .pair > section + section { border-left: 1px solid var(--color-line); }
+  .casepanel #bm-left, .casepanel #bm-right { gap: 0; border-bottom: 1px solid var(--color-line); }
+  .casepanel #bm-left { grid-template-columns: minmax(0, 1fr); }
+  .casepanel #result { border-top: 1px solid var(--color-line); }
+  .foot { padding: 0 var(--space-5) var(--space-5); margin: 0; max-width: 1280px; }
+  @media (max-width: 1100px) { .work { grid-template-columns: minmax(0, 1fr); } .assist { position: static; order: -1; } }
+  @media (max-width: 900px) {
+    .app { grid-template-columns: minmax(0, 1fr); }
+    .navrail { position: static; height: auto; flex-direction: row; flex-wrap: wrap; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); }
+    .navrail .branchbox, .navrail .me { display: none; }
+    .navrail .side { flex-direction: row; flex-wrap: wrap; order: 3; width: 100%; }
+    .navrail .side a { width: auto; padding: 6px 10px; font-size: var(--text-s); }
+    .navfoot { margin: 0 0 0 auto; }
+    main { padding: var(--space-4); }
+    .topbar { padding: var(--space-3) var(--space-4); }
+    .casepanel .pair > section + section { border-left: 0; border-top: 1px solid var(--color-line); }
+    .casepanel > .case-head, .casepanel section { padding-left: var(--space-4); padding-right: var(--space-4); }
+    .steps { padding: 0 var(--space-4) var(--space-4); }
+    .steps li + li::before { width: 12px; }
+  }
+  #cases-count { display: none; }
+  .work:not(.solo) table.cases th:nth-child(5), .work:not(.solo) table.cases td:nth-child(5) { display: none; }
+  .casepanel .pair, .casepanel #bm-right { grid-template-columns: minmax(0, 1fr); }
+  .casepanel .pair > section + section { border-left: 0; border-top: 1px solid var(--color-line); }
+  .steps li + li::before { width: 16px; }
+  @media (max-width: 560px) { table.cases th:nth-child(2), table.cases td:nth-child(2) { display: none; } .card b { font-size: 1.5rem; } }
+  @media (max-width: 560px) { table.cases th:nth-child(n+4), table.cases td:nth-child(n+4) { display: none; } }
+
+  /* icons */
+  h2 > svg, button > svg, .btn > svg { display: inline-block; vertical-align: -3px; margin: 0 8px 0 0; }
+  h2 > svg { width: 20px; height: 20px; color: var(--color-brand); }
+  button.small > svg { width: 15px; height: 15px; margin-right: 5px; }
+  .mark svg { width: 30px; height: 30px; margin: 0; display: block; }
+  .wordmark .mark { margin-right: -4px; }
+  .branchbox { flex-direction: row; gap: var(--space-3); align-items: center; }
+  .branchbox > svg { width: 28px; height: 28px; margin: 0; flex: none; opacity: 0.9; }
+  .branchbox > span { display: flex; flex-direction: column; }
+  .navrail .side a svg { width: 19px; height: 19px; margin: 0 10px 0 0; flex: none; }
+  .navrail .side a .lbl { flex: 1; display: flex; align-items: center; }
+  .card .ic { float: right; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 10px; background: var(--color-brand-tint); color: var(--color-brand); }
+  .card .ic svg { margin: 0; width: 20px; height: 20px; }
+  .search { position: relative; }
+  .search svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); margin: 0; color: var(--color-ink-soft); pointer-events: none; }
+  .search input { padding-left: 38px; }
+  .today::before { content: ''; }
+
+  /* case page */
+  .casepage[hidden] { display: none; }
+  .casebar { position: sticky; top: 0; z-index: 5; display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap; margin: calc(-1 * var(--space-5)) calc(-1 * var(--space-5)) var(--space-5); padding: var(--space-3) var(--space-5); background: var(--color-surface); border-bottom: 1px solid var(--color-line); box-shadow: 0 2px 8px rgb(0 0 0 / 0.05); }
+  .casebar .back { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; text-decoration: none; }
+  .casebar .back svg { margin: 0; }
+  .casebar .soft { margin-left: auto; }
+  .casegrid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: var(--space-5); align-items: start; }
+  .casegrid .assist { position: sticky; top: 76px; }
+  @media (max-width: 1100px) { .casegrid { grid-template-columns: minmax(0, 1fr); } .casegrid .assist { position: static; } }
+  @media (max-width: 900px) { .casebar { margin: calc(-1 * var(--space-4)) calc(-1 * var(--space-4)) var(--space-4); padding: var(--space-3) var(--space-4); } .casebar .soft { flex-basis: 100%; order: 3; margin: 0; } }
+  /* closer to the team's dashboard mockup */
+  :root { --color-paper: #f6f5f3; --color-line: #e7e2dc; --text-m: 0.875rem; --text-s: 0.75rem; }
+  .content > .topbar { background: linear-gradient(90deg, var(--color-brand) 60%, var(--color-gold)) top / 100% 3px no-repeat, var(--color-surface); }
+  section, .card, .casepanel, .assist { border-radius: 8px; box-shadow: none; }
+  .intro h1 { font-size: 1.625rem; font-weight: 600; letter-spacing: -0.02em; }
+  h2 { font-size: 1rem; font-weight: 600; }
+  .card span { font-weight: 500; font-size: var(--text-s); color: var(--color-ink-soft); }
+  .card b { font-size: 1.75rem; font-weight: 600; margin: var(--space-2) 0 var(--space-1); }
+  .card small { font-size: 0.6875rem; }
+  .navrail .side a { font-weight: 400; }
+  .navrail .side a[aria-current="page"] { font-weight: 500; }
+  table.trace.cases th { font-weight: 500; font-size: 0.6875rem; background: #faf8f6; }
+  table.trace.cases td { font-size: 0.8125rem; padding-top: 12px; padding-bottom: 12px; }
+  table.trace.cases tbody tr:hover { background: #fcf7f5; }
+  .status { font-weight: 500; font-size: 0.6875rem; padding: 2px 8px; border-radius: 4px; display: inline-flex; align-items: center; gap: 6px; }
+  .status::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+  .who .avatar { width: 30px; height: 30px; border-radius: 6px; border: 1px solid var(--color-line); background: #faf8f6; color: var(--color-ink-soft); font-size: 0.6875rem; }
+  .filters button[aria-pressed="false"], .filters button:not([aria-pressed]) { font-weight: 400; }
+  button, .btn { font-weight: 500; }
+  .who > span > :first-child, .who b { font-weight: 500; }
+  .bars { display: grid; gap: var(--space-2); margin-top: var(--space-3); }
+  .statbar { display: grid; grid-template-columns: minmax(0, 16rem) minmax(0, 1fr) 2.5rem; gap: var(--space-3); align-items: center; font-size: var(--text-s); }
+  .statbar i { display: block; height: 8px; border-radius: 4px; background: var(--color-brand); min-width: 2px; }
+  .statbar b { font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+  @media (max-width: 560px) { .statbar { grid-template-columns: minmax(0, 1fr) 2.5rem; } .statbar i { grid-column: 1 / -1; grid-row: 2; } }
+  .work.solo.bm .col { display: block; }
+  .work.bm .col > section + section { margin-top: var(--space-4); }
+  #cases-metric { margin-bottom: var(--space-4); }
+  .glance { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-4); }
+  @media (max-width: 900px) { .glance { grid-template-columns: minmax(0, 1fr); } }
+  .feed { list-style: none; margin: var(--space-3) 0 0; padding: 0; }
+  .feed li { border-top: 1px solid var(--color-line); }
+  .feed a { display: flex; gap: var(--space-3); align-items: center; padding: var(--space-3) var(--space-2); text-decoration: none; color: inherit; border-radius: 6px; }
+  .feed a:hover { background: #fdfaf7; }
+  .feed .grow { flex: 1; min-width: 0; }
+  .feed .soft { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .glance > section + section { margin-top: 0; }
+  @media (max-width: 560px) { .feed .status { display: none; } }
+  @media (max-width: 900px) { .navrail .side a[aria-current="page"]::before { display: none; } }
+  .statbar span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  #report-box #cases-metric { margin: var(--space-3) 0 0; }
+  .topbar .right { display: flex; align-items: center; gap: var(--space-3); }
+  .topbar .avatar { width: 30px; height: 30px; font-size: 0.6875rem; }
+  /* colors and hovers from the team's mockup */
+  :root { --color-paper: #f7f6f2; --color-line: #eae6e1; --color-gold: #b69754; }
+  .navrail { background: linear-gradient(165deg, #982525 0%, #771b1e 44%, #571216 100%); color: #eed9d5; }
+  .navrail .side a { position: relative; color: #eed9d5; }
+  .navrail .side a svg { color: #d9bda5; }
+  .navrail .side a:hover { background: rgb(255 255 255 / 0.05); color: #fff; }
+  .navrail .side a[aria-current="page"] { background: #fff6e8; color: #8d2225; box-shadow: 0 3px 12px rgb(61 9 14 / 0.09); }
+  .navrail .side a[aria-current="page"] svg { color: var(--color-brand); }
+  .navrail .side a[aria-current="page"]::before { content: ""; position: absolute; left: -16px; top: 50%; translate: 0 -50%; width: 3px; height: 20px; border-radius: 0 2px 2px 0; background: #e1c781; }
+  .navrail .side .count { background: #f0dfca; color: #8e3931; }
+  .branchbox { border-color: rgb(208 172 108 / 0.35); background: rgb(255 255 255 / 0.02); }
+  .branchbox svg { color: #d6b56d; }
+  .content > .topbar { background: linear-gradient(90deg, #a32628 0 73%, var(--color-gold) 73% 100%) top / 100% 3px no-repeat, var(--color-surface); border-bottom-color: #e8dfd0; }
+  .card { box-shadow: 0 2px 3px rgb(77 43 22 / 0.01); }
+  .card:first-child { border-top: 2px solid var(--color-brand); }
+  .card b { color: #772026; }
+  .card .ic { background: #f5f1eb; color: #a48a62; border-radius: 6px; width: 32px; height: 32px; }
+  .card:first-child .ic { background: #f9eae6; color: var(--color-brand); }
+  .card:hover { border-color: #d5bd89; }
+  .card[aria-pressed="true"] { border-color: var(--color-brand); }
+  table.trace.cases th { color: #9a8b7f; background: #fbfaf7; }
+  table.cases tbody tr:hover { background: #fdfaf7; }
+  table.cases tbody tr[aria-current="true"] { background: #fcf5ed; }
+  .who .avatar { background: #f2ede5; color: #917453; border-color: transparent; }
+  .avatar.big { background: #f5ece0; color: #8c602e; }
+  .filters button:hover { background: #fbf7ed; }
+  .filters button[aria-pressed="true"] { color: #a32628; background: #faedeb; font-weight: 600; }
+  button.secondary, .btn.secondary { border-color: #e5ddd6; color: #74645b; }
+  button.secondary:hover, .btn.secondary:hover { background: #fbf7ed; border-color: #d5bd89; }
+  button:not(.secondary):not(.small):not(.card):hover:not(:disabled), .btn:not(.secondary):hover { background: #8c2023; border-color: #8c2023; }
+  .status.missing { background: #fff5df; color: #af8435; }
+  .status.ready, .status.with { background: #e9f5ef; color: #278168; }
+  #chat > .row:first-child { margin: calc(-1 * var(--space-5)) calc(-1 * var(--space-5)) var(--space-4); padding: var(--space-4) var(--space-5); background: linear-gradient(120deg, #fbf6e9, #f8f1df); border-top: 2px solid var(--color-gold); border-bottom: 1px solid #ece1c7; border-radius: 8px 8px 0 0; }
+  #chat > .row:first-child h2 { color: #7d2926; }
+  #chat > .row:first-child .soft { color: #91794c; }
+  .quick button:hover { background: #fbf7ed; border-color: #d5bd89; }
+  .productlist { display: grid; gap: var(--space-3); margin-top: var(--space-4); }
+  .product { border: 1px solid var(--color-line); border-radius: 8px; padding: var(--space-4); transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease); }
+  .product:hover { border-color: #bc9a54; background: #fcf8ee; }
+  .product h3 { font-size: var(--text-m); font-weight: 600; }
+  .product .amt { font-size: var(--text-s); color: #81652e; background: #f0e6cb; padding: 2px 8px; border-radius: 4px; white-space: nowrap; }
+  .product p { color: var(--color-ink-soft); font-size: var(--text-s); margin: var(--space-1) 0 var(--space-2); }
+  .product a { font-size: var(--text-s); font-weight: 500; }
+  @media (max-width: 560px) { #chat > .row:first-child { margin: calc(-1 * var(--space-4)) calc(-1 * var(--space-4)) var(--space-4); padding: var(--space-3) var(--space-4); } }
 </style>
 </head>
 <body>
-<header class="top"><div class="top-inner">
-  <h1 class="wordmark">BPI <span>Counter Check, synthetic data only</span></h1>
-  <nav class="roles" aria-label="View"><a id="nav-bm" href="#">Branch</a><a id="nav-bso" href="#">BSO</a></nav>
-</div></header>
-
+<div class="app">
+<aside class="navrail">
+  <p class="wordmark"><span class="mark" data-icon="logo"></span>BPI <span class="name">Counter Check<small>Business lending</small></span></p>
+  <div class="branchbox" data-icon="bank"><span><strong>Sample branch</strong><small id="ws-role">Branch workspace</small></span></div>
+  <nav class="side" id="side" aria-label="Sections"></nav>
+  <div class="navfoot">
+    <nav class="roles" aria-label="View"><a id="nav-bm" href="#">Branch</a><a id="nav-bso" href="#">BSO</a></nav>
+    <p class="me"><span class="avatar" id="me-initials">BM</span><span><strong id="me-name">Sample branch manager</strong><small>Synthetic user</small></span></p>
+  </div>
+</aside>
+<div class="content">
+<header class="topbar"><p class="crumb"><span id="ph-ws">Branch workspace</span> / <span id="crumb-page">Loan referrals</span><span id="ph-id"></span></p><span class="right"><span class="soft today" id="today"></span><span class="avatar" aria-hidden="true">BM</span></span></header>
 <main id="main">
-  <!-- Branch manager -->
+  <div class="intro" id="overview">
+    <div><h1 id="page-title">Loan referrals</h1><p class="soft" id="page-sub">Check each MSME client's papers at the counter before the BSO sees them.</p></div>
+    <a class="btn" id="new-ref" data-icon="plus" href="?">New referral</a>
+  </div>
+  <div class="cards" id="cards" aria-live="polite"></div>
+  <div class="work" id="work">
+  <div class="col">
+  <section id="cases-box">
+    <div class="row"><div><h2 data-icon="pipeline" id="cases-title">Referral pipeline</h2><div class="counts" id="cases-count"></div><p class="soft" id="cases-metric" style="margin-top:var(--space-2)"></p></div><button id="cases-refresh" data-icon="refresh" class="small secondary">Refresh</button></div>
+    <div class="filters" id="cases-filters" role="group" aria-label="Filter referrals"></div><div class="search" data-icon="search"><input id="cases-search" type="search" placeholder="Search client, business or referral number" aria-label="Search referrals"></div>
+    <div class="tablewrap"><table class="trace cases">
+      <thead><tr><th>Client and business</th><th>Loan amount</th><th>Status</th><th>Open items</th><th>Last update</th></tr></thead>
+      <tbody id="cases"></tbody>
+    </table></div>
+    <div class="pager hidden" id="cases-pager"><button class="small secondary" id="cases-prev">Previous</button><span class="soft" id="cases-page"></span><button class="small secondary" id="cases-next">Next</button></div>
+  </section>
+
+  <section id="case-panel" class="casepanel hidden">
+    <div class="case-head"><span class="avatar big" id="ph-initials" aria-hidden="true">NR</span><div class="grow"><h2 id="ph-title">New referral</h2><p class="soft" id="ph-meta"></p></div><div class="ph-right"><span id="ph-status" class="status">Not saved yet</span><p class="soft" id="ph-sub"></p></div></div>
+    <ol class="steps" id="steps" aria-label="Where this referral is"></ol>
   <div id="bm-left" class="hidden">
-    <section id="chat">
-      <div class="row"><h2>Assistant</h2><span class="soft">English or Taglish</span></div>
-      <div class="modes" role="group" aria-label="What the assistant does">
-        <button id="mode-fill" class="secondary small" aria-pressed="true">Fill the form</button>
-        <button id="mode-ask" class="secondary small" aria-pressed="false">Ask about this case</button>
-      </div>
-      <div class="log" id="chat-log" aria-live="polite"></div>
-      <div class="composer">
-        <textarea id="chat-in" rows="5" maxlength="1000" aria-label="Message to the assistant">Si Elena Santos, may-ari ng Elena's Artisan Bakery, sole prop, food business. 750k ang loan. Married kay Ramon Santos, may BPI account.</textarea>
-        <button id="chat-send">Send</button>
-      </div>
-      <p class="soft" id="chat-hint">Tell it what the client said. It fills the form below, and you check it before you save. The note here is a sample.</p>
-    </section>
-    <section>
-      <h2>Case</h2>
+    <section id="case-sec">
+      <h2 data-icon="user">Case</h2>
       <p class="soft">The branch confirms these fields. The checklist comes from the rules, not from the AI.</p>
-      <div class="two">
+      <div class="fields">
         <div><label for="f-id">Referral number</label><input id="f-id" value="RF-2026-042"></div>
         <div><label for="f-channel">Channel</label><select id="f-channel"><option>Branch walk-in</option><option>Ka-Negosyo online</option></select></div>
-      </div>
-      <label for="f-type">Business structure</label><select id="f-type"><option>Sole proprietorship</option><option>Partnership</option><option>Corporation</option></select>
-      <label for="f-business">Business name</label><input id="f-business">
-      <label for="f-name">Owner or signatory</label><input id="f-name">
-      <div class="two">
+        <div><label for="f-type">Business structure</label><select id="f-type"><option>Sole proprietorship</option><option>Partnership</option><option>Corporation</option></select></div>
+        <div><label for="f-business">Business name</label><input id="f-business"></div>
+        <div><label for="f-name">Owner or signatory</label><input id="f-name"></div>
         <div><label for="f-industry">Industry</label><select id="f-industry"><option>Food & beverage</option><option>Services</option><option>Wholesale & retail</option><option>Manufacturing</option><option>Construction</option></select></div>
         <div><label for="f-amount">Loan amount (PHP)</label><input id="f-amount" inputmode="numeric"></div>
-      </div>
-      <div class="two">
         <div><label for="f-civil">Civil status</label><select id="f-civil"><option value="married">Married</option><option value="single">Single</option><option value="widowed">Widowed</option><option value="separated">Separated</option></select></div>
         <div><label for="f-spouse">Spouse name</label><input id="f-spouse"></div>
       </div>
-      <label class="check"><input type="checkbox" id="f-secured"> Secured loan (property collateral)</label>
-      <label class="check"><input type="checkbox" id="f-bpi" checked> Working account is with BPI</label>
-      <div class="actions"><button id="save-case">Save case</button></div>
+      <div class="checks">
+        <label class="check"><input type="checkbox" id="f-secured"> Secured loan (property collateral)</label>
+        <label class="check"><input type="checkbox" id="f-bpi" checked> Working account is with BPI</label>
+      </div>
+      <div class="actions"><button id="save-case" data-icon="save">Save case</button></div>
     </section>
-    <section>
-      <details id="req-box" style="margin-top:0"><summary><h2 style="display:inline">Requirements</h2> <span class="soft" id="req-count">Save the case to see the papers</span></summary>
-      <ul class="items" id="checklist"><li><span></span><span class="soft">Save the case to see the papers this client needs.</span><span></span></li></ul>
+  </div>
+  <div id="bm-right" class="hidden">
+    <section id="req-sec">
+      <div class="row"><h2 data-icon="clipboard"><span id="req-title">Papers this case needs</span></h2><span class="soft" id="req-count"></span></div>
+      <p class="soft" id="req-for">Save the case above to see the papers this client needs.</p>
+      <ul class="items" id="checklist"></ul>
       <p class="soft" id="rules-note" style="margin-top:8px"></p>
-      </details>
       <div id="headsup-box" class="hidden">
         <h3 style="margin-top:16px">Heads up from BSO</h3>
         <ul class="items" id="headsup"></ul>
         <p class="soft">These are reminders from past returns, and a BSO published each one. They do not change the checklist.</p>
       </div>
     </section>
-  </div>
-
-  <div id="bm-right" class="hidden">
     <section>
-      <div class="row"><h2>Documents</h2><span class="soft" id="photo-note">Photos are uploaded to the AWS backend (S3 in Singapore, deleted after 1 day). Use synthetic documents only.</span></div>
+      <div class="row"><h2 data-icon="camera">Documents</h2><span class="soft" id="photo-note">Photos are uploaded to the AWS backend (S3 in Singapore, deleted after 1 day). Use synthetic documents only.</span></div>
       <p class="soft" id="stack-switch"></p>
       <div class="actions">
-        <label class="btn secondary" style="margin:0">Take or add photos<input id="files" type="file" accept="image/*,application/pdf" multiple hidden></label>
-        <button id="run-check" disabled>Check documents</button>
-        <button id="clear-pages" class="secondary" disabled>Remove photos</button>
+        <label class="btn secondary" style="margin:0" data-icon="camera">Take or add photos<input id="files" type="file" accept="image/*,application/pdf" multiple hidden></label>
+        <button id="run-check" data-icon="scan" disabled>Check documents</button>
+        <button id="clear-pages" data-icon="trash" class="secondary" disabled>Remove photos</button>
       </div>
       <p class="soft">No papers at hand? Load the synthetic sample papers for the sample client, Elena Santos, so fill the form from the sample note first. Visit 1 has two planted problems, and visit 2 is complete.</p>
-      <div class="actions"><button id="sample-1" class="secondary small">Sample papers, visit 1</button><button id="sample-2" class="secondary small">Sample papers, visit 2</button></div>
+      <div class="actions"><button id="sample-1" data-icon="file" class="secondary small">Sample papers, visit 1</button><button id="sample-2" data-icon="file" class="secondary small">Sample papers, visit 2</button></div>
       <div class="empty" id="pages-empty"><strong>No pages yet</strong>Take photos of the papers, drop images or PDFs here, or load the sample papers.</div>
       <div class="progress hidden" id="progress" role="status" aria-live="polite"><div class="row"><strong id="progress-title">Checking the documents</strong><span class="soft" id="progress-time"></span></div><ol id="progress-steps"></ol><div class="bar"><i id="progress-bar"></i></div></div>
       <div class="pages" id="pages"></div>
@@ -233,72 +488,122 @@
       <h3 style="margin-top:16px">Message to send</h3>
       <div class="message" id="message"></div>
       <p class="soft" id="drafted"></p>
-      <div class="actions"><button id="handoff" disabled>Send to BSO</button></div>
+      <div class="actions"><button id="handoff" data-icon="arrow" disabled data-why="Send to BSO unlocks once nothing is missing.">Send to BSO</button></div>
       <details><summary>How the AI worked on this check</summary>
         <table class="trace"><thead><tr><th>Page</th><th>Lines read</th><th>Placed as</th><th>Model</th><th>Checked against the text</th></tr></thead><tbody id="trace"></tbody></table>
         <p class="soft" id="trace-note"></p>
       </details>
     </section>
   </div>
-
-  <!-- BSO -->
-  <section id="cases-box" class="full">
-    <div class="row"><div><h2 id="cases-title">All cases</h2><div class="counts" id="cases-count"></div><p class="soft" id="cases-metric" style="margin-top:var(--space-2)"></p></div><button id="cases-refresh" class="small secondary">Refresh</button></div>
+  </section>
+  <div class="glance off" id="overview-box">
+    <section>
+      <h2 data-icon="alert">Needs attention</h2>
+      <p class="soft">Cases with missing papers or returned by the BSO, oldest update first.</p>
+      <ul class="feed" id="attention"></ul>
+    </section>
+    <section>
+      <h2 data-icon="clock">Latest updates</h2>
+      <p class="soft">The newest status on each case.</p>
+      <ul class="feed" id="activity"></ul>
+    </section>
+  </div>
+  <section id="clients-box" class="off">
+    <div class="row"><div><h2 data-icon="users">Clients</h2><p class="soft">Each client comes from the saved referrals. Pick a row to open the client's latest case.</p></div></div>
     <div class="tablewrap"><table class="trace cases">
-      <thead><tr><th>Referral</th><th>Business</th><th>Status</th><th>Open items</th><th>Last update</th><th>Amount</th><th>Structure and industry</th></tr></thead>
-      <tbody id="cases"></tbody>
+      <thead><tr><th>Client</th><th>Business structure</th><th>Referrals</th><th>Latest status</th><th>Last update</th></tr></thead>
+      <tbody id="clients"></tbody>
     </table></div>
-    <div class="pager hidden" id="cases-pager"><button class="small secondary" id="cases-prev">Previous</button><span class="soft" id="cases-page"></span><button class="small secondary" id="cases-next">Next</button></div>
+  </section>
+  <section id="report-box" class="off">
+    <h2 data-icon="chart">Referrals by status</h2>
+    <div class="bars" id="by-status"></div>
+    <h2 data-icon="alert" style="margin-top:var(--space-5)">Most common problems in open cases</h2>
+    <p class="soft">These come from the latest check on each case that still has open items.</p>
+    <div class="bars" id="by-issue"></div>
+    <p class="soft" style="margin-top:var(--space-4)">All counts come from the prototype's synthetic cases.</p>
+  </section>
+  <section id="products" class="hidden">
+    <h2 data-icon="briefcase">Loan product guide</h2>
+    <p class="soft">These are BPI's MSME loan types. The BSO picks the product with the client, and this page doesn't suggest one.</p>
+    <div class="productlist">
+      <div class="product"><div class="row"><h3>Ka-Negosyo SME Term Loan</h3><span class="amt">From PHP 300,000</span></div><p>For a fixed amount paid back over a set term, such as expansion or equipment.</p><a href="https://www.bpi.com.ph/sme-banking/loans/sme-term-loan" target="_blank" rel="noopener">BPI page</a></div>
+      <div class="product"><div class="row"><h3>Ka-Negosyo Credit Line</h3><span class="amt">From PHP 1,000,000</span></div><p>For a revolving line the business draws on for working capital.</p><a href="https://www.bpi.com.ph/sme-banking/loans/sme-credit-line" target="_blank" rel="noopener">BPI page</a></div>
+      <div class="product"><div class="row"><h3>Property Acquisition Loan</h3><span class="amt">From PHP 1,000,000</span></div><p>For buying property the business will use.</p><a href="https://www.bpi.com.ph/sme-banking/loans/property-acquisition-loan" target="_blank" rel="noopener">BPI page</a></div>
+      <div class="product"><div class="row"><h3>Ready Loan</h3><span class="amt">Up to PHP 300,000</span></div><p>For a smaller loan with a quick application.</p><a href="https://www.bpi.com.ph/sme-banking/loans/ready-loan" target="_blank" rel="noopener">BPI page</a></div>
+    </div>
+    <p class="soft" style="margin-top:8px">The amounts come from BPI's public pages, read once and not cross-checked. The one-line descriptions are ours, written from those pages.</p>
   </section>
   <div id="bso-left" class="hidden">
     <section>
-      <h2>Case</h2>
+      <h2 data-icon="user">Case</h2>
       <label for="b-id">Referral number</label>
-      <div class="row"><input id="b-id" value="RF-2026-042" style="max-width:200px"><button id="b-open" class="secondary">Open</button></div>
+      <div class="row"><input id="b-id" value="RF-2026-042" style="max-width:200px"><button id="b-open" data-icon="folder" class="secondary">Open</button></div>
       <div id="b-summary" style="margin-top:12px"></div>
     </section>
     <section>
-      <h2>Timeline</h2>
+      <h2 data-icon="clock">Timeline</h2>
       <ul class="items timeline" id="b-events"></ul>
     </section>
   </div>
   <div id="bso-right" class="hidden">
     <section id="ask-box">
-      <div class="row"><h2>Ask about this case</h2><span class="soft">Answers come only from the case record.</span></div>
-      <div class="row" style="margin-top:8px"><input id="b-q" aria-label="Question about this case"><button id="b-ask">Ask</button></div>
+      <div class="row"><h2 data-icon="sparkles">Ask about this case</h2><span class="soft">Answers come only from the case record.</span></div>
+      <div class="row" style="margin-top:8px"><input id="b-q" aria-label="Question about this case"><button id="b-ask" data-icon="send">Ask</button></div>
       <div class="answer" id="b-answer"></div>
       <details id="b-trace-box" class="hidden"><summary>Tools the assistant used</summary><pre class="mono" id="b-trace" style="white-space:pre-wrap"></pre></details>
     </section>
     <section>
-      <div class="row"><h2>Open items</h2><span id="b-status" class="status"></span></div>
+      <div class="row"><h2 data-icon="clipboard">Open items</h2><span id="b-status" class="status"></span></div>
       <ul class="items" id="b-open-items"></ul>
     </section>
     <section>
-      <h2>Message from the last check</h2>
+      <h2 data-icon="message">Message from the last check</h2>
       <div class="message" id="b-message">No check yet.</div>
-      <div class="actions"><button id="b-approve" class="secondary" disabled>Approve message</button></div>
+      <div class="actions"><button id="b-approve" data-icon="check" class="secondary" disabled>Approve message</button></div>
     </section>
     <section>
-      <h2>Endorse to Credit</h2>
+      <h2 data-icon="badge">Endorse to Credit</h2>
       <p class="soft">Use this when the packet is complete. Credit decides the loan. A case endorsed with no return counts as complete the first time.</p>
-      <div class="actions"><button id="b-endorse" disabled>Endorse to Credit</button></div>
+      <div class="actions"><button id="b-endorse" data-icon="badge" disabled data-why="Endorse unlocks when the case is with the BSO and nothing is open.">Endorse to Credit</button></div>
     </section>
     <section>
-      <h2>Return to branch</h2>
+      <h2 data-icon="undo">Return to branch</h2>
       <p class="soft">Use this when the checklist passed but the branch still has something to fix. The branch sees your reason, and the AI drafts a heads-up from it for you to review.</p>
       <form id="b-return">
         <textarea id="b-return-reason" rows="2" maxlength="300" required aria-label="Reason for returning this case" placeholder="What does the branch need to fix?"></textarea>
-        <div class="actions"><button id="b-return-btn" disabled>Return to branch</button></div>
+        <div class="actions"><button id="b-return-btn" data-icon="undo" disabled data-why="Type a reason first.">Return to branch</button></div>
       </form>
     </section>
     <section>
-      <h2>Heads up for branches</h2>
+      <h2 data-icon="warn">Heads up for branches</h2>
       <p class="soft">Branches see a heads-up only after you publish it, and only on cases like the one it came from. It is a reminder and it never changes the checklist.</p>
       <div id="b-drafts"></div>
       <ul class="items" id="b-headsup"></ul>
     </section>
   </div>
+  </div>
+  <aside class="assist hidden" id="assist">
+    <section id="chat">
+      <div class="row"><h2 data-icon="sparkles">Referral assistant</h2><span class="soft">English or Taglish</span></div>
+      <div class="modes" role="group" aria-label="What the assistant does">
+        <button id="mode-fill" class="secondary small" aria-pressed="true">Fill the form</button>
+        <button id="mode-ask" class="secondary small hidden" aria-pressed="false">Ask about this case</button>
+      </div>
+      <div class="log" id="chat-log" aria-live="polite"></div>
+      <div class="composer">
+        <textarea id="chat-in" rows="5" maxlength="1000" aria-label="Message to the assistant" placeholder="Type what the client said, or a question about this case">Si Elena Santos, may-ari ng Elena's Artisan Bakery, sole prop, food business. 750k ang loan. Married kay Ramon Santos, may BPI account.</textarea>
+        <button id="chat-send" data-icon="send">Send</button>
+      </div>
+      <div class="quick hidden" id="quick"><button class="secondary small" data-icon="message" data-q="Ano pa ang kulang?">What requirements are missing?</button><button class="secondary small" data-icon="message" data-q="Ano ang next step dito?">What happens next?</button><button class="secondary small" data-icon="message" data-q="Bakit ito ibinalik ng BSO?">Why did the BSO return it?</button></div>
+      <p class="soft" id="chat-hint">Tell it what the client said. It fills the case form, and you check it before you save. The note here is a sample.</p>
+    </section>
+  </aside>
+  </div>
 </main>
+<footer class="foot"><span>BPI DATA Wave 2026 prototype. Synthetic data only.</span><span>The branch prepares, the BSO assesses, and Credit decides.</span></footer>
+</div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
 <script src="live.js"></script>

@@ -15,6 +15,44 @@ const ICON = {
   warn: '<svg viewBox="0 0 24 24" class="warn" aria-hidden="true"><path d="M12 8v5M12 17h.01M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>',
   doc: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z M14 3v6h6"/></svg>',
 };
+const svg = (d) => `<svg viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
+Object.assign(ICON, Object.fromEntries(Object.entries({
+  logo: '<rect x="3" y="3" width="18" height="18" rx="5"/><path d="M8 12.5l3 3 5-6"/>',
+  grid: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>',
+  file: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/>',
+  briefcase: '<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>',
+  inbox: '<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  bank: '<path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/>',
+  layers: '<path d="M12 2l10 5-10 5L2 7z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>',
+  alert: '<circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>',
+  users: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+  badge: '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/>',
+  sparkles: '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 3v4M17 5h4"/>',
+  send: '<path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/>',
+  camera: '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>',
+  scan: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h5"/><path d="M14 3v6h6v2"/><circle cx="17" cy="17" r="3"/><path d="M21 21l-1.8-1.8"/>',
+  save: '<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/>',
+  arrow: '<path d="M5 12h14M12 5l7 7-7 7"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
+  trash: '<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>',
+  clipboard: '<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 14l2 2 4-4"/>',
+  clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+  refresh: '<path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/>',
+  undo: '<path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/>',
+  message: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+  folder: '<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>',
+  pipeline: '<path d="M3 6h18M3 12h12M3 18h6"/>',
+  check: '<path d="M5 12l5 5 9-11"/>',
+  x: '<path d="M6 6l12 12M18 6L6 18"/>',
+  back: '<path d="M19 12H5M12 19l-7-7 7-7"/>',
+  chart: '<path d="M4 20V11M10 20V5M16 20v-6M2 20h20"/>',
+  warnline: '<path d="M12 8v5M12 17h.01M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>',
+}).map(([k, d]) => [k, svg(d)])));
+// put an icon at the start of every element marked data-icon
+const iconize = (root = document) => root.querySelectorAll('[data-icon]:not([data-iconized])').forEach((el) => { el.insertAdjacentHTML('afterbegin', el.dataset.icon === 'warn' ? ICON.warnline : ICON[el.dataset.icon] || ''); el.dataset.iconized = '1'; });
+iconize();
 const DOC_LABELS = { '': 'Auto', application_form: 'Application form', gov_id: 'Government ID', spouse_id: 'Spouse ID', registration: 'DTI or SEC registration', business_permit: "Mayor's permit", itr: 'Income tax return', financials: 'Financial statements', audited_fs: 'Audited FS', bank_statements: 'Bank statement', articles: 'Articles', bylaws: 'By-laws', gis: 'GIS', collateral: 'Collateral' };
 const statusClass = (s) => (s === 'Missing requirements' || s === 'Returned by BSO' ? 'missing' : s === 'Ready for BSO review' ? 'ready' : s === 'With BSO' ? 'with' : s === 'Endorsed to Credit' ? 'ready' : '');
 
@@ -44,20 +82,50 @@ function navLinks() {
   const id = encodeURIComponent(caseId() || 'RF-2026-042');
   $('nav-bm').href = `?id=${id}${stackQuery}`; $('nav-bso').href = `?role=bso&id=${id}${stackQuery}`;
   $(role === 'bm' ? 'nav-bm' : 'nav-bso').setAttribute('aria-current', 'page');
+  $('ph-id').textContent = caseId();
 }
-for (const id of role === 'bm' ? ['bm-left', 'bm-right'] : ['bso-left', 'bso-right']) $(id).classList.remove('hidden');
+for (const id of role === 'bm' ? ['bm-left', 'bm-right', 'case-panel', 'assist', 'products'] : ['bso-left', 'bso-right']) $(id).classList.remove('hidden');
+// the branch case is its own page (#case), and the dashboard keeps the cards and the pipeline
+if (role === 'bm') {
+  $('work').classList.add('solo', 'bm');
+  const page = document.createElement('div');
+  page.className = 'casepage'; page.id = 'casepage'; page.hidden = true;
+  page.innerHTML = `<div class="casebar"><a class="back" id="case-back" data-icon="back" href="?${stack === 'free' ? 'stack=free' : ''}">Loan referrals</a><span class="soft" id="sheet-note">Send to BSO unlocks once nothing is missing.</span><button id="sheet-send" data-icon="arrow" disabled>Send to BSO</button></div><div class="casegrid"></div>`;
+  $('main').prepend(page);
+  page.querySelector('.casegrid').append($('case-panel'), $('assist'));
+  iconize(page);
+  const caseView = location.hash === '#case' || location.hash === '#case-panel';
+  page.hidden = !caseView;
+  for (const id of ['overview', 'cards', 'work']) $(id).classList.toggle('off', caseView);
+  if (caseView) $('crumb-page').textContent = 'Case';
+  addEventListener('hashchange', () => { if (location.hash === '#case' || !page.hidden) location.reload(); });
+  $('new-ref').href = `?${stack === 'free' ? 'stack=free' : ''}#case`;
+  // the bar button mirrors Send to BSO at the end of the result
+  const mirror = () => { $('sheet-send').disabled = $('handoff').disabled || $('result').classList.contains('hidden'); $('sheet-note').textContent = $('sheet-send').disabled ? 'Send to BSO unlocks once nothing is missing.' : 'Nothing is missing. The BSO can take it from here.'; };
+  new MutationObserver(mirror).observe($('handoff'), { attributes: true }); new MutationObserver(mirror).observe($('result'), { attributes: true }); mirror();
+  $('sheet-send').onclick = () => $('handoff').click();
+}
+if (role === 'bso') { $('work').classList.add('solo'); $('ws-role').textContent = 'BSO workspace'; $('me-initials').textContent = 'BS'; $('me-name').textContent = 'Sample BSO'; $('page-title').textContent = 'Referral queue'; $('page-sub').textContent = 'Review what the branches sent, return what needs fixing, and endorse complete cases to Credit.'; $('new-ref').classList.add('hidden'); }
+$('today').textContent = new Date().toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'Asia/Manila' });
+const initials = (t) => String(t || '').replace(/[^A-Za-z ]/g, ' ').trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || 'NR';
+// step line from the case status
+const STEPS = ['Client intake', 'Requirements', 'BSO referral', 'Credit review'];
+function steps(status) {
+  const at = !status || status === 'Not saved yet' ? 0 : status === 'With BSO' ? 2 : status === 'Endorsed to Credit' ? 3 : 1;
+  $('steps').innerHTML = STEPS.map((t, i) => `<li class="${i < at ? 'done' : i === at ? 'now' : ''}"${i === at ? ' aria-current="step"' : ''}><span>${t}</span></li>`).join('');
+}
 // a branch link without a case number gets its own random one, so visitors do not share a case
 const freshCase = role === 'bm' && !params.get('id');
 const randomId = () => `RF-2026-${300 + Math.floor(Math.random() * 500)}`;
-if (freshCase) { params.set('id', randomId()); history.replaceState(null, '', `?${params}`); }
+if (freshCase) { params.set('id', randomId()); history.replaceState(null, '', `?${params}${location.hash}`); }
 if (params.get('id')) { $('f-id').value = params.get('id'); $('b-id').value = params.get('id'); }
 navLinks();
 
 function checklistHtml(rows) {
-  return rows.map((r) => `<li>${ICON.doc}<span>${esc(r.title)}${r.reason ? ` <span class="src">(because: ${esc(r.reason)})</span>` : ''}<br>${r.sourceUrl
-    ? `<a class="chip" href="${esc(r.sourceUrl)}" target="_blank" rel="noopener">Source: BPI public page</a>`
-    : r.source === 'J1' ? `<span class="chip" title="${esc(r.sourceTitle)}">Source: BSO checklist</span>`
-    : '<span class="chip assumed">Team assumption, BSO confirms</span>'}</span><span></span></li>`).join('');
+  return rows.map((r) => `<li>${ICON.doc}<span>${esc(r.title)}${r.reason ? ` <span class="src">(because: ${esc(r.reason)})</span>` : ''}</span>${r.sourceUrl
+    ? `<a class="chip" href="${esc(r.sourceUrl)}" target="_blank" rel="noopener">BPI page</a>`
+    : r.source === 'J1' ? `<span class="chip" title="${esc(r.sourceTitle)}">BSO checklist</span>`
+    : '<span class="chip assumed">Assumed</span>'}</li>`).join('');
 }
 // a button shows a spinner and its own label while its request runs, and comes back as it was
 function busy(btn, label) {
@@ -69,6 +137,17 @@ const skelLines = (n) => Array.from({ length: n }, (_, i) => `<li><span></span><
 const headsUpScope = (l) => (l.industry ? `${l.type}, ${l.industry}` : l.type || 'All cases');
 
 // ================= Branch view =================
+// page heading with the business, the client and the status
+function head(r, status, open) {
+  $('ph-ws').textContent = role === 'bm' ? 'Branch workspace' : 'BSO workspace';
+  $('ph-id').textContent = caseId();
+  $('ph-title').textContent = r.business || 'New referral';
+  if (role === 'bm') { $('ph-initials').textContent = initials(r.business || 'New referral'); steps(status); }
+  $('ph-meta').textContent = [r.name, r.type, r.channel].filter(Boolean).join(', ');
+  $('ph-status').textContent = status || 'Not saved yet'; $('ph-status').className = `status ${statusClass(status)}`;
+  $('ph-sub').textContent = open ? `${open} ${open === 1 ? 'item' : 'items'} open` : '';
+}
+
 if (role === 'bm') {
   const pages = []; // { file, url, lines, conf, status, label }
   let lastView = null;
@@ -80,6 +159,9 @@ if (role === 'bm') {
     bpiAccount: $('f-bpi').checked, channel: $('f-channel').value,
   });
   $('f-civil').onchange = () => { $('f-spouse').disabled = $('f-civil').value !== 'married'; };
+  const refreshHead = () => head(referral(), lastView?.status, (lastView?.open?.defects?.length || 0) + (lastView?.open?.needsReview?.length || 0));
+  for (const ev of ['input', 'change']) $('bm-left').addEventListener(ev, refreshHead);
+  refreshHead();
 
   async function saveCase() {
     const done = busy($('save-case'), 'Saving');
@@ -94,9 +176,14 @@ if (role === 'bm') {
   function renderChecklist(v) {
     $('checklist').innerHTML = checklistHtml(v.rules.rows);
     $('req-count').textContent = `${v.rules.rows.length} papers`;
+    const r = v.referral || referral();
+    $('req-title').textContent = r.business ? `Papers for ${r.business}` : 'Papers this case needs';
+    $('req-for').textContent = `${r.id}, ${String(r.type || '').toLowerCase()}${r.secured ? ', secured' : ''}`;
+    $('mode-ask').classList.remove('hidden'); $('quick').classList.toggle('hidden', mode !== 'ask');
     $('rules-note').textContent = `Rules version ${v.rules.version}. Rows marked BSO checklist are what the BSO expects from the branch at referral. The other rows come from BPI's public page, which BPI calls indicative.`;
     $('headsup-box').classList.toggle('hidden', !v.headsUp.length);
     $('headsup').innerHTML = v.headsUp.map((l) => `<li>${ICON.warn}<span>${esc(l.text)}</span><span></span></li>`).join('');
+    refreshHead();
   }
   $('save-case').onclick = saveCase;
 
@@ -107,21 +194,24 @@ if (role === 'bm') {
   let mode = 'fill';
   const SAMPLE = $('chat-in').value;
   const HINT = {
-    fill: 'Tell it what the client said. It fills the form below, and you check it before you save.',
-    ask: 'Ask about the saved case, for example what is still missing or why the BSO sent it back.',
+    fill: 'Tell it what the client said. It fills the case form, and you check it before you save.',
+    ask: 'Ask about this saved case, for example what is still missing or why the BSO sent it back.',
   };
   const say = (who, text) => { const b = document.createElement('div'); b.className = `bubble ${who}`; b.textContent = text; $('chat-log').append(b); $('chat-log').scrollTop = $('chat-log').scrollHeight; return b; };
   const setMode = (m) => {
     mode = m;
     $('mode-fill').setAttribute('aria-pressed', m === 'fill'); $('mode-ask').setAttribute('aria-pressed', m === 'ask');
     $('chat-hint').textContent = HINT[m];
+    $('quick').classList.toggle('hidden', m !== 'ask' || !lastView);
     const v = $('chat-in').value;
     if (m === 'ask' && (!v.trim() || v === SAMPLE)) $('chat-in').value = 'Ano pa ang kulang?';
     if (m === 'fill' && v === 'Ano pa ang kulang?') $('chat-in').value = '';
     $('chat-in').focus();
   };
+  say('bot', 'Hi! Tell me what the client said and I fill the case form. Once the case is saved, you can ask me what papers are still missing.');
   $('mode-fill').onclick = () => setMode('fill');
   $('mode-ask').onclick = () => setMode('ask');
+  $('quick').onclick = (e) => { const b = e.target.closest('[data-q]'); if (!b || $('chat-send').disabled) return; setMode('ask'); $('chat-in').value = b.dataset.q; $('chat-send').click(); };
   async function fill(text, wait) {
     const { fields, model } = await api('POST', '/api/intake', { text, stack });
     if (fields.name || fields.business) { for (const id of ['f-business', 'f-name', 'f-spouse', 'f-amount']) $(id).value = ''; for (const id of ['f-secured', 'f-bpi']) $(id).checked = false; } // a new client clears the last one's values, a correction keeps them
@@ -342,12 +432,12 @@ if (role === 'bm') {
       for (let i = 0; i < 5; i++) {
         const r = await fetch(`/api/case?id=${caseId()}&exists=1`, { headers: { 'x-demo-key': demoKey } }).then((x) => x.json()).catch(() => null);
         if (!r || !r.exists) return;
-        params.set('id', randomId()); history.replaceState(null, '', `?${params}`); $('f-id').value = $('b-id').value = params.get('id'); navLinks();
+        params.set('id', randomId()); history.replaceState(null, '', `?${params}${location.hash}`); $('f-id').value = $('b-id').value = params.get('id'); navLinks();
       }
       return;
     }
     const empty = $('checklist').innerHTML; $('checklist').innerHTML = skelLines(4);
-    try { const v = await api('GET', `/api/case?id=${encodeURIComponent(caseId())}`); fillForm(v.referral); renderChecklist(v); lastView = v; if (v.open.checked) { renderResult(v); markStale('These results are from the last saved check. Photos are not kept after a refresh, so add them again and press Check documents to update.'); } } catch { $('checklist').innerHTML = empty; } })();
+    try { const v = await api('GET', `/api/case?id=${encodeURIComponent(caseId())}`); fillForm(v.referral); lastView = v; renderChecklist(v); if ($('chat-in').value === SAMPLE) { $('chat-in').value = ''; $('chat-hint').textContent = HINT[mode]; } if (v.open.checked) { renderResult(v); markStale('These results are from the last saved check. Photos are not kept after a refresh, so add them again and press Check documents to update.'); } } catch { $('checklist').innerHTML = empty; } })();
   function fillForm(r) { $('f-business').value = r.business; $('f-name').value = r.name; $('f-type').value = r.type; $('f-industry').value = r.industry; $('f-amount').value = r.amount; $('f-civil').value = r.civilStatus; $('f-spouse').value = r.spouseName || ''; $('f-secured').checked = !!r.secured; $('f-bpi').checked = r.bpiAccount !== false; $('f-channel').value = r.channel || 'Branch walk-in'; }
 }
 
@@ -364,6 +454,7 @@ async function loadCases(btn) {
     $('cases-count').innerHTML = Object.entries(counts).map(([s, n]) => `<span class="status ${statusClass(s)}">${n} ${esc(s)}</span>`).join(' ');
     const n = (k) => cases.filter((c) => c.firstHandoff === k).length, ok = n('complete'), acted = ok + n('returned'), waiting = cases.filter((c) => c.firstHandoff === 'pending' && c.status === 'With BSO').length;
     $('cases-metric').textContent = acted ? `${ok} of ${acted} ${acted === 1 ? 'case' : 'cases'} the BSO acted on ${acted === 1 ? 'was' : 'were'} endorsed to Credit without a return${waiting ? `, and ${waiting} ${waiting === 1 ? 'is' : 'are'} still with the BSO` : ''}.` : waiting ? `${waiting} ${waiting === 1 ? 'case is' : 'cases are'} with the BSO.` : '';
+    renderCards(cases); if (role === 'bm') renderReports(cases);
     allCases = cases; casePage = Math.min(casePage, Math.max(0, Math.ceil(cases.length / PAGE) - 1)); renderCases();
     casesLoaded = true;
   } catch (e) {
@@ -372,10 +463,51 @@ async function loadCases(btn) {
   }
   if (done) done();
 }
+// clients and reports come from the same case list
+const STATUSES = ['Draft', 'Missing requirements', 'Ready for BSO review', 'With BSO', 'Returned by BSO', 'Endorsed to Credit'];
+const when = (t) => (t ? new Date(t).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Manila' }) : '');
+const bars = (rows) => { const max = Math.max(1, ...rows.map(([, n]) => n)); return rows.map(([label, n]) => `<div class="statbar"><span title="${esc(label)}">${esc(label)}</span><i style="width:${(100 * n) / max}%"></i><b>${n}</b></div>`).join(''); };
+function renderReports(cases) {
+  const by = {}; for (const c of cases) (by[(c.name || c.business).trim().toLowerCase()] ||= []).push(c);
+  $('clients').innerHTML = Object.values(by).map((list) => {
+    const c = list[0];
+    return `<tr data-id="${esc(c.id)}" tabindex="0"><td><div class="who"><span class="avatar" aria-hidden="true">${esc(initials(c.name || c.business))}</span><span>${esc(c.name || c.business)}<br><span class="soft">${esc([...new Set(list.map((x) => x.business))].join(', '))}</span></span></div></td><td>${esc(c.type || '')}</td><td>${list.length}</td><td><span class="status ${statusClass(c.status)}">${esc(c.status)}</span></td><td>${when(c.updated)}</td></tr>`;
+  }).join('') || '<tr><td colspan="5"><div class="empty"><strong>No clients yet</strong>Save a case and its client shows up here.</div></td></tr>';
+  const open = (c) => `?id=${encodeURIComponent(c.id)}${stackQuery}#case`;
+  const item = (c, line) => `<li><a href="${open(c)}"><span class="avatar" aria-hidden="true">${esc(initials(c.business))}</span><span class="grow">${esc(c.business)}<span class="soft">${line}</span></span><span class="status ${statusClass(c.status)}">${esc(c.status)}</span></a></li>`;
+  const need = cases.filter((c) => ['Missing requirements', 'Returned by BSO'].includes(c.status)).sort((a, b) => String(a.updated || '').localeCompare(String(b.updated || ''))).slice(0, 6);
+  $('attention').innerHTML = need.map((c) => item(c, `${esc(c.id)}, ${c.open} open ${c.open === 1 ? 'item' : 'items'}${c.issues && c.issues[0] ? `, ${esc(c.issues[0])}` : ''}`)).join('') || '<li class="soft" style="padding:var(--space-3) 0">Nothing needs attention right now.</li>';
+  $('activity').innerHTML = cases.slice(0, 6).map((c) => item(c, `${esc(c.id)}, ${when(c.updated)}`)).join('') || '<li class="soft" style="padding:var(--space-3) 0">No updates yet.</li>';
+  $('by-status').innerHTML = bars(STATUSES.map((st) => [st, cases.filter((c) => c.status === st).length]).filter(([, n]) => n));
+  const issues = {}; for (const c of cases) for (const m of new Set(c.issues || [])) issues[m] = (issues[m] || 0) + 1;
+  const top = Object.entries(issues).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  $('by-issue').innerHTML = top.length ? bars(top) : '<p class="soft">No open problems right now.</p>';
+}
+$('clients').onclick = (e) => { const tr = e.target.closest('tr[data-id]'); if (tr) location.href = `?id=${encodeURIComponent(tr.dataset.id)}${stackQuery}#case`; };
+$('clients').onkeydown = (e) => { if (e.key === 'Enter') $('clients').onclick(e); };
+// count cards double as filters
+const CARD_ICON = { all: 'layers', attention: 'alert', bso: 'users', credit: 'badge' };
+const FILTERS = [
+  ['all', 'Total referrals', 'All saved cases', () => true],
+  ['attention', 'Needs attention', 'Missing papers or returned', (c) => ['Missing requirements', 'Returned by BSO', 'Draft'].includes(c.status)],
+  ['bso', 'With BSO', 'Sent for the BSO to review', (c) => c.status === 'With BSO'],
+  ['credit', 'Endorsed to Credit', 'Credit decides the loan', (c) => c.status === 'Endorsed to Credit'],
+];
+let filter = 'all', query = '';
+function renderCards(cases) {
+  $('cards').innerHTML = FILTERS.map(([k, t, sub, f]) => `<button class="card" data-filter="${k}" aria-pressed="${k === filter}"><i class="ic">${ICON[CARD_ICON[k]]}</i><span>${t}</span><b>${cases.filter(f).length}</b><small>${sub}</small></button>`).join('');
+  $('cases-filters').innerHTML = FILTERS.map(([k, t]) => `<button class="small" data-filter="${k}" aria-pressed="${k === filter}">${k === 'all' ? 'All referrals' : t}</button>`).join('');
+  const c = document.querySelector('#side .count'); if (c) c.textContent = cases.length;
+}
+function setFilter(k) { filter = k; casePage = 0; renderCards(allCases); renderCases(); }
+for (const id of ['cards', 'cases-filters']) $(id).onclick = (e) => { const b = e.target.closest('[data-filter]'); if (b) { setFilter(b.dataset.filter); if (id === 'cards' && role === 'bm') { history.replaceState(null, '', `${location.search}#referrals`); showView('referrals'); } else if (id === 'cards') $('cases-box').scrollIntoView({ behavior: 'smooth', block: 'start' }); } };
+$('cases-search').oninput = (e) => { query = e.target.value.trim().toLowerCase(); casePage = 0; renderCases(); };
 function renderCases() {
-  $('cases').innerHTML = allCases.slice(casePage * PAGE, casePage * PAGE + PAGE).map((c) => `<tr data-id="${esc(c.id)}" tabindex="0"${c.id === caseId() ? ' aria-current="true"' : ''}><td class="mono">${esc(c.id)}</td><td>${esc(c.business)}<br><span class="soft">${esc(c.channel)}</span></td><td><span class="status ${statusClass(c.status)}">${esc(c.status)}</span></td><td>${c.open ?? ''}</td><td>${c.updated ? new Date(c.updated).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Manila' }) : ''}</td><td>PHP ${Number(c.amount).toLocaleString('en-PH')}</td><td>${esc(c.type)}, ${esc(c.industry)}</td></tr>`).join('')
-      || `<tr><td colspan="7"><div class="empty"><strong>No ${role === 'bm' ? 'referrals' : 'cases'} yet</strong>${role === 'bm' ? 'Save a case and it shows up here.' : 'Cases show up here once a branch saves one.'}</div></td></tr>`;
-  const pages = Math.ceil(allCases.length / PAGE);
+  const f = FILTERS.find(([k]) => k === filter)[3];
+  const list = allCases.filter((c) => f(c) && (!query || `${c.id} ${c.business} ${c.name || ''}`.toLowerCase().includes(query)));
+  $('cases').innerHTML = list.slice(casePage * PAGE, casePage * PAGE + PAGE).map((c) => `<tr data-id="${esc(c.id)}" tabindex="0"${c.id === caseId() ? ' aria-current="true"' : ''}><td><div class="who"><span class="avatar" aria-hidden="true">${esc(initials(c.business))}</span><span>${esc(c.business)}<br><span class="soft">${c.name ? `${esc(c.name)}, ` : ''}<span class="mono">${esc(c.id)}</span></span></span></div></td><td>₱${Number(c.amount).toLocaleString('en-PH')}</td><td><span class="status ${statusClass(c.status)}">${esc(c.status)}</span></td><td>${c.open ?? ''}</td><td>${c.updated ? new Date(c.updated).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Manila' }) : ''}</td></tr>`).join('')
+      || `<tr><td colspan="5"><div class="empty"><strong>${allCases.length ? 'No referrals match' : `No ${role === 'bm' ? 'referrals' : 'cases'} yet`}</strong>${allCases.length ? 'Try another filter or search.' : role === 'bm' ? 'Save a case and it shows up here.' : 'Cases show up here once a branch saves one.'}</div></td></tr>`;
+  const pages = Math.max(1, Math.ceil(list.length / PAGE));
   $('cases-pager').classList.toggle('hidden', pages < 2);
   $('cases-page').textContent = `Page ${casePage + 1} of ${pages}`;
   $('cases-prev').disabled = casePage === 0; $('cases-next').disabled = casePage >= pages - 1;
@@ -385,13 +517,13 @@ $('cases-next').onclick = () => { casePage++; renderCases(); };
 const pick = (e) => {
   if (e.target.closest('[data-retry]')) { loadCases(); return; }
   const tr = e.target.closest('tr[data-id]'); if (!tr) return;
-  if (role === 'bm') { location.search = `?id=${encodeURIComponent(tr.dataset.id)}${stackQuery}`; return; }
-  $('b-id').value = tr.dataset.id; history.replaceState(null, '', `?role=bso&id=${encodeURIComponent(tr.dataset.id)}${stackQuery}`); $('b-open').onclick();
+  if (role === 'bm') { location.href = `?id=${encodeURIComponent(tr.dataset.id)}${stackQuery}#case`; return; }
+  $('b-id').value = tr.dataset.id; history.replaceState(null, '', `?role=bso&id=${encodeURIComponent(tr.dataset.id)}${stackQuery}#case`); showView('case'); $('b-open').onclick();
 };
 $('cases').onclick = pick;
 $('cases').onkeydown = (e) => { if (e.key === 'Enter') pick(e); };
 $('cases-refresh').onclick = () => loadCases($('cases-refresh'));
-if (role === 'bm') { $('cases-title').textContent = 'Referrals'; $('bm-right').append($('cases-box')); loadCases(); }
+if (role === 'bm') loadCases();
 
 // ================= BSO view =================
 if (role === 'bso') {
@@ -408,6 +540,7 @@ if (role === 'bso') {
       $('b-status').textContent = v.status; $('b-status').className = `status ${statusClass(v.status)}`;
       $('b-events').innerHTML = v.events.slice().reverse().map((e) => `<li><time>${new Date(e.at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Manila' })}</time><span>${esc(e.by || '')} ${esc(e.type.replace(/_/g, ' '))}${e.value ? `: ${esc(e.value)}` : ''}${e.reason ? ` (${esc(e.reason)})` : ''}${e.pages ? `, ${e.pages} pages` : ''}</span></li>`).join('');
       const o = v.open;
+      head(r, v.status, o.defects.length + o.needsReview.length);
       $('b-open-items').innerHTML = !o.checked ? '<li><span></span><span class="soft">Not checked yet.</span><span></span></li>'
         : [...o.defects.map((d) => `<li>${ICON.bad}<span>${esc(d.message)}</span><button class="small secondary" data-waive="${esc(d.key)}">Waive</button></li>`), ...o.needsReview.map((d) => `<li>${ICON.warn}<span>${esc(d.message)}</span><span></span></li>`)].join('') || `<li>${ICON.ok}<span>Nothing open.</span><span></span></li>`;
       document.querySelectorAll('[data-waive]').forEach((b) => { b.onclick = async () => {
@@ -491,3 +624,28 @@ function toast(msg, kind = '') {
   clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('show'), kind === 'error' ? 7000 : 4000);
 }
 function alertInline(msg) { toast(msg, 'error'); }
+
+// sidebar: one section per job
+const VIEWS = role === 'bm'
+  ? [['referrals', 'Loan referrals', ['cases-box']], ['overview', 'Overview', ['cards', 'overview-box']], ['clients', 'Clients', ['clients-box']], ['products', 'Loan products', ['products']], ['reports', 'Reports', ['cases-metric', 'report-box']]]
+  : [['queue', 'Referral queue', ['cases-box', 'cards']], ['case', 'Selected case', ['bso-left', 'bso-right']]];
+if (role === 'bm') $('by-status').after($('cases-metric'));
+function showView(key) {
+  for (const [k, , ids] of VIEWS) for (const id of ids) $(id).classList.toggle('off', k !== key);
+  if (role === 'bm') { $('ph-id').classList.toggle('off', $('casepage').hidden); if (!$('casepage').hidden) { $('side').querySelector('[data-view=referrals]')?.setAttribute('aria-current', 'page'); return; } $('crumb-page').textContent = $('page-title').textContent = VIEWS.find(([k]) => k === key)[1]; $('page-sub').textContent = SUB[key]; }
+  else { $('overview').classList.toggle('off', key !== 'queue'); $('crumb-page').textContent = key === 'queue' ? 'Referral queue' : 'Selected case'; }
+  for (const a of $('side').children) { if (a.dataset.view === key) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); }
+}
+const SUB = { overview: 'What needs the branch today, at a glance.', referrals: "Check each MSME client's papers at the counter before the BSO sees them.", clients: 'Every client with a saved referral at this branch.', products: "BPI's MSME loan types, for reference.", reports: 'Counts across all saved referrals at this branch.' };
+const NAV_ICON = { reports: 'chart', clients: 'users', overview: 'grid', referrals: 'file', products: 'briefcase', queue: 'inbox', case: 'user' };
+$('side').innerHTML = VIEWS.map(([k, label]) => `<a href="#${k}" data-view="${k}"><span class="lbl">${ICON[NAV_ICON[k]]}${label}</span>${k === 'referrals' || k === 'queue' ? '<span class="count"></span>' : ''}</a>`).join('');
+$('side').onclick = (e) => { const a = e.target.closest('a'); if (!a) return; e.preventDefault(); if (role === 'bm' && !$('casepage').hidden) { location.href = `?${stack === 'free' ? 'stack=free' : ''}#${a.dataset.view}`; return; } history.replaceState(null, '', `${location.search}#${a.dataset.view}`); showView(a.dataset.view); };
+const hashView = location.hash.slice(1);
+showView(VIEWS.some(([k]) => k === hashView) ? hashView : role === 'bm' ? 'referrals' : !params.get('id') ? 'queue' : 'case');
+
+// says why a button is off
+for (const b of document.querySelectorAll('button[data-why]')) {
+  const p = document.createElement('p'); p.className = 'soft why'; b.closest('.actions').after(p);
+  const set = () => { p.textContent = b.disabled ? b.dataset.why : ''; p.hidden = !b.disabled; };
+  new MutationObserver(set).observe(b, { attributes: true, attributeFilter: ['disabled'] }); set();
+}
