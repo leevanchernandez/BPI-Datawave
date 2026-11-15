@@ -224,6 +224,7 @@ export function makeApi({ store, llm, now = () => new Date(), demoKey, aws = nul
       const items = [...rec.stillMissing, ...rec.newIssues, ...result.needsReview].map((d) => d.message);
       if (!onAws && llm && items.length) { try { message = await llm.draftMessage({ items, audience: 'branch' }); if (message) drafted = 'model'; } catch { /* template below */ } }
       message = message || templateDraft({ ...rec, newIssues: [...rec.newIssues, ...result.needsReview] });
+      if (asked && !message.includes(asked.message)) message += `\n- ${asked.message}`;
       const pages = (b.pageKeys || b.pages).length;
       c.events.push({ type: result.complete ? 'check_passed' : 'check_failed', by: 'BM', at: at(), defects: result.defects, needsReview: result.needsReview, message, pages, ...(onAws ? { stack: 'aws' } : {}) });
       await store.put(b.id, c);
