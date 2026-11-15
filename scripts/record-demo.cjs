@@ -39,7 +39,7 @@ const RETURN_NOTE = 'Bank statements must cover Sep to Nov 2026.';
 
   await p.click('#save-case');
   await p.waitForFunction(() => document.getElementById('checklist').children.length > 0, null, { timeout: 30000 });
-  await p.click('#req-box summary');
+  if (await p.$('#req-box summary')) await p.click('#req-box summary');
   await p.waitForTimeout(3000);
   mark('saved');
 
