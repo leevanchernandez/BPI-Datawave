@@ -326,6 +326,73 @@
   .filters button[aria-pressed="false"], .filters button:not([aria-pressed]) { font-weight: 400; }
   button, .btn { font-weight: 500; }
   .who > span > :first-child, .who b { font-weight: 500; }
+  .bars { display: grid; gap: var(--space-2); margin-top: var(--space-3); }
+  .statbar { display: grid; grid-template-columns: minmax(0, 16rem) minmax(0, 1fr) 2.5rem; gap: var(--space-3); align-items: center; font-size: var(--text-s); }
+  .statbar i { display: block; height: 8px; border-radius: 4px; background: var(--color-brand); min-width: 2px; }
+  .statbar b { font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+  @media (max-width: 560px) { .statbar { grid-template-columns: minmax(0, 1fr) 2.5rem; } .statbar i { grid-column: 1 / -1; grid-row: 2; } }
+  .work.solo.bm .col { display: block; }
+  .work.bm .col > section + section { margin-top: var(--space-4); }
+  #cases-metric { margin-bottom: var(--space-4); }
+  .glance { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-4); }
+  @media (max-width: 900px) { .glance { grid-template-columns: minmax(0, 1fr); } }
+  .feed { list-style: none; margin: var(--space-3) 0 0; padding: 0; }
+  .feed li { border-top: 1px solid var(--color-line); }
+  .feed a { display: flex; gap: var(--space-3); align-items: center; padding: var(--space-3) var(--space-2); text-decoration: none; color: inherit; border-radius: 6px; }
+  .feed a:hover { background: #fdfaf7; }
+  .feed .grow { flex: 1; min-width: 0; }
+  .feed .soft { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .glance > section + section { margin-top: 0; }
+  @media (max-width: 560px) { .feed .status { display: none; } }
+  @media (max-width: 900px) { .navrail .side a[aria-current="page"]::before { display: none; } }
+  .statbar span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  #report-box #cases-metric { margin: var(--space-3) 0 0; }
+  .topbar .right { display: flex; align-items: center; gap: var(--space-3); }
+  .topbar .avatar { width: 30px; height: 30px; font-size: 0.6875rem; }
+  /* colors and hovers from the team's mockup */
+  :root { --color-paper: #f7f6f2; --color-line: #eae6e1; --color-gold: #b69754; }
+  .navrail { background: linear-gradient(165deg, #982525 0%, #771b1e 44%, #571216 100%); color: #eed9d5; }
+  .navrail .side a { position: relative; color: #eed9d5; }
+  .navrail .side a svg { color: #d9bda5; }
+  .navrail .side a:hover { background: rgb(255 255 255 / 0.05); color: #fff; }
+  .navrail .side a[aria-current="page"] { background: #fff6e8; color: #8d2225; box-shadow: 0 3px 12px rgb(61 9 14 / 0.09); }
+  .navrail .side a[aria-current="page"] svg { color: var(--color-brand); }
+  .navrail .side a[aria-current="page"]::before { content: ""; position: absolute; left: -16px; top: 50%; translate: 0 -50%; width: 3px; height: 20px; border-radius: 0 2px 2px 0; background: #e1c781; }
+  .navrail .side .count { background: #f0dfca; color: #8e3931; }
+  .branchbox { border-color: rgb(208 172 108 / 0.35); background: rgb(255 255 255 / 0.02); }
+  .branchbox svg { color: #d6b56d; }
+  .content > .topbar { background: linear-gradient(90deg, #a32628 0 73%, var(--color-gold) 73% 100%) top / 100% 3px no-repeat, var(--color-surface); border-bottom-color: #e8dfd0; }
+  .card { box-shadow: 0 2px 3px rgb(77 43 22 / 0.01); }
+  .card:first-child { border-top: 2px solid var(--color-brand); }
+  .card b { color: #772026; }
+  .card .ic { background: #f5f1eb; color: #a48a62; border-radius: 6px; width: 32px; height: 32px; }
+  .card:first-child .ic { background: #f9eae6; color: var(--color-brand); }
+  .card:hover { border-color: #d5bd89; }
+  .card[aria-pressed="true"] { border-color: var(--color-brand); }
+  table.trace.cases th { color: #9a8b7f; background: #fbfaf7; }
+  table.cases tbody tr:hover { background: #fdfaf7; }
+  table.cases tbody tr[aria-current="true"] { background: #fcf5ed; }
+  .who .avatar { background: #f2ede5; color: #917453; border-color: transparent; }
+  .avatar.big { background: #f5ece0; color: #8c602e; }
+  .filters button:hover { background: #fbf7ed; }
+  .filters button[aria-pressed="true"] { color: #a32628; background: #faedeb; font-weight: 600; }
+  button.secondary, .btn.secondary { border-color: #e5ddd6; color: #74645b; }
+  button.secondary:hover, .btn.secondary:hover { background: #fbf7ed; border-color: #d5bd89; }
+  button:not(.secondary):not(.small):not(.card):hover:not(:disabled), .btn:not(.secondary):hover { background: #8c2023; border-color: #8c2023; }
+  .status.missing { background: #fff5df; color: #af8435; }
+  .status.ready, .status.with { background: #e9f5ef; color: #278168; }
+  #chat > .row:first-child { margin: calc(-1 * var(--space-5)) calc(-1 * var(--space-5)) var(--space-4); padding: var(--space-4) var(--space-5); background: linear-gradient(120deg, #fbf6e9, #f8f1df); border-top: 2px solid var(--color-gold); border-bottom: 1px solid #ece1c7; border-radius: 8px 8px 0 0; }
+  #chat > .row:first-child h2 { color: #7d2926; }
+  #chat > .row:first-child .soft { color: #91794c; }
+  .quick button:hover { background: #fbf7ed; border-color: #d5bd89; }
+  .productlist { display: grid; gap: var(--space-3); margin-top: var(--space-4); }
+  .product { border: 1px solid var(--color-line); border-radius: 8px; padding: var(--space-4); transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease); }
+  .product:hover { border-color: #bc9a54; background: #fcf8ee; }
+  .product h3 { font-size: var(--text-m); font-weight: 600; }
+  .product .amt { font-size: var(--text-s); color: #81652e; background: #f0e6cb; padding: 2px 8px; border-radius: 4px; white-space: nowrap; }
+  .product p { color: var(--color-ink-soft); font-size: var(--text-s); margin: var(--space-1) 0 var(--space-2); }
+  .product a { font-size: var(--text-s); font-weight: 500; }
+  @media (max-width: 560px) { #chat > .row:first-child { margin: calc(-1 * var(--space-4)) calc(-1 * var(--space-4)) var(--space-4); padding: var(--space-3) var(--space-4); } }
 </style>
 </head>
 <body>
@@ -340,7 +407,7 @@
   </div>
 </aside>
 <div class="content">
-<header class="topbar"><p class="crumb"><span id="ph-ws">Branch workspace</span> / <span id="crumb-page">Loan referrals</span><span id="ph-id"></span></p><span class="soft today" id="today"></span></header>
+<header class="topbar"><p class="crumb"><span id="ph-ws">Branch workspace</span> / <span id="crumb-page">Loan referrals</span><span id="ph-id"></span></p><span class="right"><span class="soft today" id="today"></span><span class="avatar" aria-hidden="true">BM</span></span></header>
 <main id="main">
   <div class="intro" id="overview">
     <div><h1 id="page-title">Loan referrals</h1><p class="soft" id="page-sub">Check each MSME client's papers at the counter before the BSO sees them.</p></div>
@@ -429,16 +496,43 @@
     </section>
   </div>
   </section>
+  <div class="glance off" id="overview-box">
+    <section>
+      <h2 data-icon="alert">Needs attention</h2>
+      <p class="soft">Cases with missing papers or returned by the BSO, oldest update first.</p>
+      <ul class="feed" id="attention"></ul>
+    </section>
+    <section>
+      <h2 data-icon="clock">Latest updates</h2>
+      <p class="soft">The newest status on each case.</p>
+      <ul class="feed" id="activity"></ul>
+    </section>
+  </div>
+  <section id="clients-box" class="off">
+    <div class="row"><div><h2 data-icon="users">Clients</h2><p class="soft">Each client comes from the saved referrals. Pick a row to open the client's latest case.</p></div></div>
+    <div class="tablewrap"><table class="trace cases">
+      <thead><tr><th>Client</th><th>Business structure</th><th>Referrals</th><th>Latest status</th><th>Last update</th></tr></thead>
+      <tbody id="clients"></tbody>
+    </table></div>
+  </section>
+  <section id="report-box" class="off">
+    <h2 data-icon="chart">Referrals by status</h2>
+    <div class="bars" id="by-status"></div>
+    <h2 data-icon="alert" style="margin-top:var(--space-5)">Most common problems in open cases</h2>
+    <p class="soft">These come from the latest check on each case that still has open items.</p>
+    <div class="bars" id="by-issue"></div>
+    <p class="soft" style="margin-top:var(--space-4)">All counts come from the prototype's synthetic cases.</p>
+  </section>
   <section id="products" class="hidden">
-    <h2 data-icon="briefcase">Loan products</h2>
+    <h2 data-icon="briefcase">Loan product guide</h2>
     <p class="soft">These are BPI's MSME loan types. The BSO picks the product with the client, and this page doesn't suggest one.</p>
-    <table class="trace products"><thead><tr><th>Product</th><th>Amount</th><th>Source</th></tr></thead><tbody>
-      <tr><td>Ka-Negosyo SME Term Loan</td><td>From PHP 300,000</td><td><a href="https://www.bpi.com.ph/sme-banking/loans/sme-term-loan" target="_blank" rel="noopener">BPI page</a></td></tr>
-      <tr><td>Ka-Negosyo Credit Line</td><td>From PHP 1,000,000</td><td><a href="https://www.bpi.com.ph/sme-banking/loans/sme-credit-line" target="_blank" rel="noopener">BPI page</a></td></tr>
-      <tr><td>Property Acquisition Loan</td><td>From PHP 1,000,000</td><td><a href="https://www.bpi.com.ph/sme-banking/loans/property-acquisition-loan" target="_blank" rel="noopener">BPI page</a></td></tr>
-      <tr><td>Ready Loan</td><td>Up to PHP 300,000</td><td><a href="https://www.bpi.com.ph/sme-banking/loans/ready-loan" target="_blank" rel="noopener">BPI page</a></td></tr>
-    </tbody></table>
-    <p class="soft" style="margin-top:8px">The amounts come from BPI's public pages, read once and not cross-checked.</p>
+    <div class="productlist">
+      <div class="product"><div class="row"><h3>Ka-Negosyo SME Term Loan</h3><span class="amt">From PHP 300,000</span></div><p>For a fixed amount paid back over a set term, such as expansion or equipment.</p><a href="https://www.bpi.com.ph/sme-banking/loans/sme-term-loan" target="_blank" rel="noopener">BPI page</a></div>
+      <div class="product"><div class="row"><h3>Ka-Negosyo Credit Line</h3><span class="amt">From PHP 1,000,000</span></div><p>For a revolving line the business draws on for working capital.</p><a href="https://www.bpi.com.ph/sme-banking/loans/sme-credit-line" target="_blank" rel="noopener">BPI page</a></div>
+      <div class="product"><div class="row"><h3>Property Acquisition Loan</h3><span class="amt">From PHP 1,000,000</span></div><p>For buying property the business will use.</p><a href="https://www.bpi.com.ph/sme-banking/loans/property-acquisition-loan" target="_blank" rel="noopener">BPI page</a></div>
+      <div class="product"><div class="row"><h3>Ready Loan</h3><span class="amt">Up to PHP 300,000</span></div><p>For a smaller loan with a quick application.</p><a href="https://www.bpi.com.ph/sme-banking/loans/ready-loan" target="_blank" rel="noopener">BPI page</a></div>
+    </div>
+    <p class="soft" style="margin-top:8px">The amounts come from BPI's public pages, read once and not cross-checked. The one-line descriptions are ours, written from those pages.</p>
   </section>
   <div id="bso-left" class="hidden">
     <section>

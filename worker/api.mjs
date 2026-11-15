@@ -155,7 +155,7 @@ export function makeApi({ store, llm, now = () => new Date(), demoKey, aws = nul
         // After the first handoff: 'returned' if the BSO ever sent it back, 'complete' if endorsed with no return, else 'pending'.
         const h = c.events.findIndex((e) => e.type === 'handed_off'), after = h < 0 ? [] : c.events.slice(h);
         const firstHandoff = h < 0 ? null : after.some((e) => e.type === 'returned') ? 'returned' : after.some((e) => e.type === 'endorsed') ? 'complete' : 'pending';
-        return { id: r.id, business: r.business, channel: r.channel || CHANNELS[0], type: r.type, industry: r.industry, amount: r.amount, status: statusOf(c.events), open: o.defects.length + o.needsReview.length, updated: (c.events[c.events.length - 1] || {}).at || null, firstHandoff };
+        return { id: r.id, business: r.business, name: r.name || '', channel: r.channel || CHANNELS[0], type: r.type, industry: r.industry, amount: r.amount, status: statusOf(c.events), open: o.defects.length + o.needsReview.length, updated: (c.events[c.events.length - 1] || {}).at || null, firstHandoff, issues: o.defects.slice(0, 20).map((d) => d.message) };
       });
       cases.sort((a, b) => String(b.updated || '').localeCompare(String(a.updated || '')));
       return json(200, { cases: cases.slice(0, MAX_LIST) });

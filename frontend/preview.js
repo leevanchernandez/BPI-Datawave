@@ -47,6 +47,7 @@ Object.assign(ICON, Object.fromEntries(Object.entries({
   check: '<path d="M5 12l5 5 9-11"/>',
   x: '<path d="M6 6l12 12M18 6L6 18"/>',
   back: '<path d="M19 12H5M12 19l-7-7 7-7"/>',
+  chart: '<path d="M4 20V11M10 20V5M16 20v-6M2 20h20"/>',
   warnline: '<path d="M12 8v5M12 17h.01M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>',
 }).map(([k, d]) => [k, svg(d)])));
 // put an icon at the start of every element marked data-icon
@@ -86,7 +87,7 @@ function navLinks() {
 for (const id of role === 'bm' ? ['bm-left', 'bm-right', 'case-panel', 'assist', 'products'] : ['bso-left', 'bso-right']) $(id).classList.remove('hidden');
 // the branch case is its own page (#case), and the dashboard keeps the cards and the pipeline
 if (role === 'bm') {
-  $('work').classList.add('solo');
+  $('work').classList.add('solo', 'bm');
   const page = document.createElement('div');
   page.className = 'casepage'; page.id = 'casepage'; page.hidden = true;
   page.innerHTML = `<div class="casebar"><a class="back" id="case-back" data-icon="back" href="?${stack === 'free' ? 'stack=free' : ''}">Loan referrals</a><span class="soft" id="sheet-note">Send to BSO unlocks once nothing is missing.</span><button id="sheet-send" data-icon="arrow" disabled>Send to BSO</button></div><div class="casegrid"></div>`;
@@ -453,7 +454,7 @@ async function loadCases(btn) {
     $('cases-count').innerHTML = Object.entries(counts).map(([s, n]) => `<span class="status ${statusClass(s)}">${n} ${esc(s)}</span>`).join(' ');
     const n = (k) => cases.filter((c) => c.firstHandoff === k).length, ok = n('complete'), acted = ok + n('returned'), waiting = cases.filter((c) => c.firstHandoff === 'pending' && c.status === 'With BSO').length;
     $('cases-metric').textContent = acted ? `${ok} of ${acted} ${acted === 1 ? 'case' : 'cases'} the BSO acted on ${acted === 1 ? 'was' : 'were'} endorsed to Credit without a return${waiting ? `, and ${waiting} ${waiting === 1 ? 'is' : 'are'} still with the BSO` : ''}.` : waiting ? `${waiting} ${waiting === 1 ? 'case is' : 'cases are'} with the BSO.` : '';
-    renderCards(cases);
+    renderCards(cases); if (role === 'bm') renderReports(cases);
     allCases = cases; casePage = Math.min(casePage, Math.max(0, Math.ceil(cases.length / PAGE) - 1)); renderCases();
     casesLoaded = true;
   } catch (e) {
@@ -462,6 +463,28 @@ async function loadCases(btn) {
   }
   if (done) done();
 }
+// clients and reports come from the same case list
+const STATUSES = ['Draft', 'Missing requirements', 'Ready for BSO review', 'With BSO', 'Returned by BSO', 'Endorsed to Credit'];
+const when = (t) => (t ? new Date(t).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Manila' }) : '');
+const bars = (rows) => { const max = Math.max(1, ...rows.map(([, n]) => n)); return rows.map(([label, n]) => `<div class="statbar"><span title="${esc(label)}">${esc(label)}</span><i style="width:${(100 * n) / max}%"></i><b>${n}</b></div>`).join(''); };
+function renderReports(cases) {
+  const by = {}; for (const c of cases) (by[(c.name || c.business).trim().toLowerCase()] ||= []).push(c);
+  $('clients').innerHTML = Object.values(by).map((list) => {
+    const c = list[0];
+    return `<tr data-id="${esc(c.id)}" tabindex="0"><td><div class="who"><span class="avatar" aria-hidden="true">${esc(initials(c.name || c.business))}</span><span>${esc(c.name || c.business)}<br><span class="soft">${esc([...new Set(list.map((x) => x.business))].join(', '))}</span></span></div></td><td>${esc(c.type || '')}</td><td>${list.length}</td><td><span class="status ${statusClass(c.status)}">${esc(c.status)}</span></td><td>${when(c.updated)}</td></tr>`;
+  }).join('') || '<tr><td colspan="5"><div class="empty"><strong>No clients yet</strong>Save a case and its client shows up here.</div></td></tr>';
+  const open = (c) => `?id=${encodeURIComponent(c.id)}${stackQuery}#case`;
+  const item = (c, line) => `<li><a href="${open(c)}"><span class="avatar" aria-hidden="true">${esc(initials(c.business))}</span><span class="grow">${esc(c.business)}<span class="soft">${line}</span></span><span class="status ${statusClass(c.status)}">${esc(c.status)}</span></a></li>`;
+  const need = cases.filter((c) => ['Missing requirements', 'Returned by BSO'].includes(c.status)).sort((a, b) => String(a.updated || '').localeCompare(String(b.updated || ''))).slice(0, 6);
+  $('attention').innerHTML = need.map((c) => item(c, `${esc(c.id)}, ${c.open} open ${c.open === 1 ? 'item' : 'items'}${c.issues && c.issues[0] ? `, ${esc(c.issues[0])}` : ''}`)).join('') || '<li class="soft" style="padding:var(--space-3) 0">Nothing needs attention right now.</li>';
+  $('activity').innerHTML = cases.slice(0, 6).map((c) => item(c, `${esc(c.id)}, ${when(c.updated)}`)).join('') || '<li class="soft" style="padding:var(--space-3) 0">No updates yet.</li>';
+  $('by-status').innerHTML = bars(STATUSES.map((st) => [st, cases.filter((c) => c.status === st).length]).filter(([, n]) => n));
+  const issues = {}; for (const c of cases) for (const m of new Set(c.issues || [])) issues[m] = (issues[m] || 0) + 1;
+  const top = Object.entries(issues).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  $('by-issue').innerHTML = top.length ? bars(top) : '<p class="soft">No open problems right now.</p>';
+}
+$('clients').onclick = (e) => { const tr = e.target.closest('tr[data-id]'); if (tr) location.href = `?id=${encodeURIComponent(tr.dataset.id)}${stackQuery}#case`; };
+$('clients').onkeydown = (e) => { if (e.key === 'Enter') $('clients').onclick(e); };
 // count cards double as filters
 const CARD_ICON = { all: 'layers', attention: 'alert', bso: 'users', credit: 'badge' };
 const FILTERS = [
@@ -604,16 +627,17 @@ function alertInline(msg) { toast(msg, 'error'); }
 
 // sidebar: one section per job
 const VIEWS = role === 'bm'
-  ? [['referrals', 'Loan referrals', ['cases-box']], ['overview', 'Overview', ['cards', 'cases-metric']], ['products', 'Loan products', ['products']]]
+  ? [['referrals', 'Loan referrals', ['cases-box']], ['overview', 'Overview', ['cards', 'overview-box']], ['clients', 'Clients', ['clients-box']], ['products', 'Loan products', ['products']], ['reports', 'Reports', ['cases-metric', 'report-box']]]
   : [['queue', 'Referral queue', ['cases-box', 'cards']], ['case', 'Selected case', ['bso-left', 'bso-right']]];
-if (role === 'bm') $('cards').after($('cases-metric'));
+if (role === 'bm') $('by-status').after($('cases-metric'));
 function showView(key) {
   for (const [k, , ids] of VIEWS) for (const id of ids) $(id).classList.toggle('off', k !== key);
-  if (role === 'bm') { $('ph-id').classList.toggle('off', $('casepage').hidden); if (!$('casepage').hidden) { $('side').querySelector('[data-view=referrals]')?.setAttribute('aria-current', 'page'); return; } $('crumb-page').textContent = $('page-title').textContent = VIEWS.find(([k]) => k === key)[1]; }
+  if (role === 'bm') { $('ph-id').classList.toggle('off', $('casepage').hidden); if (!$('casepage').hidden) { $('side').querySelector('[data-view=referrals]')?.setAttribute('aria-current', 'page'); return; } $('crumb-page').textContent = $('page-title').textContent = VIEWS.find(([k]) => k === key)[1]; $('page-sub').textContent = SUB[key]; }
   else { $('overview').classList.toggle('off', key !== 'queue'); $('crumb-page').textContent = key === 'queue' ? 'Referral queue' : 'Selected case'; }
   for (const a of $('side').children) { if (a.dataset.view === key) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); }
 }
-const NAV_ICON = { overview: 'grid', referrals: 'file', products: 'briefcase', queue: 'inbox', case: 'user' };
+const SUB = { overview: 'What needs the branch today, at a glance.', referrals: "Check each MSME client's papers at the counter before the BSO sees them.", clients: 'Every client with a saved referral at this branch.', products: "BPI's MSME loan types, for reference.", reports: 'Counts across all saved referrals at this branch.' };
+const NAV_ICON = { reports: 'chart', clients: 'users', overview: 'grid', referrals: 'file', products: 'briefcase', queue: 'inbox', case: 'user' };
 $('side').innerHTML = VIEWS.map(([k, label]) => `<a href="#${k}" data-view="${k}"><span class="lbl">${ICON[NAV_ICON[k]]}${label}</span>${k === 'referrals' || k === 'queue' ? '<span class="count"></span>' : ''}</a>`).join('');
 $('side').onclick = (e) => { const a = e.target.closest('a'); if (!a) return; e.preventDefault(); if (role === 'bm' && !$('casepage').hidden) { location.href = `?${stack === 'free' ? 'stack=free' : ''}#${a.dataset.view}`; return; } history.replaceState(null, '', `${location.search}#${a.dataset.view}`); showView(a.dataset.view); };
 const hashView = location.hash.slice(1);
