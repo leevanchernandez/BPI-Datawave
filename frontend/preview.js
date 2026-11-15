@@ -175,6 +175,7 @@ if (role === 'bm') {
     if (m === 'fill' && v === 'Ano pa ang kulang?') $('chat-in').value = '';
     $('chat-in').focus();
   };
+  say('bot', 'Hi! Tell me what the client said and I fill the case form. Once the case is saved, you can ask me what papers are still missing.');
   $('mode-fill').onclick = () => setMode('fill');
   $('mode-ask').onclick = () => setMode('ask');
   $('quick').onclick = (e) => { const b = e.target.closest('[data-q]'); if (!b || $('chat-send').disabled) return; setMode('ask'); $('chat-in').value = b.dataset.q; $('chat-send').click(); };
@@ -582,7 +583,15 @@ function showView(key) {
 const NAV_ICON = { overview: 'grid', referrals: 'file', products: 'briefcase', queue: 'inbox', case: 'user' };
 $('side').innerHTML = VIEWS.map(([k, label]) => `<a href="#${k}" data-view="${k}"><span class="lbl">${ICON[NAV_ICON[k]]}${label}</span>${k === 'referrals' || k === 'queue' ? '<span class="count"></span>' : ''}</a>`).join('');
 $('side').onclick = (e) => { const a = e.target.closest('a'); if (a) { e.preventDefault(); history.replaceState(null, '', `${location.search}#${a.dataset.view}`); showView(a.dataset.view); } };
-if (role === 'bm') { for (const a of $('side').children) if (a.dataset.view === 'overview') a.setAttribute('aria-current', 'page'); if (location.hash === '#case-panel') setTimeout(() => $('case-panel').scrollIntoView({ block: 'start' }), 600); }
+if (role === 'bm') {
+  // the side rail follows the part of the page in view
+  const spy = () => {
+    const end = innerHeight + scrollY >= document.documentElement.scrollHeight - 4;
+    const k = end || $('products').getBoundingClientRect().top < innerHeight * 0.35 ? 'products' : $('cases-box').getBoundingClientRect().top < innerHeight * 0.35 ? 'referrals' : 'overview';
+    for (const a of $('side').children) { if (a.dataset.view === k) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); }
+  };
+  addEventListener('scroll', spy, { passive: true });
+  for (const a of $('side').children) if (a.dataset.view === 'overview') a.setAttribute('aria-current', 'page'); if (location.hash === '#case-panel') setTimeout(() => $('case-panel').scrollIntoView({ block: 'start' }), 600); }
 else showView(VIEWS.some(([k]) => k === location.hash.slice(1)) ? location.hash.slice(1) : !params.get('id') ? 'queue' : 'case');
 
 // says why a button is off
