@@ -273,11 +273,12 @@ if (role === 'bm') {
     const wait = say('bot wait dots', 'Reading the form'); $('chat-send').disabled = true; $('form-photo-btn').disabled = true;
     try {
       const files = [];
-      for (const f of chosen) files.push(...(f.type === 'application/pdf' || /\.pdf$/i.test(f.name) ? (await pdfPages(f)).slice(0, 3) : [f]));
+      for (const f of chosen) files.push(...(f.type === 'application/pdf' || /\.pdf$/i.test(f.name) ? await pdfPages(f) : [f]));
       const images = [];
-      for (const f of files.slice(0, 3)) images.push((await downscale(f)).toDataURL('image/jpeg', 0.85).split(',')[1]);
+      for (const f of files.slice(0, 6)) images.push((await downscale(f, 1600)).toDataURL('image/jpeg', 0.8).split(',')[1]);
       const { fields, found, model } = await api('POST', '/api/intake', { images, stack });
       if (!found) wait.textContent = 'I could not find BPI\'s application form in those photos. Take a clear photo of page 1, or type what the client said.';
+      else if (!Object.keys(fields).length) wait.textContent = 'I found the form but could not read its fields. Take page 1 again flat, in good light and filling the frame, or type what the client said.';
       else await fill(null, wait, { fields, model, from: 'the paper form' });
     } catch (err) { wait.textContent = err.message; }
     wait.classList.remove('wait', 'dots'); $('chat-send').disabled = false; $('form-photo-btn').disabled = false;

@@ -48,7 +48,7 @@ const sameKey = (given, want) => typeof given === 'string' && typeof want === 's
 function makeHandlers(deps) {
   /** POST /check { formImages: [base64 JPEG, ...] } fills case fields from photos of BPI's application form. Nothing is stored. */
   async function readForm(images) {
-    if (!Array.isArray(images) || !images.length || images.length > 3 || !images.every((s) => str(s, 4e6))) return bad('invalid formImages');
+    if (!Array.isArray(images) || !images.length || images.length > 6 || !images.every((s) => str(s, 2e6))) return bad('invalid formImages');
     usage();
     const kv = {}; let found = 0;
     for (const b64 of images) {

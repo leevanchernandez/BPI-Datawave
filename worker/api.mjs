@@ -174,7 +174,7 @@ export function makeApi({ store, llm, now = () => new Date(), demoKey, aws = nul
       const b = await body(req);
       if (b && b.images !== undefined) { // photos of BPI's application form instead of a note
         if (!useAws(b.stack) || !aws) return bad('reading a paper form needs the AWS reader');
-        if (!Array.isArray(b.images) || !b.images.length || b.images.length > 3 || !b.images.every((x) => str(x, 4e6))) return bad('add 1 to 3 photos of the form');
+        if (!Array.isArray(b.images) || !b.images.length || b.images.length > 6 || !b.images.every((x) => str(x, 2e6))) return bad('add 1 to 6 photos of the form');
         const r = await awsPost('/check', { formImages: b.images });
         const a = await r.json().catch(() => null);
         if (r.status !== 200 || !a) return json(502, { error: 'The form could not be read. Fill the form by hand.' });
