@@ -63,10 +63,10 @@ function makeGemini({ apiKey, model = 'gemini-3.5-flash-lite', fetchFn = fetch, 
     return page;
   }
 
-  async function draftMessage({ items, audience = 'branch' }) {
+  async function draftMessage({ items, audience = 'client' }) {
     const r = await call({
-      systemInstruction: { parts: [{ text: 'You write short, polite Taglish messages for a bank business-loan officer (BSO). When the audience is the branch officer, the BSO is writing to the branch officer about one client: address the branch officer, refer to the business owner as the client (ang client, ng client, sa client), and never write as if to the client or as the client. Cover every item provided and nothing else, and keep the facts of each item (the paper, page, field and dates), but say them in everyday Taglish the way an officer texts a colleague, in short sentences. Never copy technical words such as scan, checker or condition, and never soften any item, and never say the application is approved or complete. No promises about timing. Under 90 words.' }] },
-      contents: [{ role: 'user', parts: [{ text: `Audience: ${audience === 'client' ? 'the business owner' : 'the branch officer'}.\nItems still needed:\n${items.map((i) => `- ${i}`).join('\n')}` }] }],
+      systemInstruction: { parts: [{ text: 'You write short, polite Taglish messages about the papers a BPI business-loan client still has to bring. When the audience is the client, the branch officer sends it to the client: address the client directly with po, say what to bring for each item, and never write as the client. When the audience is the branch officer, the BSO is writing to the branch officer about one client: address the branch officer and refer to the business owner as the client (ang client, ng client, sa client). Cover every item provided and nothing else, and keep the facts of each item (the paper, page, field and dates), but say them in everyday Taglish the way a person texts, in short sentences. Never copy technical words such as scan, checker or condition, and never soften any item, and never say the application is approved or complete. No promises about timing. Under 90 words.' }] },
+      contents: [{ role: 'user', parts: [{ text: `Audience: ${audience === 'client' ? 'the client (the business owner)' : 'the branch officer'}.\nItems still needed:\n${items.map((i) => `- ${i}`).join('\n')}` }] }],
       generationConfig: { maxOutputTokens: 2048 },
     });
     return safeDraft(textOf(r), items);

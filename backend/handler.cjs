@@ -82,7 +82,7 @@ function makeHandlers(deps) {
       const rec = reconcile(prev.defects, result.defects, result.needsReview);
       const items = msgs([...rec.stillMissing, ...rec.newIssues, ...result.needsReview]);
       let message = null, drafted = 'template';
-      if (deps.draftMessage && items.length) { try { message = await deps.draftMessage({ items, audience: 'branch' }); if (message) drafted = 'model'; } catch { /* template fallback below */ } }
+      if (deps.draftMessage && items.length) { try { message = await deps.draftMessage({ items, audience: 'client' }); if (message) drafted = 'model'; } catch { /* template fallback below */ } }
       message = message || draftMessage({ ...rec, newIssues: [...rec.newIssues, ...result.needsReview] });
       await deps.store.record(id, { type: result.complete ? 'check_passed' : 'check_failed', defects: result.defects, needsReview: result.needsReview, at: new Date().toISOString() });
       // Textract reads every page for text lines, and the Forms pass runs on application form pages only.

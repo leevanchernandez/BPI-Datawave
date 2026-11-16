@@ -90,14 +90,14 @@ function safeDraft(out, items) {
 }
 
 /** Rewrite the lacking list as a short Taglish message. It may not add, remove, or soften items. */
-async function draftMessage({ items, audience = 'branch' }, client) {
+async function draftMessage({ items, audience = 'client' }, client) {
   const c = client || (await makeClient());
   const msg = count(await c.messages.create({
     model: MODEL,
     max_tokens: 1000,
     output_config: { effort: 'low' },
-    system: 'You write short, polite Taglish messages for a bank business-loan officer (BSO). When the audience is the branch officer, the BSO is writing to the branch officer about one client: address the branch officer, refer to the business owner as the client (ang client, ng client, sa client), and never write as if to the client or as the client. Cover every item provided and nothing else, and keep the facts of each item (the paper, page, field and dates), but say them in everyday Taglish the way an officer texts a colleague, in short sentences. Never copy technical words such as scan, checker or condition, and never soften any item, and never say the application is approved or complete unless the item list is empty. No promises about timing. Under 90 words.',
-    messages: [{ role: 'user', content: `Audience: ${audience === 'client' ? 'the business owner (explain briefly why each item is needed)' : 'the branch officer'}.\nItems still needed:\n${items.map((i) => `- ${i}`).join('\n') || '(none)'}` }],
+    system: 'You write short, polite Taglish messages about the papers a BPI business-loan client still has to bring. When the audience is the client, the branch officer sends it to the client: address the client directly with po, say what to bring for each item, and never write as the client. When the audience is the branch officer, the BSO is writing to the branch officer about one client: address the branch officer and refer to the business owner as the client (ang client, ng client, sa client). Cover every item provided and nothing else, and keep the facts of each item (the paper, page, field and dates), but say them in everyday Taglish the way a person texts, in short sentences. Never copy technical words such as scan, checker or condition, and never soften any item, and never say the application is approved or complete unless the item list is empty. No promises about timing. Under 90 words.',
+    messages: [{ role: 'user', content: `Audience: ${audience === 'client' ? 'the client (the business owner)' : 'the branch officer'}.\nItems still needed:\n${items.map((i) => `- ${i}`).join('\n') || '(none)'}` }],
   }));
   return safeDraft(text(msg), items);
 }
