@@ -61,7 +61,7 @@ async function readPage({ text: ocr }, client) {
   for (const k of ['owner_name', 'business_name']) if (typeof o[k] === 'string' && o[k].trim()) { page.fields[k] = o[k].trim().slice(0, 120); page.conf[k] = c0; }
   if (validDate(o.expiry)) page.expiry = o.expiry; // real calendar parse. The pipeline also requires it to be visible in the OCR text.
   if (o.side === 'front' || o.side === 'back') page.side = o.side;
-  if (Number.isInteger(o.pageNo) && Number.isInteger(o.pageTotal)) { page.pageNo = o.pageNo; page.pageTotal = o.pageTotal; }
+  if (Number.isInteger(o.pageNo) && Number.isInteger(o.pageTotal) && o.pageNo >= 1 && o.pageNo <= o.pageTotal) { page.pageNo = o.pageNo; page.pageTotal = o.pageTotal; } // a page with no printed number can come back as 0 of 0
   return page;
 }
 
