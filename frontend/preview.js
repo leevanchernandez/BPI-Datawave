@@ -223,7 +223,9 @@ if (role === 'bm') {
     fill: 'Tell it what the client said. It fills the case form, and you check it before you save.',
     ask: 'Ask about this saved case, for example what is still missing or why the BSO sent it back.',
   };
-  const say = (who, text) => { const b = document.createElement('div'); b.className = `bubble ${who}`; b.textContent = text; $('chat-log').append(b); $('chat-log').scrollTop = $('chat-log').scrollHeight; return b; };
+  const say = (who, text) => { const b = document.createElement('div'); b.className = `bubble ${who}`; b.textContent = text; $('chat-log').append(b); return b; };
+  // Keep the newest bubble in view, also when an answer replaces a waiting bubble.
+  new MutationObserver(() => { $('chat-log').scrollTop = $('chat-log').scrollHeight; }).observe($('chat-log'), { childList: true, subtree: true, characterData: true });
   const setMode = (m) => {
     mode = m;
     $('mode-fill').setAttribute('aria-pressed', m === 'fill'); $('mode-ask').setAttribute('aria-pressed', m === 'ask');
