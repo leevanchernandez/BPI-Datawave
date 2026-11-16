@@ -132,6 +132,8 @@ for (const d of DEFECTS.filter((x) => x !== 'NAME_MISMATCH')) {
 { // 9c. a note from the real form's fields, as Textract returned them on Nov 16
   const v = (value) => ({ value, conf: 0.95 });
   const n = formNote({ '(first name)': v('MARICEL'), '(middle name)': v('DIZON'), '(last name)': v('VILLAFUERTE'), '(first name) #2': v('ARNEL'), '(last name) #2': v('VILLAFUERTE'), 'registered business name (trade name)': v("MARICEL'S SARI-SARI"), 'sole-proprietorship': v('SELECTED'), 'individual': v('NOT_SELECTED'), 'married': v('SELECTED'), 'please specify business activity;': v('Sari-sari store and e-load'), 'php': v('300, 000'), 'annual sales or revenue': v('PHP 1, 800, 000'), 'unsecured loan': v('SELECTED'), 'secured loan': v('NOT_SELECTED') });
+  // A blurred photo can garble labels: an unclosed parenthesis and trailing dashes still match.
+  assert.match(formNote({ 'registered business name (tade -': v('SARI BARI STORE'), 'nature of business - -': v('Retail') }), /Business name SARI BARI STORE\. Business activity Retail\./);
   assert.equal(n, "Business name MARICEL'S SARI-SARI. Owner MARICEL DIZON VILLAFUERTE. sole proprietorship. Business activity Sari-sari store and e-load. Civil status married. Spouse ARNEL VILLAFUERTE. Loan amount PHP 300000. Unsecured loan, no collateral.");
   assert.equal(formNote({ 'single': v('NOT_SELECTED') }), '', 'an empty form gives no note'); }
 { // 10. defects must be storable: no undefined values (DynamoDB rejected them by default)

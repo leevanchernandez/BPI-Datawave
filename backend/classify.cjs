@@ -57,8 +57,8 @@ const FORM_KEYS = {
 // "Registered Business Name (Trade Name)" -> "registered business name". A key that is only "(First Name)" keeps its words.
 const normKey = (k) => {
   const [, base, n = ''] = /^(.*?)(\s#\d+)?$/.exec(String(k).toLowerCase().replace(/[:*_]/g, ' '));
-  const bare = base.replace(/\([^)]*\)/g, ' ').replace(/\.$/, '');
-  return ((bare.trim() ? bare : base.replace(/[()]/g, ' ')).replace(/\.\s*$/, '').replace(/\s+/g, ' ').trim() + n).trim();
+  const bare = base.replace(/\([^)]*\)/g, ' ').replace(/\([^)]*$/, ' '); // a blurred photo can lose the closing parenthesis
+  return ((bare.trim() ? bare : base.replace(/[()]/g, ' ')).replace(/[\s.;,\-–]+$/, '').replace(/\s+/g, ' ').trim() + n).trim();
 };
 const CIVIL_BOXES = ['single', 'married', 'widow/er', 'widowed', 'separated', 'annulled'];
 function mapForm(kv) {
@@ -94,7 +94,7 @@ function formNote(kv) {
   if (fields.owner_name) s.push(`Owner ${fields.owner_name}.`);
   const type = ['sole-proprietorship', 'partnership', 'corporation', 'one person corporation'].find(ticked);
   if (type) s.push(`${type.replace('-', ' ')}.`);
-  const activity = [val('please specify business activity;'), val('nature of business')].filter(Boolean).join(', ');
+  const activity = [val('please specify business activity'), val('nature of business')].filter(Boolean).join(', ');
   if (activity) s.push(`Business activity ${activity}.`);
   if (fields.civil_status) s.push(`Civil status ${fields.civil_status}.`);
   if (fields.spouse_name) s.push(`Spouse ${fields.spouse_name}.`);
