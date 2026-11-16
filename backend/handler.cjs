@@ -9,6 +9,7 @@ const { processPacket } = require('./pipeline.cjs');
 const { reconcile, draftMessage, deriveStatus } = require('./reconcile.cjs');
 const { checklist, requirementsFor } = require('./rules.cjs');
 const { cleanIntake, INTAKE_MAX } = require('./free/guards.cjs');
+const { classify, formNote } = require('./classify.cjs');
 
 const MAX_PAGES = 20; // HTTP API integrations time out at 30 seconds, so keep one request small
 const ID = /^RF-\d{4}-\d{3}$/;
@@ -45,12 +46,28 @@ const sameKey = (given, want) => typeof given === 'string' && typeof want === 's
 // Dependencies are built once per container and injectable for tests. Every route needs deps.demoKey in x-demo-key;
 // with no key configured every request is refused.
 function makeHandlers(deps) {
+  /** POST /check { formImages: [base64 JPEG, ...] } fills case fields from photos of BPI's application form. Nothing is stored. */
+  async function readForm(images) {
+    if (!Array.isArray(images) || !images.length || images.length > 3 || !images.every((s) => str(s, 4e6))) return bad('invalid formImages');
+    usage();
+    const kv = {}; let found = 0;
+    for (const b64 of images) {
+      const bytes = Buffer.from(b64, 'base64');
+      if (classify(await deps.detectLines(bytes)).docType !== 'application_form') continue;
+      found++;
+      for (const [k, v] of Object.entries(await deps.analyzeForm(bytes))) if (!kv[k] || (!kv[k].value && v.value)) kv[k] = v;
+    }
+    const note = found ? formNote(kv).slice(0, INTAKE_MAX) : '';
+    const fields = note ? cleanIntake(await deps.intake(note), note) : {};
+    return json(200, { fields, note, found, usage: usage(), model: deps.model || null });
+  }
   // Model tokens used by one request. The call at the start of a route clears what an earlier failed request left.
   const usage = () => (deps.takeUsage ? deps.takeUsage() : null);
   const routes = {
     /** POST /check  { referral, pageKeys: ["uploads/RF-2026-042/page1.jpg", ...] } */
     async check(event) {
       let body; try { body = JSON.parse(event.body || '{}'); } catch { return bad('invalid json'); }
+      if (body.formImages !== undefined) return readForm(body.formImages);
       if (!validReferral(body.referral)) return bad('invalid referral');
       const id = body.referral.id, keys = body.pageKeys;
       if (!Array.isArray(keys) || !keys.length || keys.length > MAX_PAGES || !keys.every((k) => validKey(id, k))) return bad('invalid pageKeys');

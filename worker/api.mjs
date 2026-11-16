@@ -171,7 +171,16 @@ export function makeApi({ store, llm, now = () => new Date(), demoKey, aws = nul
     },
     // Case fields from the branch officer's note. Nothing is saved here. The branch checks the form and saves the case.
     'POST /api/intake': async (req) => {
-      const b = await body(req); if (!b || typeof b.text !== 'string' || !b.text.trim()) return bad('write the note first'); if (!str(b.text, INTAKE_MAX)) return bad(`write the note in ${INTAKE_MAX} characters or fewer`);
+      const b = await body(req);
+      if (b && b.images !== undefined) { // photos of BPI's application form instead of a note
+        if (!useAws(b.stack) || !aws) return bad('reading a paper form needs the AWS reader');
+        if (!Array.isArray(b.images) || !b.images.length || b.images.length > 3 || !b.images.every((x) => str(x, 4e6))) return bad('add 1 to 3 photos of the form');
+        const r = await awsPost('/check', { formImages: b.images });
+        const a = await r.json().catch(() => null);
+        if (r.status !== 200 || !a) return json(502, { error: 'The form could not be read. Fill the form by hand.' });
+        return json(200, { fields: cleanIntake(a.fields, a.note || ''), note: a.note || '', found: a.found || 0, model: a.model || 'Amazon Bedrock', stack: 'aws' });
+      }
+      if (!b || typeof b.text !== 'string' || !b.text.trim()) return bad('write the note first'); if (!str(b.text, INTAKE_MAX)) return bad(`write the note in ${INTAKE_MAX} characters or fewer`);
       const onAws = useAws(b.stack);
       if (onAws ? !aws : !llm) return onAws ? noAws() : json(503, { error: 'no model configured' });
       const text = b.text.trim();

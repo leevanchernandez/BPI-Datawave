@@ -83,4 +83,26 @@ function mapForm(kv) {
   return { fields, conf };
 }
 
-module.exports = { classify, mapForm };
+// A short note from BPI's application form, read by the same intake as a typed note.
+function formNote(kv) {
+  const { fields } = mapForm(kv);
+  const norm = new Map(Object.entries(kv).map(([k, v]) => [normKey(k), v]));
+  const val = (k) => { const v = String((norm.get(k) || {}).value || '').trim(); return /^(NOT_)?SELECTED$/.test(v) ? '' : v; };
+  const ticked = (k) => (norm.get(k) || {}).value === 'SELECTED';
+  const s = [];
+  if (fields.business_name) s.push(`Business name ${fields.business_name}.`);
+  if (fields.owner_name) s.push(`Owner ${fields.owner_name}.`);
+  const type = ['sole-proprietorship', 'partnership', 'corporation', 'one person corporation'].find(ticked);
+  if (type) s.push(`${type.replace('-', ' ')}.`);
+  const activity = [val('please specify business activity;'), val('nature of business')].filter(Boolean).join(', ');
+  if (activity) s.push(`Business activity ${activity}.`);
+  if (fields.civil_status) s.push(`Civil status ${fields.civil_status}.`);
+  if (fields.spouse_name) s.push(`Spouse ${fields.spouse_name}.`);
+  const amount = val('php').replace(/[^\d.]/g, '');
+  if (+amount > 0) s.push(`Loan amount PHP ${amount}.`); // annual sales stay out, so the note has one peso amount
+  if (ticked('unsecured loan')) s.push('Unsecured loan, no collateral.');
+  else if (ticked('secured loan')) s.push('Secured loan with collateral.');
+  return s.join(' ');
+}
+
+module.exports = { classify, mapForm, formNote };

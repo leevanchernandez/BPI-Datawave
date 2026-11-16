@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const { checklist } = require('../backend/rules.cjs');
 const { check, validDate } = require('../backend/checker.cjs');
 const { nameCompare } = require('../backend/names.cjs');
-const { classify, mapForm } = require('../backend/classify.cjs');
+const { classify, mapForm, formNote } = require('../backend/classify.cjs');
 const { reconcile, draftMessage, deriveStatus } = require('../backend/reconcile.cjs');
 const { packet, DEFECTS, rng } = require('../backend/synth.cjs');
 
@@ -129,6 +129,11 @@ for (const d of DEFECTS.filter((x) => x !== 'NAME_MISMATCH')) {
   assert.equal(classify([{ text: 'FOR BANK REFERENCE ONLY' }, { text: 'PHILIPPINE STANDARD INDUSTRIAL CLASSIFICATION (PSIC)' }]).docType, 'form_annex');
   assert.equal(classify([{ text: 'BUSINESS LOAN APPLICATION FORM' }, { text: '(INDIVIDUAL/SOLE PROPRIETORSHIP)' }]).docType, 'application_form');
   assert.equal(classify([{ text: 'BUSINESS LOAN APPLICATION FORM' }, { text: 'ANNEX SHEET' }]).docType, 'application_form'); }
+{ // 9c. a note from the real form's fields, as Textract returned them on Nov 16
+  const v = (value) => ({ value, conf: 0.95 });
+  const n = formNote({ '(first name)': v('MARICEL'), '(middle name)': v('DIZON'), '(last name)': v('VILLAFUERTE'), '(first name) #2': v('ARNEL'), '(last name) #2': v('VILLAFUERTE'), 'registered business name (trade name)': v("MARICEL'S SARI-SARI"), 'sole-proprietorship': v('SELECTED'), 'individual': v('NOT_SELECTED'), 'married': v('SELECTED'), 'please specify business activity;': v('Sari-sari store and e-load'), 'php': v('300, 000'), 'annual sales or revenue': v('PHP 1, 800, 000'), 'unsecured loan': v('SELECTED'), 'secured loan': v('NOT_SELECTED') });
+  assert.equal(n, "Business name MARICEL'S SARI-SARI. Owner MARICEL DIZON VILLAFUERTE. sole proprietorship. Business activity Sari-sari store and e-load. Civil status married. Spouse ARNEL VILLAFUERTE. Loan amount PHP 300000. Unsecured loan, no collateral.");
+  assert.equal(formNote({ 'single': v('NOT_SELECTED') }), '', 'an empty form gives no note'); }
 { // 10. defects must be storable: no undefined values (DynamoDB rejected them by default)
   const s = packet(7, REF, [], 0, TODAY); const idp = s.packet.pages.find((x) => x.docType === 'gov_id' && x.side === 'front'); idp.fields.owner_name = 'Pedro Villanueva'; idp.conf = { owner_name: 0.97 }; const o = run(REF, s.packet);
   assert(o.defects.some((d) => d.code === 'NAME_MISMATCH' && !('docType' in d)), 'identity defects carry no docType key, never an undefined one'); assert.doesNotThrow(() => { for (const d of o.defects) for (const [k, v] of Object.entries(d)) if (v === undefined) throw new Error(`${d.key}.${k} is undefined`); }); }

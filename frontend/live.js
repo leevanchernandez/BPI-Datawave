@@ -228,7 +228,7 @@ if (role === 'bm') {
     mode = m;
     $('mode-fill').setAttribute('aria-pressed', m === 'fill'); $('mode-ask').setAttribute('aria-pressed', m === 'ask');
     $('chat-hint').textContent = HINT[m];
-    $('quick').classList.toggle('hidden', m !== 'ask' || !lastView);
+    $('quick').classList.toggle('hidden', m !== 'ask' || !lastView); $('form-read').classList.toggle('hidden', m !== 'fill');
     const v = $('chat-in').value;
     if (m === 'ask' && (!v.trim() || v === SAMPLE)) $('chat-in').value = 'Ano pa ang kulang?';
     if (m === 'fill' && v === 'Ano pa ang kulang?') $('chat-in').value = '';
@@ -238,8 +238,8 @@ if (role === 'bm') {
   $('mode-fill').onclick = () => setMode('fill');
   $('mode-ask').onclick = () => setMode('ask');
   $('quick').onclick = (e) => { const b = e.target.closest('[data-q]'); if (!b || $('chat-send').disabled) return; setMode('ask'); $('chat-in').value = b.dataset.q; $('chat-send').click(); };
-  async function fill(text, wait) {
-    const { fields, model } = await api('POST', '/api/intake', { text, stack });
+  async function fill(text, wait, read) {
+    const { fields, model } = read || await api('POST', '/api/intake', { text, stack });
     if (fields.name || fields.business) { for (const id of ['f-business', 'f-name', 'f-spouse', 'f-amount']) $(id).value = ''; for (const id of ['f-secured', 'f-bpi']) $(id).checked = false; } // a new client clears the last one's values, a correction keeps them
     for (const [k, [id]] of Object.entries(INTAKE)) {
       const el = $(id); el.classList.toggle('ai', k in fields);
@@ -248,7 +248,7 @@ if (role === 'bm') {
     $('f-civil').onchange();
     const missing = Object.entries(INTAKE).filter(([k, [id]]) => !(k in fields) && $(id).type !== 'checkbox' && !$(id).value).map(([, [, label]]) => label);
     const n = Object.keys(fields).length;
-    wait.textContent = `I filled ${n} field${n === 1 ? '' : 's'} from your note (${/claude/i.test(model) ? 'Claude Haiku' : /gemini/i.test(model) ? 'Gemini' : model}). Check the highlighted ones, then save the case.${missing.length ? ` I did not fill ${missing.join(', ')}.` : ''}`;
+    wait.textContent = `I filled ${n} field${n === 1 ? '' : 's'} from ${read ? read.from : 'your note'} (${/claude/i.test(model) ? 'Claude Haiku' : /gemini/i.test(model) ? 'Gemini' : model}). Check the highlighted ones, then save the case.${missing.length ? ` I did not fill ${missing.join(', ')}.` : ''}`;
   }
   async function ask(question, wait) {
     const v = await api('POST', '/api/ask', { id: caseId(), question, stack });
@@ -262,6 +262,24 @@ if (role === 'bm') {
     wait.classList.remove('wait', 'dots'); $('chat-send').disabled = false;
   }
   $('chat-send').onclick = send;
+  // Photos of BPI's application form fill the case form, the same as a note.
+  $('form-photo-btn').onclick = () => $('form-photo').click();
+  $('form-photo').onchange = async (e) => {
+    const chosen = [...e.target.files]; e.target.value = ''; if (!chosen.length) return;
+    if (stack !== 'aws') { say('bot', 'Reading a paper form needs the AWS reader. Switch to Textract and Bedrock below, or type what the form says.'); return; }
+    setMode('fill'); if ($('chat-in').value === SAMPLE) $('chat-in').value = ''; say('me', `${chosen.length} photo${chosen.length === 1 ? '' : 's'} of the application form`);
+    const wait = say('bot wait dots', 'Reading the form'); $('chat-send').disabled = true; $('form-photo-btn').disabled = true;
+    try {
+      const files = [];
+      for (const f of chosen) files.push(...(f.type === 'application/pdf' || /\.pdf$/i.test(f.name) ? (await pdfPages(f)).slice(0, 3) : [f]));
+      const images = [];
+      for (const f of files.slice(0, 3)) images.push((await downscale(f)).toDataURL('image/jpeg', 0.85).split(',')[1]);
+      const { fields, found, model } = await api('POST', '/api/intake', { images, stack });
+      if (!found) wait.textContent = 'I could not find BPI\'s application form in those photos. Take a clear photo of page 1, or type what the client said.';
+      else await fill(null, wait, { fields, model, from: 'the paper form' });
+    } catch (err) { wait.textContent = err.message; }
+    wait.classList.remove('wait', 'dots'); $('chat-send').disabled = false; $('form-photo-btn').disabled = false;
+  };
   $('chat-in').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
   if (stack === 'free') $('photo-note').textContent = 'Photos stay on this device. Only the text read from them is sent.';
   const switchLink = () => `?id=${encodeURIComponent(caseId() || 'RF-2026-042')}${stack === 'aws' ? '&stack=free' : ''}`;
