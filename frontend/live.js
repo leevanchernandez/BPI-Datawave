@@ -540,7 +540,7 @@ function renderReports(cases) {
   $('attention').innerHTML = need.map((c) => item(c, `${esc(c.id)}, ${c.open} open ${c.open === 1 ? 'item' : 'items'}${c.issues && c.issues[0] ? `, ${esc(c.issues[0])}` : ''}`)).join('') || '<li class="soft" style="padding:var(--space-3) 0">Nothing needs attention right now.</li>';
   $('activity').innerHTML = cases.slice(0, 6).map((c) => item(c, `${esc(c.id)}, ${when(c.updated)}`)).join('') || '<li class="soft" style="padding:var(--space-3) 0">No updates yet.</li>';
   $('by-status').innerHTML = bars(STATUSES.map((st) => [st, cases.filter((c) => c.status === st).length]).filter(([, n]) => n));
-  const issues = {}; for (const c of cases) for (const m of new Set((c.issues || []).map((s) => s.replace(/( The AI did not find it in the new scan\.).*$/, '$1')))) issues[m] = (issues[m] || 0) + 1;
+  const issues = {}; for (const c of cases) for (const m of new Set((c.issues || []).map((s) => s.replace(/( The AI did not find it in the new scan\.| It isn't in these papers yet\.).*$/, '$1')))) issues[m] = (issues[m] || 0) + 1;
   const top = Object.entries(issues).sort((a, b) => b[1] - a[1]).slice(0, 6);
   $('by-issue').innerHTML = top.length ? bars(top) : '<p class="soft">No open problems right now.</p>';
 }

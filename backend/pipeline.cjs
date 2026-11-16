@@ -69,7 +69,7 @@ async function matchBsoRequest({ request, today }, n, texts, deps, result, trace
   const why = m && typeof m.why === 'string' ? m.why.trim().slice(0, 200) : '';
   t.verdict = m ? m.verdict : 'none';
   if (m && m.verdict === 'found' && page) { t.page = page; t.why = why; result.bsoRequest = { found: true, page, why }; }
-  else if (m && m.verdict === 'missing') result.defects.push({ key: 'BSO_REQUEST', message: `${asked} The AI did not find it in the new scan.${why ? ` ${why}` : ''}` });
+  else if (m && m.verdict === 'missing') result.defects.push({ key: 'BSO_REQUEST', message: `${asked} It isn't in these papers yet.${why ? ` ${why}` : ''}` });
   else result.needsReview.push({ key: 'BSO_REQUEST', message: `${asked} Find it in the new scan and type what the paper shows.` });
 }
 

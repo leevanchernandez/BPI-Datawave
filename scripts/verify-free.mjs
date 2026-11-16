@@ -145,7 +145,7 @@ const asks = [];
 fakeLlm.matchRequest = async (i) => { asks.push(i); return { verdict: 'missing', page: null, why: 'The statements cover Aug to Oct only.' }; };
 r = await call('POST', '/api/check', { id: REF.id, pages: pages2 });
 assert.equal(r.body.status, 'Missing requirements');
-assert(r.body.result.defects.some((d) => d.key === 'BSO_REQUEST' && /did not find it/.test(d.message)), 'missing is a defect');
+assert(r.body.result.defects.some((d) => d.key === 'BSO_REQUEST' && /isn't in these papers yet/.test(d.message)), 'missing is a defect');
 assert.equal(asks[0].request, 'The bank statements cover two months, and the BSO needs three.');
 assert.equal(asks[0].pages.length, pages2.length);
 assert(!asks[0].pages.some((p) => /123-456-789-000/.test(p.text)), 'ID numbers are masked before the model');
