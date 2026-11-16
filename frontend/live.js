@@ -190,6 +190,8 @@ if (role === 'bm') {
   refreshHead();
 
   async function saveCase() {
+    const empty = [['f-business', 'business name'], ['f-name', 'owner'], ['f-industry', 'industry'], ['f-amount', 'loan amount']].filter(([id]) => !(+$(id).value > 0 || (id !== 'f-amount' && $(id).value.trim()))).map(([, l]) => l);
+    if (empty.length) { alertInline(`Fill in the ${empty.join(', ')} before saving.`); return; }
     const done = busy($('save-case'), 'Saving');
     try {
       const v = await api('POST', '/api/case', { referral: referral() });
