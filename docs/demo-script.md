@@ -109,14 +109,16 @@ A silent real-time take of this run sheet is `~/Downloads/counter-check-demo-liv
 
 | Time | On screen | Say |
 |---|---|---|
-| 0:00 to 0:25 | Three notes fill the form (English, Taglish, nokia). | The branch officer types what the client said, however they type. The AI fills the form each time, and the officer checks it before saving. |
-| 0:25 to 0:29 | Save case. The Requirements dropdown opens. | The checklist comes from BPI's rules table, not from the AI. |
-| 0:29 to 0:54 | Sample papers, visit 1, then Check documents. | The officer snaps the papers at the counter. Textract reads them, and the rules find two problems while the client is still there. These papers are synthetic. |
-| 0:54 to 1:04 | "ano pa kulang?" in the Assistant. | The assistant answers from this case's record, and it never says a loan is approved. |
-| 1:04 to 1:28 | Visit 2, Check documents, Send to BSO. | On the second visit nothing is missing, so Send to BSO unlocks. It stays locked while anything is open. |
-| 1:28 to 1:38 | BSO view, return with "Bank statements must cover Sep to Nov 2026." | After review the BSO still needs something, so the BSO returns the case with a note. |
-| 1:38 to 2:14 | Branch view, visit 2 papers checked again. | The AI reads the new scan against the BSO's note. This statement covers Aug to Oct, so it's flagged, and the case can't go back until the branch gets the right one. |
-| 2:14 to 2:26 | BSO case list. | The BSO sees every referral and its status in one place, and the list counts how many went to Credit with no return. |
+| 0:00 to 0:25 | Three notes fill the form (English, Taglish, nokia). | The officer types the client's details three ways, and the form fills each time. |
+| 0:25 to 0:29 | Save case. The Requirements dropdown opens. | Saving the case brings up the list of papers for a sole proprietorship. |
+| 0:29 to 0:54 | Sample papers, visit 1, then Check documents. | The officer snaps the papers, and the check finds a missing DTI page and a blank TIN. |
+| 0:54 to 1:04 | "ano pa kulang?" in the Assistant. | The officer asks what's still missing, in Taglish. |
+| 1:04 to 1:28 | Visit 2, Check documents, Send to BSO. | On the second visit nothing is missing, so the case goes to the BSO. |
+| 1:28 to 1:38 | BSO view, return with "Bank statements must cover Sep to Nov 2026." | The BSO needs newer bank statements and sends it back with a note. |
+| 1:38 to 2:14 | Branch view, visit 2 papers checked again. | The branch scans again, and the Aug to Oct statement gets flagged against the note. |
+| 2:14 to 2:26 | BSO case list. | The BSO sees every referral and its status in one list. |
+
+The lines only say what's on screen, because pitch slides 11 to 16 and 18 to 21 already explain the AI, the rules and the safeguards (cross-checked on Nov 16 at Regina's ask).
 
 The return step needs a BSO note that the sample photos fail. "Bank statements must cover Sep to Nov 2026." works because the visit 2 statement covers Aug to Oct 2026 (checked on AWS on Nov 15, and again on the true-to-life papers on Nov 16). A check takes 15 to 30 seconds, so keep talking or cut the wait in editing.
 
