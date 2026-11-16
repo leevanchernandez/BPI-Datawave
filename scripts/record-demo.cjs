@@ -1,5 +1,6 @@
 // Records the live demo run sheet in docs/demo-script.md as a silent real-time take.
 // Usage: PW=<playwright dir> CHROME=<chrome binary> OUT=<file.webm> node scripts/record-demo.cjs
+// HD=1 renders at 2x and writes OUT as an H.264 mp4 built from screencast frames.
 const { chromium } = require(process.env.PW || 'playwright');
 const fs = require('fs');
 const path = require('path');
@@ -13,10 +14,25 @@ const NOTES = [
 const RETURN_NOTE = 'Bank statements must cover Sep to Nov 2026.';
 
 (async () => {
-  const dir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'take-'));
+  const dir = fs.mkdtempSync(path.join(process.env.FRAMES_DIR || require('os').tmpdir(), 'take-'));
   const b = await chromium.launch({ executablePath: process.env.CHROME, args: process.env.CHROME_ARGS ? [process.env.CHROME_ARGS] : [] });
-  const ctx = await b.newContext({ viewport: { width: 1280, height: 800 }, recordVideo: { dir, size: { width: 1280, height: 800 } } });
+  const HD = !!process.env.HD;
+  const ctx = await b.newContext(HD ? { viewport: { width: 1280, height: 800 }, deviceScaleFactor: 2 } : { viewport: { width: 1280, height: 800 }, recordVideo: { dir, size: { width: 1280, height: 800 } } });
   const p = await ctx.newPage();
+  const frames = [];
+  let cdp;
+  if (HD) {
+    cdp = await ctx.newCDPSession(p);
+    cdp.on('Page.screencastFrame', (f) => {
+      const file = path.join(dir, `f${String(frames.length).padStart(6, '0')}.jpg`);
+      fs.writeFileSync(file, Buffer.from(f.data, 'base64'));
+      frames.push({ file, t: f.metadata.timestamp });
+      cdp.send('Page.screencastFrameAck', { sessionId: f.sessionId }).catch(() => {});
+    });
+    const start = () => cdp.send('Page.startScreencast', { format: 'jpeg', quality: 95 });
+    await start();
+    p.on('framenavigated', (fr) => { if (fr === p.mainFrame()) start().catch(() => {}); });
+  }
   const t0 = Date.now();
   const mark = (s) => console.log(`${((Date.now() - t0) / 1000).toFixed(1)}s ${s}`);
   const idle = () => p.waitForFunction(() => !document.getElementById('chat-send').disabled, null, { timeout: 60000 });
@@ -100,6 +116,17 @@ const RETURN_NOTE = 'Bank statements must cover Sep to Nov 2026.';
   await p.waitForTimeout(8000);
   mark('case list');
 
+  if (HD) {
+    await cdp.send('Page.stopScreencast');
+    await ctx.close();
+    await b.close();
+    const list = frames.map((f, i) => `file '${f.file}'\nduration ${((frames[i + 1] || { t: f.t + 2 }).t - f.t).toFixed(3)}`).join('\n') + `\nfile '${frames[frames.length - 1].file}'\n`;
+    fs.writeFileSync(path.join(dir, 'list.txt'), list);
+    require('child_process').execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'concat', '-safe', '0', '-i', path.join(dir, 'list.txt'), '-vf', 'fps=30,scale=2560:1600:flags=lanczos', '-c:v', 'libx264', '-crf', '16', '-preset', 'slow', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', process.env.OUT || 'take.mp4']);
+    fs.rmSync(dir, { recursive: true });
+    console.log('saved', process.env.OUT || 'take.mp4');
+    return;
+  }
   const video = await p.video().path();
   await ctx.close();
   await b.close();
