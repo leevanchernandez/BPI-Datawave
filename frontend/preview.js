@@ -218,6 +218,7 @@ if (role === 'bm') {
   for (const [id] of Object.values(INTAKE)) $(id).addEventListener('input', (e) => e.target.classList.remove('ai'));
   // ---- assistant: fill the form from a note, or ask about the saved case ----
   let mode = 'fill';
+  const QUESTION = /\?\s*$|^(ano|anong|ano'ng|ilan|paano|kailan|bakit|sino|nasaan|what|which|is|are|does|do|how|when|why|who)\b/i;
   const SAMPLE = $('chat-in').value;
   const HINT = {
     fill: 'Tell it what the client said. It fills the case form, and you check it before you save.',
@@ -258,6 +259,7 @@ if (role === 'bm') {
   }
   async function send() {
     const text = $('chat-in').value.trim(); if (!text) return;
+    if (mode === 'fill' && QUESTION.test(text)) setMode('ask'); // a question typed under Fill goes to Ask
     say('me', text); $('chat-in').value = ''; $('chat-send').disabled = true;
     const wait = say('bot wait dots', mode === 'fill' ? 'Reading your note' : 'Checking the case');
     try { await (mode === 'fill' ? fill(text, wait) : ask(text, wait)); } catch (e) { wait.textContent = e.message === 'unknown referral' ? 'Save the case first, then ask about it.' : e.message; }
