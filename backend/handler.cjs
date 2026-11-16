@@ -53,9 +53,12 @@ function makeHandlers(deps) {
     const kv = {}; let found = 0;
     for (const b64 of images) {
       const bytes = Buffer.from(b64, 'base64');
-      if (classify(await deps.detectLines(bytes)).docType !== 'application_form') continue;
-      found++;
-      for (const [k, v] of Object.entries(await deps.analyzeForm(bytes))) if (!kv[k] || (!kv[k].value && v.value)) kv[k] = v;
+      const { docType } = classify(await deps.detectLines(bytes));
+      if (docType && docType !== 'application_form') continue; // an unrecognized page may be the form with its title out of frame
+      const page = await deps.analyzeForm(bytes);
+      if (!docType) for (const k of Object.keys(page)) if (/^\(?(first|middle|last) name\b/i.test(k)) delete page[k]; // without the top of the page the borrower and spouse rows can't be told apart
+      if (docType || formNote(page)) found++;
+      for (const [k, v] of Object.entries(page)) if (!kv[k] || (!kv[k].value && v.value)) kv[k] = v;
     }
     const note = found ? formNote(kv).slice(0, INTAKE_MAX) : '';
     const fields = note ? cleanIntake(await deps.intake(note), note) : {};

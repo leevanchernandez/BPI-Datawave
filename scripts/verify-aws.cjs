@@ -96,11 +96,14 @@ const GOOD = ['form', 'idf', 'idb', 'reg', 'cor', 'permit', 'bank', 'cal'];
   const keys = (tags, id = REF.id) => tags.map((k) => `uploads/${id}/${k}`);
   assert.equal((await H.check(ev('{bad'))).statusCode, 400);
   { // a photo of the application form fills case fields, and other pages are skipped
-    const H5 = makeHandlers({ ...hdeps, detectLines: async (b) => [{ text: b.toString() === 'form' ? 'BUSINESS LOAN APPLICATION FORM' : 'Some receipt' }], analyzeForm: async () => ({ 'registered business name (trade name)': { value: 'ABC STORE', conf: 0.9 }, 'sole-proprietorship': { value: 'SELECTED', conf: 0.9 } }), intake: async (note) => ({ business: 'ABC STORE', type: 'Sole proprietorship', name: 'Not In Note' }) });
+    const H5 = makeHandlers({ ...hdeps, detectLines: async (b) => [{ text: b.toString() === 'form' ? 'BUSINESS LOAN APPLICATION FORM' : 'Some receipt' }], analyzeForm: async (b) => (b.toString() === 'other' ? {} : { 'registered business name (trade name)': { value: 'ABC STORE', conf: 0.9 }, 'sole-proprietorship': { value: 'SELECTED', conf: 0.9 }, '(first name)': { value: 'ARNEL', conf: 0.9 }, '(last name)': { value: 'CRUZ', conf: 0.9 } }), intake: async (note) => ({ business: 'ABC STORE', type: 'Sole proprietorship', name: 'Not In Note' }) });
     const b64 = (t) => Buffer.from(t).toString('base64');
     const r = JSON.parse((await H5.check(ev({ formImages: [b64('form'), b64('other')] }))).body);
     assert.equal(r.found, 1); assert.deepEqual(r.fields, { business: 'ABC STORE', type: 'Sole proprietorship' }, 'cleanIntake drops a name the form did not have');
     assert.deepEqual(JSON.parse((await H5.check(ev({ formImages: [b64('other')] }))).body).fields, {});
+    const t = JSON.parse((await H5.check(ev({ formImages: [b64('titleless')] }))).body);
+    assert.equal(t.found, 1, 'a form page with its title out of frame is still read');
+    assert.doesNotMatch(t.note, /ARNEL/, 'name boxes are skipped without the title, since the rows may be shifted');
     assert.equal((await H5.check(ev({ formImages: [] }))).statusCode, 400);
     assert.equal((await H5.check(ev({ formImages: [b64('form')] }, 'wrong'))).statusCode, 401, 'form reading needs the key'); }
   assert.equal((await H.check(ev({ referral: { ...REF, id: 'x' }, pageKeys: keys(['a']) }))).statusCode, 400, 'referral id format');
