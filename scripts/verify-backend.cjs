@@ -119,6 +119,16 @@ for (const d of DEFECTS.filter((x) => x !== 'NAME_MISMATCH')) {
   assert.equal(classify([{ text: 'Department of Trade and Industry' }, { text: 'Certificate of Business Name Registration' }]).docType, 'registration');
   const m = mapForm({ 'Signature of Spouse:': { value: 'x', conf: 1 }, 'Full name of spouse': { value: 'Pedro', conf: 1 }, 'Address of employer': { value: 'z', conf: 1 } });
   assert.equal(m.fields.signature, undefined); assert.equal(m.fields.owner_name, undefined); assert.equal(m.fields.address, undefined); assert.equal(m.fields.spouse_signature, 'x'); }
+{ // 9b. BPI's own form (2026 individual/sole prop): bracketed hints, name boxes, ticked civil status, later pages
+  const v = (value) => ({ value, conf: 0.95 });
+  const m = mapForm({ 'name of the borrower': v('(First Name)'), '(first name)': v('MARICEL'), '(middle name)': v('DIZON'), '(last name)': v('VILLAFUERTE'), '(first name) #2': v('ARNEL'), '(middle name) #2': v('CRUZ'), '(last name) #2': v('VILLAFUERTE'), '(first name) #3': v('LOURDES'), 'name of spouse': v(''), 'registered business name (trade name)': v("MARICEL'S SARI-SARI"), 'home address (unit #, building/house #, street)': v('118 Rizal St.'), 'mobile no.': v('0917 555 0142'), 'tin': v('412-883-019-000'), 'single': v('NOT_SELECTED'), 'married': v('SELECTED') });
+  assert.equal(m.fields.owner_name, 'MARICEL DIZON VILLAFUERTE'); assert.equal(m.fields.spouse_name, 'ARNEL CRUZ VILLAFUERTE');
+  assert.equal(m.fields.business_name, "MARICEL'S SARI-SARI"); assert.equal(m.fields.address, '118 Rizal St.'); assert.equal(m.fields.contact, '0917 555 0142'); assert.equal(m.fields.civil_status, 'married');
+  assert.equal(mapForm({ 'single': v('NOT_SELECTED'), 'married': v('NOT_SELECTED') }).fields.civil_status, undefined, 'no tick is a blank civil status');
+  assert.equal(classify([{ text: 'Signature above' }, { text: 'Printed Name of Borrower' }]).docType, 'form_annex');
+  assert.equal(classify([{ text: 'FOR BANK REFERENCE ONLY' }, { text: 'PHILIPPINE STANDARD INDUSTRIAL CLASSIFICATION (PSIC)' }]).docType, 'form_annex');
+  assert.equal(classify([{ text: 'BUSINESS LOAN APPLICATION FORM' }, { text: '(INDIVIDUAL/SOLE PROPRIETORSHIP)' }]).docType, 'application_form');
+  assert.equal(classify([{ text: 'BUSINESS LOAN APPLICATION FORM' }, { text: 'ANNEX SHEET' }]).docType, 'application_form'); }
 { // 10. defects must be storable: no undefined values (DynamoDB rejected them by default)
   const s = packet(7, REF, [], 0, TODAY); const idp = s.packet.pages.find((x) => x.docType === 'gov_id' && x.side === 'front'); idp.fields.owner_name = 'Pedro Villanueva'; idp.conf = { owner_name: 0.97 }; const o = run(REF, s.packet);
   assert(o.defects.some((d) => d.code === 'NAME_MISMATCH' && !('docType' in d)), 'identity defects carry no docType key, never an undefined one'); assert.doesNotThrow(() => { for (const d of o.defects) for (const [k, v] of Object.entries(d)) if (v === undefined) throw new Error(`${d.key}.${k} is undefined`); }); }

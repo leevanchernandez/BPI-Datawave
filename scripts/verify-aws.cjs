@@ -246,6 +246,19 @@ const GOOD = ['form', 'idf', 'idb', 'reg', 'cor', 'permit', 'bank', 'cal'];
   const kv = await textract.analyzeForm(Buffer.from('x'), { send: async () => ({ Blocks: blocks }) });
   assert.deepEqual(kv.tin, { value: '123', conf: 0.91 }, 'a later empty duplicate does not overwrite a filled value');
   assert.equal(kv.signature.value, '', 'missing value block is a blank field');
+  const box = [
+    { Id: 'w5', BlockType: 'WORD', Text: 'Married' }, { Id: 's1', BlockType: 'SELECTION_ELEMENT', SelectionStatus: 'SELECTED' },
+    { Id: 'w6', BlockType: 'WORD', Text: '(First' }, { Id: 'w7', BlockType: 'WORD', Text: 'Name)' }, { Id: 'w8', BlockType: 'WORD', Text: 'ANA' }, { Id: 'w9', BlockType: 'WORD', Text: 'BEN' },
+    { Id: 'k4', BlockType: 'KEY_VALUE_SET', EntityTypes: ['KEY'], Confidence: 90, Relationships: [{ Type: 'CHILD', Ids: ['w5'] }, { Type: 'VALUE', Ids: ['v4'] }] },
+    { Id: 'v4', BlockType: 'KEY_VALUE_SET', EntityTypes: ['VALUE'], Confidence: 88, Relationships: [{ Type: 'CHILD', Ids: ['s1'] }] },
+    { Id: 'k6', BlockType: 'KEY_VALUE_SET', EntityTypes: ['KEY'], Confidence: 90, Geometry: { BoundingBox: { Top: 0.3 } }, Relationships: [{ Type: 'CHILD', Ids: ['w6', 'w7'] }, { Type: 'VALUE', Ids: ['v6'] }] },
+    { Id: 'v6', BlockType: 'KEY_VALUE_SET', EntityTypes: ['VALUE'], Confidence: 90, Relationships: [{ Type: 'CHILD', Ids: ['w9'] }] },
+    { Id: 'k5', BlockType: 'KEY_VALUE_SET', EntityTypes: ['KEY'], Confidence: 90, Geometry: { BoundingBox: { Top: 0.1 } }, Relationships: [{ Type: 'CHILD', Ids: ['w6', 'w7'] }, { Type: 'VALUE', Ids: ['v5'] }] },
+    { Id: 'v5', BlockType: 'KEY_VALUE_SET', EntityTypes: ['VALUE'], Confidence: 90, Relationships: [{ Type: 'CHILD', Ids: ['w8'] }] },
+  ];
+  const kv2 = await textract.analyzeForm(Buffer.from('x'), { send: async () => ({ Blocks: box }) });
+  assert.equal(kv2.married.value, 'SELECTED', 'a ticked box reads as SELECTED');
+  assert.equal(kv2['(first name)'].value, 'ANA', 'the higher repeated label comes first'); assert.equal(kv2['(first name) #2'].value, 'BEN');
 
   // ---- stored defect items must marshal for DynamoDB (it rejected undefined values by default) ----
   const { marshall } = require('../backend/node_modules/@aws-sdk/util-dynamodb');

@@ -14,6 +14,7 @@ const RULES = [
   ['project_list', /list of (on-?going|current) projects/i],
   ['contract', /notice of award|\bcontract agreement\b|construction contract/i],
   ['bir_cor', /bir form (no\.? )?2303|certificate of registration[\s\S]*bureau of internal revenue|bureau of internal revenue[\s\S]*certificate of registration/i],
+  ['form_annex', /checklist of supporting documents|printed name of (the )?borrower|for bank reference only|related to a dos\b|for business banking segment/i], // later pages of BPI's form: signatures, checklist, PSIC list, DOSRI questions
   ['application_form', /\bloan application( form)?\b|^application form\b/im],
   ['gov_application', /(business permit|business name registration|sole proprietorship|department of trade and industry)[\s\S]*application (form|for)\b|application (form )?for (a )?(business permit|mayor'?s permit|registration|business name)/i], // an application to an agency, not the paper it issues
   ['audited_fs', /audited financial statements?|independent auditor/i],
@@ -43,23 +44,41 @@ function classify(lines) {
 
 // Map Textract form keys to our field names. Extend per real form.
 const FORM_KEYS = {
-  business_name: ['business name', 'name of business', 'trade name'],
-  owner_name: ['name of applicant', 'owner name', 'applicant name', 'full name'],
-  address: ['business address', 'address'],
+  business_name: ['business name', 'name of business', 'trade name', 'registered business name'],
+  owner_name: ['name of applicant', 'owner name', 'applicant name', 'full name', 'name of the borrower'],
+  address: ['business address', 'principal business address', 'address', 'home address'],
   tin: ['tin', 'tax identification number'],
-  contact: ['contact number', 'mobile', 'phone'],
+  contact: ['contact number', 'mobile', 'phone', 'mobile no', 'mobile number'],
   signature: ['signature', 'signature of applicant'],
   civil_status: ['civil status'],
   spouse_name: ['spouse name', 'name of spouse'],
   spouse_signature: ['spouse signature', 'signature of spouse'],
 };
-const normKey = (k) => String(k).toLowerCase().replace(/[:*_]/g, ' ').replace(/\s+/g, ' ').trim();
+// "Registered Business Name (Trade Name)" -> "registered business name". A key that is only "(First Name)" keeps its words.
+const normKey = (k) => {
+  const [, base, n = ''] = /^(.*?)(\s#\d+)?$/.exec(String(k).toLowerCase().replace(/[:*_]/g, ' '));
+  const bare = base.replace(/\([^)]*\)/g, ' ').replace(/\.$/, '');
+  return ((bare.trim() ? bare : base.replace(/[()]/g, ' ')).replace(/\.\s*$/, '').replace(/\s+/g, ' ').trim() + n).trim();
+};
+const CIVIL_BOXES = ['single', 'married', 'widow/er', 'widowed', 'separated', 'annulled'];
 function mapForm(kv) {
   const fields = {}, conf = {};
-  const norm = new Map(Object.entries(kv).map(([k, v]) => [normKey(k), v]));
+  const SUBLABEL = /^\s*\(?(first|middle|last) name\)?\s*$/i; // a printed sub-label read as the value is a blank field
+  const norm = new Map(Object.entries(kv).map(([k, v]) => [normKey(k), v && SUBLABEL.test(v.value || '') ? { ...v, value: '' } : v]));
   for (const [name, keys] of Object.entries(FORM_KEYS)) {
-    const hit = keys.map((x) => norm.get(x)).find(Boolean); // exact match only: 'signature of spouse' must never fill 'signature'
+    const hit = keys.map((x) => norm.get(x)).find((v) => v && String(v.value || '').trim()) || keys.map((x) => norm.get(x)).find(Boolean); // exact match only: 'signature of spouse' must never fill 'signature'
     if (hit) { fields[name] = hit.value; conf[name] = hit.conf; }
+  }
+  // BPI's form splits names into (First Name) (Middle Name) (Last Name) boxes: the borrower's row first, the spouse's second.
+  const parts = (n) => ['first name', 'middle name', 'last name'].map((k) => norm.get(n ? `${k} #${n}` : k)).filter((v) => v && String(v.value || '').trim());
+  for (const [name, n] of [['owner_name', 0], ['spouse_name', 2]]) {
+    const p = parts(n);
+    if (!String(fields[name] || '').trim() && p.length >= 2) { fields[name] = p.map((v) => v.value.trim()).join(' '); conf[name] = Math.min(...p.map((v) => v.conf)); }
+  }
+  // Civil status as ticked boxes.
+  if (!String(fields.civil_status || '').trim()) {
+    const box = CIVIL_BOXES.find((k) => (norm.get(k) || {}).value === 'SELECTED');
+    if (box) { fields.civil_status = box; conf.civil_status = norm.get(box).conf; }
   }
   return { fields, conf };
 }

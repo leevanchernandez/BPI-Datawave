@@ -25,13 +25,17 @@ async function analyzeForm(bytes, client) {
   const out = await c.send(new AnalyzeDocumentCommand({ Document: { Bytes: bytes }, FeatureTypes: ['FORMS'] }));
   const blocks = new Map((out.Blocks || []).map((b) => [b.Id, b]));
   const text = (b) => ((b.Relationships || []).filter((r) => r.Type === 'CHILD').flatMap((r) => r.Ids).map((id) => blocks.get(id)).filter((w) => w && w.BlockType === 'WORD').map((w) => w.Text).join(' '));
-  const kv = {};
-  for (const b of blocks.values()) {
-    if (b.BlockType !== 'KEY_VALUE_SET' || !(b.EntityTypes || []).includes('KEY')) continue;
+  const ticked = (b) => ((b.Relationships || []).filter((r) => r.Type === 'CHILD').flatMap((r) => r.Ids).map((id) => blocks.get(id)).find((w) => w && w.BlockType === 'SELECTION_ELEMENT') || {}).SelectionStatus;
+  const top = (b) => ((b.Geometry || {}).BoundingBox || {}).Top ?? 0;
+  const keys = [...blocks.values()].filter((b) => b.BlockType === 'KEY_VALUE_SET' && (b.EntityTypes || []).includes('KEY')).sort((a, b) => top(a) - top(b));
+  const kv = {}, seen = {};
+  for (const b of keys) {
     const valueIds = (b.Relationships || []).filter((r) => r.Type === 'VALUE').flatMap((r) => r.Ids);
     const v = valueIds.map((id) => blocks.get(id)).filter(Boolean)[0];
-    // An empty value block means a blank field. Unverified against real forms: test on synthetic PDFs in week 1.
-    const key = text(b).replace(/:$/, '').trim().toLowerCase(), val = { value: v ? text(v) : '', conf: ((v || b).Confidence || 0) / 100 };
+    // An empty value block means a blank field. A checkbox value reads as SELECTED or NOT_SELECTED.
+    const key = text(b).replace(/:$/, '').trim().toLowerCase(), val = { value: v ? (text(v) || ticked(v) || '') : '', conf: ((v || b).Confidence || 0) / 100 };
+    seen[key] = (seen[key] || 0) + 1;
+    if (seen[key] > 1) kv[`${key} #${seen[key]}`] = val; // repeated labels, top to bottom: the borrower's (First Name), then the spouse's
     if (!kv[key] || (!kv[key].value && val.value)) kv[key] = val; // duplicate labels: keep the first non-empty value
   }
   return kv;
