@@ -562,8 +562,15 @@ $('cases-refresh').onclick = () => loadCases($('cases-refresh'));
 if (role === 'bm') loadCases();
 
 // ================= BSO view =================
+// The BSO's follow-up email to the client, in the wording BPI BSOs already use (from a BSO's sample, Nov 16).
+const clientEmail = (r, o) => {
+  const item = (m) => m.replace(/^The BSO asked for this: "(.+?)"[\s\S]*$/, '$1').replace(/^Application form: "(.+)" is blank\.$/, (_, f) => `Application form, please fill in the ${f.replace(/\btin\b/, 'TIN')}`).replace(/ is missing\.$| is blank\.$/, '').replace(/\.$/, '').replace(/: /, ', ');
+  const spouse = o.defects.filter((d) => /spouse/i.test(d.message)), main = o.defects.filter((d) => !spouse.includes(d));
+  const list = (title, ds) => (ds.length ? `${title}\n${ds.map((d) => `  - ${item(d.message)}`).join('\n')}\n\n` : '');
+  return `Dear ${r.name},\n\nThank you for choosing BPI as your preferred bank for your business needs. We appreciate the opportunity to be your business partner.\n\nFor us to proceed with the loan application of ${r.business}, may we kindly request the following lacking information / requirements.\n\n${list('Main borrower', main)}${list('Spouse', spouse)}Thank you.`;
+};
 if (role === 'bso') {
-  let timer = null, lastAt = '', shownDrafts = null, shownId = null;
+  let timer = null, lastAt = '', shownDrafts = null, shownId = null, email = '';
   async function load() {
     if (caseId() !== shownId) { // a new case shows skeletons until it arrives
       $('b-summary').innerHTML = '<span class="skel h"></span><span class="skel w80"></span>';
@@ -598,6 +605,7 @@ if (role === 'bso') {
       $('b-headsup').innerHTML = v.headsUp.map((l) => `<li>${ICON.warn}<span>${esc(l.text)}<br><span class="soft">Shown on ${esc(headsUpScope(l))}</span></span><button class="small secondary" data-retire="${esc(l.id)}">Retire</button></li>`).join('')
         || (v.lessonDrafts.length ? '' : '<li><span></span><span class="soft">There is no heads-up for cases like this one yet.</span><span></span></li>');
       $('b-message').textContent = v.lastMessage || 'No check yet.';
+      email = o.checked ? clientEmail(r, o) : ''; $('b-email').disabled = !o.checked || !o.defects.length; $('b-email').dataset.why = o.checked ? 'Nothing is missing.' : 'Run a check first.';
       $('b-approve').disabled = !v.lastMessage || v.events.some((e) => e.type === 'draft_approved' && e.at > (v.events.filter((x) => x.type.startsWith('check')).pop() || {}).at);
       const newest = (v.events[v.events.length - 1] || {}).at || '';
       if (lastAt && newest !== lastAt) document.title = 'Updated: Counter Check';
@@ -617,6 +625,7 @@ if (role === 'bso') {
     const done = busy(btn, label);
     try { await api('POST', '/api/event', { id: caseId(), by: 'BSO', ...body }); done(); if (note) toast(note); await load(); loadCases(); } catch (e) { done(); alertInline(e.message); }
   };
+  $('b-email').onclick = async () => { try { await navigator.clipboard.writeText(email); toast('Client email copied. Paste it into your email.'); } catch { alertInline('Copy did not work in this browser.'); } };
   $('b-approve').onclick = () => act($('b-approve'), 'Approving', { type: 'draft_approved' }, 'Message approved.');
   $('b-id').addEventListener('input', () => { $('b-endorse').disabled = $('b-return-btn').disabled = true; });
   $('b-endorse').onclick = () => act($('b-endorse'), 'Endorsing', { type: 'endorsed' }, 'Endorsed to Credit. Credit decides the loan.');
@@ -683,5 +692,5 @@ showView(VIEWS.some(([k]) => k === hashView) ? hashView : role === 'bm' ? 'refer
 for (const b of document.querySelectorAll('button[data-why]')) {
   const p = document.createElement('p'); p.className = 'soft why'; b.closest('.actions').after(p);
   const set = () => { p.textContent = b.disabled ? b.dataset.why : ''; p.hidden = !b.disabled; };
-  new MutationObserver(set).observe(b, { attributes: true, attributeFilter: ['disabled'] }); set();
+  new MutationObserver(set).observe(b, { attributes: true, attributeFilter: ['disabled', 'data-why'] }); set();
 }
