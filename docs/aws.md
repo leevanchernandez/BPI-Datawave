@@ -166,6 +166,16 @@ Follow docs/aws-runbook.md. In short, export AWS_REGION, DEMO_KEY, BEDROCK_MODEL
 
 The status tool also returns a next step from a fixed table in `worker/api.mjs` (for example "Press Send to BSO." or "Nasa Credit na. Credit ang nagdedesisyon sa loan."). A case whose open items are only for a person to check gets a next step that asks the client for nothing. On Nov 13 the question "ano next step dito?" got the table's step on a case with missing papers, one with the BSO and one endorsed to Credit. The next step never has a date.
 
+
+
+## Several checks at once
+
+On Nov 15 five 9-page checks were fired at the deployed API in the same second, twice. With the Lambda timeout at 60 seconds, 4 of 5 finished in 42 to 62 seconds and one hit the timeout. After the timeout went to 180 seconds, 5 of 5 finished in 39 to 58 seconds. One check alone takes 15 to 18 seconds. The slowdown comes from Textract's per-account page rate, which queues the pages. A pilot would ask AWS for a higher Textract limit.
+
+## BPI's real application form
+
+The BSO shared BPI's Business Loan Application Form (individual and sole proprietorship, 6 pages). We filled a copy with made-up details by script, photographed it, and ran it through the deployed check. Before the label map, the check found the form but could not map 6 fields. After it (`backend/classify.cjs`), the full copy read every required field and sent only civil status to a person, because the test X sat on the edge of the box. A copy with blanks named the blank business name and TIN and sent the blank mobile number to review. Pages 3, 4 and 6 (checklist, references, signatures) are skipped as annexes. The same map fills the case form from photos of a filled form ("Read a filled paper form" on the branch view). This is one form with made-up details, not client forms, and the form itself is not in this repository.
+
 ## Side test: the form without the Forms pass (Nov 15)
 
 Textract Forms on the application form page is about three quarters of a check's cost. `scripts/eval-labels.cjs` reads the same page from the plain text pass that already runs on every page. It finds each printed label at the start of a Textract line and takes the words after it, or the line just to its right for handwriting. It stops at a big gap or a much taller word, so watermark letters stay out. On the two specimen forms at four damage levels (clean, light, medium, heavy), the mapped fields matched the Forms pass on 62 of 64 readings. The other two were a blank TIN read as "" instead of missing, which the checker treats the same, and the heavy-level handwritten civil status, which the text pass found and Forms missed. Dropping Forms would take a 10-page check from about $0.065 to about $0.016 (about 1 peso). This is one synthetic layout with 8 images. A real BPI form needs its own label list, and a form with boxed or stacked labels may still need Forms. The live pipeline doesn't use it.

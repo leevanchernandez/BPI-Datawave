@@ -1,21 +1,8 @@
-# Demo script and what it needs
+# Demo script
 
-Two minutes. Only claims what can be shown. Items marked NEEDS are not built or measured yet.
+Two minutes. Only How to record the demo and what to say over it. Every document in it is synthetic.
 
-## Headline
-
-We catch the missing page, the blank TIN and the wrong-name ID while the client is still at the counter, so the BSO's email loop shrinks. (The measured part of this sentence rests on a simulated phone-photo test so far, see docs/aws.md. The printed 60-document test below is still open.)
-
-## Script
-
-| Time | What happens | Status |
-| --- | --- | --- |
-| 0:00 to 0:20 | State the pain in the BSO's words: a lead arrives incomplete, the BSO emails the lacking list, the branch resubmits, and it cycles. One sentence on who loses time. | Ready |
-| 0:20 to 1:10 | Branch scans a synthetic packet with a page missing and the TIN blank. The result appears while the client is still there: two problems, with the exact page and field, plus the checklist for sole proprietorship, food, 750,000. | The checker and page work today on made-up packets. Textract and Bedrock read the synthetic specimens on the hackathon account, clean and with simulated photo damage (docs/aws.md). The demo page reads on that stack by default (since Nov 13), and the case form is filled from a typed note that the branch confirms. NEEDS: printed pages photographed with a phone |
-| 1:10 to 1:40 | Client fixes one problem, branch scans again. The screen shows fixed, still open and new. The BSO sees the Taglish message to approve. | Ready on the demo page |
-| 1:40 to 2:00 | One slide: recall and false-complete on the 60-document test with ranges, review rate, cost per completed referral, and "pilot task: scanner integration, hosted in BPI's own account". | A simulated version is measured (docs/aws.md). It named 33 of 33 planted defects and passed no defective packet (Nov 13 rerun). NEEDS: the printed and phone-photographed run |
-
-## Recording the demo
+emo
 
 Use a case number nobody has touched. The plain link https://counter-check.stimmie.dev/live picks a fresh number and puts it in the address. Open it in one window, then open the same address with `&role=bso` added in a second window. `RF-2026-050`, `051`, `052` and `310` are already used by earlier takes. The page needs no key. Record the screen with your voice in one take, and leave the waits in, because the 15 to 20 seconds of reading is part of the claim.
 
