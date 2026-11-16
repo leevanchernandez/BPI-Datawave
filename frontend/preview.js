@@ -204,7 +204,7 @@ if (role === 'bm') {
     $('req-count').textContent = `${v.rules.rows.length} papers`;
     const r = v.referral || referral();
     $('req-title').textContent = r.business ? `Papers for ${r.business}` : 'Papers this case needs';
-    $('req-for').textContent = `${r.id}, ${String(r.type || '').toLowerCase()}${r.secured ? ', secured' : ''}`;
+    $('req-for').textContent = `${r.id}, ${String(r.type || '').toLowerCase()}${r.secured ? ', secured' : ''}${r.channel === 'Pre-approved callout' ? '. This client came from a pre-approved callout, so the BSO may ask for fewer or different papers after the call. The list below is the standard one.' : ''}`;
     $('mode-ask').classList.remove('hidden'); $('quick').classList.toggle('hidden', mode !== 'ask');
     $('rules-note').textContent = `Rules version ${v.rules.version}. Rows marked BSO checklist are what the BSO expects from the branch at referral. The other rows come from BPI's public page, which BPI calls indicative.`;
     $('headsup-box').classList.toggle('hidden', !v.headsUp.length);

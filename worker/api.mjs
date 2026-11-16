@@ -48,7 +48,7 @@ export function validReferral(r) {
     && (r.secured == null || typeof r.secured === 'boolean')
     && (r.bpiAccount == null || typeof r.bpiAccount === 'boolean');
 }
-const CHANNELS = ['Branch walk-in', 'Ka-Negosyo online'];
+const CHANNELS = ['Branch walk-in', 'Ka-Negosyo online', 'Pre-approved callout'];
 const BRANCHES = ['Makati Main Branch', 'Quezon Avenue Branch', 'Caloocan Branch', 'Malabon Branch']; // sample branches, the first is the demo's own
 const cleanReferral = (r) => ({ id: r.id, business: r.business.trim(), name: r.name.trim(), type: r.type, industry: r.industry.trim(), amount: r.amount, civilStatus: civilOf(r.civilStatus), spouseName: (r.spouseName || '').trim(), secured: Boolean(r.secured), bpiAccount: r.bpiAccount === true, channel: CHANNELS.includes(r.channel) ? r.channel : CHANNELS[0], branch: BRANCHES.includes(r.branch) ? r.branch : BRANCHES[0] });
 
