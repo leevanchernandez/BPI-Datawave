@@ -96,7 +96,7 @@ const NEXT = {
 /** aws: { url, key, checkUrl?, fetch? } for the AWS backend, or null. checkUrl is the check function's own URL, which has no 30 second gateway limit. */
 const MODEL_ROUTES = new Set(['/api/intake', '/api/check', '/api/ask']);
 // Per address per minute for all routes and for model routes, and per UTC day for model calls per address and for all addresses together.
-export const QUOTA = { perMinute: 300, modelPerMinute: 20, modelPerDay: 300, modelPerAddressDay: 150 };
+export const QUOTA = { perMinute: 300, modelPerMinute: 20, modelPerDay: 1000, modelPerAddressDay: 400 };
 
 /** Counts one call in state { minute, hits, day, n, ips } and returns 'ok', 'rate' or 'daily'. A refused call is not counted. */
 export function takeQuota(s, ip, model, now = Date.now()) {
